@@ -307,3 +307,20 @@ def track_ang_vel_z_exp(
     # compute the error
     ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - asset.data.root_ang_vel_b[:, 2])
     return torch.exp(-ang_vel_error / std**2)
+
+
+#custom reward functions
+
+def body_height_penalty(
+    env: ManagerBasedRLEnv, threshold: float = 0.2, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+
+    asset: RigidObject = env.scene[asset_cfg.name]
+
+    body_positions = asset.data.body_pos_w  # Shape: (num_envs, num_bodies, 3)
+
+    excess_height = body_positions[:, :, 2] - threshold  # Shape: (num_envs, num_bodies)
+
+    penalty = torch.sum(excess_height.clip(min=0.0), dim=1)  # Shape: (num_envs,)
+
+    return penalty

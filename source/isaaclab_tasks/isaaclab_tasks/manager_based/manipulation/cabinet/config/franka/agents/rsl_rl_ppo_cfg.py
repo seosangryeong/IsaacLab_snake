@@ -11,7 +11,7 @@ from isaaclab.utils import configclass
 @configclass
 class CabinetPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 96
-    max_iterations = 400
+    max_iterations = 1000
     save_interval = 50
     experiment_name = "franka_open_drawer"
     empirical_normalization = False

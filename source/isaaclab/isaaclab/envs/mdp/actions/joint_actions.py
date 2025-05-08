@@ -14,6 +14,7 @@ import omni.log
 import isaaclab.utils.string as string_utils
 from isaaclab.assets.articulation import Articulation
 from isaaclab.managers.action_manager import ActionTerm
+import numpy as np
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
@@ -223,3 +224,8 @@ class JointEffortAction(JointAction):
     def apply_actions(self):
         # set joint effort targets
         self._asset.set_joint_effort_target(self.processed_actions, joint_ids=self._joint_ids)
+
+        # print(self.processed_actions)
+
+
+
