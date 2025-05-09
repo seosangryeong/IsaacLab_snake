@@ -56,6 +56,18 @@ def base_heading_proj(
 
     return heading_proj.view(env.num_envs, 1)
 
+def base_pos_to_target(
+    env: ManagerBasedEnv, target_pos: tuple[float, float, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Distance between the base position and the target position."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    # compute distance to target
+    to_target_pos = torch.tensor(target_pos, device=env.device) - asset.data.root_pos_w[:, :3]
+    distance_to_target = torch.norm(to_target_pos, dim=-1)
+
+    return distance_to_target.unsqueeze(-1)
+
 
 def base_angle_to_target(
     env: ManagerBasedEnv, target_pos: tuple[float, float, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")

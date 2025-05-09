@@ -67,12 +67,12 @@ KANAKE_CFG = ArticulationCfg(
     actuators={
             "body": ImplicitActuatorCfg(
                 joint_names_expr=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-                stiffness = 2.0,
-                damping =0.5,
+                stiffness = 0.4,
+                damping =0.01,
                 # stiffness = 10.0,
                 # damping =5.0,
                 effort_limit = 3.0, #Nm
-                # velocity_limit = 5.7, #rad/s
+                velocity_limit = 5.7, #rad/s
 
             ),
         },

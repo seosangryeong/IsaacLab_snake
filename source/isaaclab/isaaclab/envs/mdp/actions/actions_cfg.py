@@ -9,7 +9,7 @@ from isaaclab.controllers import DifferentialIKControllerCfg, OperationalSpaceCo
 from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.utils import configclass
 
-from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions 
+from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions , cpg_actions
 import numpy as np
 ##
 # Joint actions.
@@ -350,3 +350,15 @@ class JointSineHorizonActionCfg(JointActionCfg):
         (1.0, 2.0)   # phase_horizontal 
 
     ]
+
+@configclass
+class JointCPGActionCfg(JointActionCfg):
+    class_type: type[ActionTerm] = cpg_actions.JointCPGAction
+    preserve_order: bool = True
+
+    joint_names: list[str] = ["j*"]      # 기존과 동일
+    preserve_order: bool = True
+    a: float = 5.0          # 진폭 ODE 계수 a
+    mu: float | list = 0.3  # 결합 강도 μ (스칼라 또는 관절별 리스트)
+    B: float = 1.0          # 외부 자극 게인
+    clip_ranges: list[tuple[float,float]] = [(-1,1)]*6

@@ -1,14 +1,11 @@
 import os, torch, numpy as np
 from sklearn.cluster import KMeans
 
-# ───────── KIT 파일명 찾기 (파일명만 반환) ─────────
 def _find_kit(headless=True) -> str:
     fname = "isaacsim.exp.base.python.kit" if headless else "isaacsim.exp.full.kit"
     if os.path.exists(f"_isaac_sim/apps/" + fname):
         return fname
-    raise FileNotFoundError(f"{fname} 을 _isaac_sim/apps 에서 찾지 못했습니다.")
 
-# ───────── 클러스터링 ─────────
 def run_clustering(actions_path, out_prefix, n_clusters=64):
     seqs = torch.load(actions_path)            # list[Tensor]
     X = np.stack([s.cpu().numpy().reshape(-1) for s in seqs])
@@ -25,7 +22,6 @@ def run_clustering(actions_path, out_prefix, n_clusters=64):
     print(f"클러스터 라벨 저장 → {labels_path}")
     return labels_path, centroids_path
 
-# ───────── 클러스터 검토 ─────────
 def review_clusters_with_env(centroids, env_cfg, args_cli, sim_app):
     import time, gymnasium as gym
     from isaaclab_rl.rsl_rl import RslRlVecEnvWrapper

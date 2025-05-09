@@ -56,7 +56,7 @@ class ActionsCfg:
     # joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=0.05)
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.1, use_default_offset=True)
 
     # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
     # joint_sine_h = mdp.JointSineHorizonActionCfg(
@@ -95,7 +95,7 @@ class ObservationsCfg:
         # base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
         base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (100.0, 0.0, 0.0)})
         base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (100.0, 0.0, 0.0)})
-        projected_gravity = ObsTerm(func=mdp.projected_gravity)
+        # projected_gravity = ObsTerm(func=mdp.projected_gravity)
         base_pos_to_target = ObsTerm(func=mdp.base_pos_to_target, params={"target_pos": (100.0, 0.0, 0.0)})
         # base_quat_w = ObsTerm(func=mdp.root_quat_w)
         # heading_w = ObsTerm(func=mdp.heading_w)
@@ -183,14 +183,15 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     progress = RewTerm(func=mdp.progress_reward, weight=10.0, params={"target_pos": (100.0, 0.0, 0.0)})
+    terminated = RewTerm(func=mdp.is_terminated, weight=-0.1)
     action_rate_l2 = RewTerm(
         func=mdp.action_rate_l2,
-        weight = -0.001
+        weight = -0.01
     )
-    action_l2 = RewTerm(
-        func=mdp.action_l2,
-        weight = -0.0001
-    )
+    # action_l2 = RewTerm(
+    #     func=mdp.action_l2,
+    #     weight = -0.0001
+    # )
     # LocalWorldAlignmentReward = RewTerm(
     #     func=mdp.LocalWorldAlignmentReward,
     #     weight=0.01
@@ -212,10 +213,10 @@ class RewardsCfg:
     #     params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     # )
     move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.0, params={"threshold": 0.9, "target_pos": (100.0, 0.0, 0.0)})
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=2.0, params={"threshold": 0.85})
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=2.0, params={"threshold": 0.9})
     # upright_penalty = RewTerm(func=mdp.upright_posture_penalty, weight=0.5, params={"threshold": 1.0})
     # debug = RewTerm(func=mdp.debug, weight=1.0) #디버깅용
-    heading = RewTerm(func=mdp.heading, weight=2.0, params={"target_pos": (100.0, 0.0, 0.0)})
+    # heading = RewTerm(func=mdp.heading, weight=2.0, params={"target_pos": (100.0, 0.0, 0.0)})
     # joint_nomove_penalty = RewTerm(func=mdp.joint_nomove_penalty,params={"threshold": 2.0}, weight=-0.5) #2라디안
     # base_up_proj1 = RewTerm(func=mdp.base_up_proj1, weight=0.1)
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward, weight=1.0, params={"target_pos": (100.0, 0.0, 0.0)})
@@ -239,11 +240,11 @@ class RewardsCfg:
     #     params={"threshold": 0.2}
     # )
 
-    linealignmentreward = RewTerm(
-        func=mdp.LineAlignmentReward,
-        weight = 1.0,
-        params={"target_pos": (100.0, 0.0, 0.0)}
-    )
+    # linealignmentreward = RewTerm(
+    #     func=mdp.LineAlignmentReward,
+    #     weight = 1.0,
+    #     params={"target_pos": (100.0, 0.0, 0.0)}
+    # )
 
     # joint_limits = RewTerm(
     #     func=mdp.joint_limits_penalty_ratio, weight=-0.1, params={"threshold": 0.80, "gear_ratio": {".*": 1.0}}
@@ -291,7 +292,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    # max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.2})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.2})
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
 
@@ -314,7 +315,7 @@ class CurriculumCfg:
 class kanakeEnvCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=1.5)
+    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=3.0)
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     # commands: CommandsCfg = CommandsCfg()
@@ -328,12 +329,12 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
     def __post_init__(self):
         """Post initialization."""
         # general settings
-        self.decimation = 4
+        self.decimation = 2
         self.episode_length_s = 20.0
         # simulation settings
         self.sim.dt = 0.005
         self.sim.render_interval = self.decimation
-        self.sim.physx.bounce_threshold_velocity = 0.8
+        self.sim.physx.bounce_threshold_velocity = 0.5
         self.sim.physics_material.static_friction = 1.0
         self.sim.physics_material.dynamic_friction = 1.0
-        self.sim.physics_material.restitution = 0.2
+        self.sim.physics_material.restitution = 0.05
