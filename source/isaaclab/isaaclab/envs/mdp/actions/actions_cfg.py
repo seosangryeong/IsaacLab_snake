@@ -353,12 +353,27 @@ class JointSineHorizonActionCfg(JointActionCfg):
 
 @configclass
 class JointCPGActionCfg(JointActionCfg):
+    # ActionTerm 클래스 지정
     class_type: type[ActionTerm] = cpg_actions.JointCPGAction
-    preserve_order: bool = True
 
-    joint_names: list[str] = ["j*"]      # 기존과 동일
-    preserve_order: bool = True
-    a: float = 5.0          # 진폭 ODE 계수 a
-    mu: float | list = 0.3  # 결합 강도 μ (스칼라 또는 관절별 리스트)
-    B: float = 1.0          # 외부 자극 게인
-    clip_ranges: list[tuple[float,float]] = [(-1,1)]*6
+    # CPG-제어에 사용할 관절(와일드카드 가능)
+    joint_names: list[str] = ["j*"]          # 모든 관절
+
+    # 동역학 계수
+    a:  float = 5.0      # 진폭 ODE 계수   (커지면 r 수렴이 빠름)
+    mu: float = 0.3      # 위상 결합 강도  (0.1~0.5 사이에서 조정)
+    B:  float = 1.0      # 외부 자극 게인  (θ 항 가중치)
+
+    preserve_order: bool = True              # USD joint 순서 유지
+
+    # ─────────── Action Clip Ranges ───────────
+    # ( R_vert, ω_vert, θ_vert,  R_horz, ω_horz, θ_horz )
+    clip_ranges: list[tuple[float, float]] = [
+        (0.0,  2.0),     # 진폭  R_vertical   [rad]
+        (0.0,  3.0),     # 주파수 ω_vertical [Hz]
+        (-6.28, 6.28),   # θ_vertical        [rad s⁻²]  (-2π~2π)
+
+        (0.0,  2.0),     # 진폭  R_horizontal
+        (0.0,  3.0),     # 주파수 ω_horizontal
+        (-6.28, 6.28)    # θ_horizontal
+    ]
