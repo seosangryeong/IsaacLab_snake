@@ -10,3 +10,7 @@ from .binary_joint_actions import *
 from .joint_actions import *
 from .joint_actions_to_limits import *
 from .non_holonomic_actions import *
+from .sine_actions import *
+from .sine_h_actions import *
+from .sine_v_actions import *
+

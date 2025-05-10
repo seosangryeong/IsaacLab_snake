@@ -423,6 +423,16 @@ class ArticulationData:
         """
         forward_w = math_utils.quat_apply(self.root_link_quat_w, self.FORWARD_VEC_B)
         return torch.atan2(forward_w[:, 1], forward_w[:, 0])
+    
+    @property
+    def head_forward(self):
+
+        head_forward = math_utils.quat_apply(self.head_quat_w, self.FORWARD_VEC_B)
+        return head_forward[:,:]
+
+    
+
+
 
     @property
     def joint_pos(self):
@@ -545,6 +555,9 @@ class ArticulationData:
             pose[:, 3:7] = math_utils.convert_quat(pose[:, 3:7], to="wxyz")
             return pose[:, 3:7]
         return self.root_link_state_w[:, 3:7]
+    
+
+
 
     @property
     def root_link_vel_w(self) -> torch.Tensor:
@@ -679,6 +692,11 @@ class ArticulationData:
         This quantity is the orientation of the rigid bodies' actor frame relative to the world.
         """
         return self.body_state_w[..., 3:7]
+    
+    @property
+    def head_quat_w(self) -> torch.Tensor:
+
+        return self.body_quat_w[:,16,:]
 
     @property
     def body_vel_w(self) -> torch.Tensor:

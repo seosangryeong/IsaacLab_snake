@@ -126,6 +126,9 @@ def main():
 
     dt = env.unwrapped.physics_dt
 
+    # env.reset()
+
+
     # reset environment
     obs, _ = env.get_observations()
     timestep = 0

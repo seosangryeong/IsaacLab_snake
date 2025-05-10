@@ -226,6 +226,7 @@ class SimulationCfg:
 
     dt: float = 1.0 / 60.0
     """The physics simulation time-step (in seconds). Default is 0.0167 seconds."""
+    print(dt)
 
     render_interval: int = 1
     """The number of physics simulation steps per rendering step. Default is 1."""

@@ -9,8 +9,8 @@ from isaaclab.controllers import DifferentialIKControllerCfg, OperationalSpaceCo
 from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.utils import configclass
 
-from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions
-
+from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions 
+import numpy as np
 ##
 # Joint actions.
 ##
@@ -310,3 +310,58 @@ class OperationalSpaceControllerActionCfg(ActionTermCfg):
     Note: Functional only when ``nullspace_control`` is set to ``"position"`` within the
         ``OperationalSpaceControllerCfg``.
     """
+
+@configclass
+class JointSineActionCfg(JointActionCfg):
+    class_type: type[ActionTerm] = sine_actions.JointSineAction
+    preserve_order: bool = True
+
+    clip_ranges: list[tuple[float, float]] = [
+
+        # vertical
+
+        (0.0, 0.0),  # amplitude_vertical
+        (0.0, 0.0),  # frequency_vertical
+        (0.0, 0.0),  # phase_verticals   
+
+        # horizontal
+
+        (1.0, 2.0),  # amplitude_horizontal 
+        (1/13*30, 1/13*30),  # frequency_horizontal 
+        (0.8, 1.2)   # phase_horizontal 
+
+    ]
+
+@configclass
+class JointSineHorizonActionCfg(JointActionCfg):
+    class_type: type[ActionTerm] = sine_h_actions.JointSineHorizonAction
+    preserve_order: bool = True
+
+    clip_ranges: list[tuple[float, float]] = [
+
+        # # horizontal
+        # (1.0, 2.0),  # amplitude_horizontal 
+        # (1/13*30, 1/13*30),  # frequency_horizontal 
+        # (0.8, 1.2)   # phase_horizontal 
+
+        # horizontal
+        (0.5, 1.5),  # amplitude_horizontal 
+        (1.0, 1.5),  # frequency_horizontal 
+        (0.5, 1.5)   # phase_horizontal 
+
+    ]
+
+
+@configclass
+class JointSineVerticalActionCfg(JointActionCfg):
+    class_type: type[ActionTerm] = sine_v_actions.JointSineVerticalAction
+    preserve_order: bool = True
+
+    clip_ranges: list[tuple[float, float]] = [
+
+        # vertical
+        (0.5, 1.5),  # amplitude_horizontal 
+        (1.0, 1.5),  # frequency_horizontal 
+        (0.5, 1.5),  # phase_horizontal 
+
+    ]

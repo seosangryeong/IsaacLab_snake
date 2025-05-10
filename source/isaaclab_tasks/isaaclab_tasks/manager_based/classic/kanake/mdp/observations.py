@@ -38,15 +38,6 @@ def base_up_proj(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
 
     return base_up_vec[:, 2].unsqueeze(-1)
 
-def base_up_proj_kanake(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
-    """Projection of the base up vector onto the world up vector."""
-    # extract the used quantities (to enable type-hinting)
-    asset: Articulation = env.scene[asset_cfg.name]
-    # compute base up vector
-    base_up_vec = -asset.data.projected_gravity_b
-
-    return base_up_vec[:, 1].unsqueeze(-1)
-
 
 def base_heading_proj(
     env: ManagerBasedEnv, target_pos: tuple[float, float, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
@@ -82,15 +73,3 @@ def base_angle_to_target(
     angle_to_target = torch.atan2(torch.sin(angle_to_target), torch.cos(angle_to_target))
 
     return angle_to_target.unsqueeze(-1)
-
-
-def base_forward_vector(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
-    """Forward vector of the base in the simulation world frame."""
-    # Extract the used quantities (to enable type-hinting)
-    asset: Articulation = env.scene[asset_cfg.name]
-    
-    # Get the forward vector in the world frame
-    head_forward = asset.data.head_forward
-    
-    return head_forward
-

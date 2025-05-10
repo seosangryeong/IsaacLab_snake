@@ -12,11 +12,11 @@ import isaaclab.utils.math as math_utils
 import isaaclab.utils.string as string_utils
 from isaaclab.assets import Articulation
 from isaaclab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
-import torch.nn.functional as F
+
 from . import observations as obs
 
 if TYPE_CHECKING:
-    from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedEnv
+    from isaaclab.envs import ManagerBasedRLEnv
 
 
 def upright_posture_bonus(
@@ -24,91 +24,9 @@ def upright_posture_bonus(
 ) -> torch.Tensor:
     """Reward for maintaining an upright posture.
     로봇의 로컬좌표계 z축과 월드좌표계 z축의 내적. -1에서 1 사이(1에 가까울수록 upright)"""
-    up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)
-    # print("up_proj", up_proj)
-    return (up_proj > threshold).float()
-
-def upright_posture_penalty(
-    env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-) -> torch.Tensor:
-    up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)
-    # print("up_proj", up_proj)
-    return up_proj - threshold
-
-def upright_posture_bonus_0(
-    env: ManagerBasedRLEnv, threshold: float = 0.1, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-) -> torch.Tensor:
-    """
-    Reward for maintaining an upright posture.
-    로봇의 로컬좌표계 z축과 월드좌표계 z축의 내적. 0에 가까울수록 수직에 가까움.
-    """
     up_proj = obs.base_up_proj(env, asset_cfg).squeeze(-1)
     # print("up_proj", up_proj)
-
-    reward = torch.where(
-        torch.abs(up_proj) <= threshold,  
-        1.0,  
-        1.0 - torch.abs(up_proj)  
-    )
-
-    return reward
-
-def debug(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
-    """
-    Debugging reward to print the root_link_quat_w values.
-    Always returns 0 to avoid affecting training.
-    """
-    # Extract the robot asset
-    asset: Articulation = env.scene[asset_cfg.name]
-    
-    # Get the root link quaternion in world coordinates
-    head_forward = asset.data.head_forward
-    projected_gravity_b = asset.data.projected_gravity_b #똑바로 서있으면 z축(3번째)데이터가 -1
-    # quat2euler=math_utils.euler_xyz_from_quat(root_quat)
-    # Print the quaternion for debugging
-    # print("root_link_quat_w:", root_quat)
-    # print("projected_gravity_b:", projected_gravity_b)
-    # print("quat2euler:", quat2euler)
-    print("head_forward", head_forward)
-    # Return a dummy reward value (0) to avoid affecting training
-
-    return torch.zeros(env.num_envs, device=env.device)
-
-def heading(
-    env: ManagerBasedRLEnv,
-    target_pos: tuple[float, float, float],
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-) -> torch.Tensor:
-
-    asset: Articulation = env.scene[asset_cfg.name]
-
-    head_forward = asset.data.head_forward
-    
-    target = torch.tensor(target_pos, device=env.device, dtype=head_forward.dtype)
-    
-    to_target = target - asset.data.body_pos_w[:,0,:]
-    
-    forward_norm = F.normalize(head_forward, p=2, dim=-1)
-    to_target_norm = F.normalize(to_target, p=2, dim=-1)
-    
-    heading_reward = torch.sum(forward_norm * to_target_norm, dim=-1)
-    
-    return heading_reward
-
-def base_up_proj1(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
-    """Projection of the base up vector onto the world up vector (for debugging)."""
-    # extract the used quantities (to enable type-hinting)
-    asset: Articulation = env.scene[asset_cfg.name]
-    # compute base up vector
-    base_up_vec = -asset.data.projected_gravity_b
-
-    # Print values for debugging
-    print("base_up_vec:", base_up_vec)
-    # print("projected_gravity_b:", -base_up_vec)
-
-    # Return a dummy reward value (0) to avoid affecting training
-    return torch.zeros(env.num_envs, device=env.device)
-
+    return (up_proj > threshold).float()
 
 
 def move_to_target_bonus(

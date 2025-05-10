@@ -195,6 +195,7 @@ class ManagerBasedEnv:
         This is the time-step at which the environment steps forward.
         """
         return self.cfg.sim.dt * self.cfg.decimation
+        
 
     @property
     def device(self):
