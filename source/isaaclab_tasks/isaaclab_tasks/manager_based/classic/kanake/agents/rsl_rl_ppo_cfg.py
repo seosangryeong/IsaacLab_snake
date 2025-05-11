@@ -11,7 +11,7 @@ from isaaclab.utils import configclass
 @configclass
 class kanakePPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 32
-    max_iterations = 2000
+    max_iterations = 5000
     save_interval = 50
     experiment_name = "kanake"
     empirical_normalization = False

@@ -9,7 +9,7 @@ from isaaclab.controllers import DifferentialIKControllerCfg, OperationalSpaceCo
 from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.utils import configclass
 
-from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions 
+from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions 
 import numpy as np
 ##
 # Joint actions.
@@ -92,6 +92,7 @@ class JointEffortActionCfg(JointActionCfg):
     """
 
     class_type: type[ActionTerm] = joint_actions.JointEffortAction
+    
 
 
 ##
@@ -320,17 +321,22 @@ class JointSineActionCfg(JointActionCfg):
 
         # vertical
 
-        (0.0, 0.0),  # amplitude_vertical
-        (0.0, 0.0),  # frequency_vertical
-        (0.0, 0.0),  # phase_verticals   
+        (0.5, 0.5),  # amplitude
+        (1/13*30, 1/13*30),  # frequency
+        (1.2, 1.2),  #phase
+   
 
         # horizontal
 
-        (1.0, 2.0),  # amplitude_horizontal 
-        (1/13*30, 1/13*30),  # frequency_horizontal 
-        (0.8, 1.2)   # phase_horizontal 
+        (3.0, 3.0),  # amplitude
+        (1/13*30, 1/13*30),  # frequency
+        (1.2, 1.2)  #phase
 
     ]
+    enable_additional_joint_values: bool = False
+    additional_joint_scale: float = 1.0
+
+
 
 @configclass
 class JointSineHorizonActionCfg(JointActionCfg):
@@ -345,9 +351,10 @@ class JointSineHorizonActionCfg(JointActionCfg):
         # (0.8, 1.2)   # phase_horizontal 
 
         # horizontal
-        (0.5, 1.5),  # amplitude_horizontal 
-        (1.0, 1.5),  # frequency_horizontal 
-        (0.5, 1.5)   # phase_horizontal 
+        (0.5, 1.2),  # amplitude
+        (0.3, 0.8),  # frequency
+        (0.4,1.2),  # phase
+
 
     ]
 
@@ -360,8 +367,32 @@ class JointSineVerticalActionCfg(JointActionCfg):
     clip_ranges: list[tuple[float, float]] = [
 
         # vertical
-        (0.5, 1.5),  # amplitude_horizontal 
-        (1.0, 1.5),  # frequency_horizontal 
-        (0.5, 1.5),  # phase_horizontal 
+        (0.5, 1.2),  # amplitude
+        (0.3, 0.8),  # frequency
+        (0.4,1.2),  # phase
 
+    ]
+
+@configclass
+class JointCPGActionCfg(JointActionCfg):
+    class_type: type[ActionTerm] = cpg_actions.JointCPGAction
+
+    joint_names: list[str] = ["j*"]          
+
+    a:  float = 5.0      # 진폭 ODE 계수   (커지면 r 수렴이 빠름)
+    mu: float = 0.3      # 위상 결합 강도  (0.1~0.5 사이에서 조정)
+    B:  float = 1.0      # 외부 자극 게인  (θ 항 가중치)
+
+    preserve_order: bool = True              # USD joint 순서 유지
+
+    # ─────────── Action Clip Ranges ───────────
+    # ( R_vert, ω_vert, θ_vert,  R_horz, ω_horz, θ_horz )
+    clip_ranges: list[tuple[float, float]] = [
+        (0.0,  1.0),     # 진폭  R_vertical   [rad]
+        (-0.2,  0.2),    # 주파수 ω_vertical [Hz]
+        (-3.14, 3.14),   # θ_vertical        [rad s⁻²]  (-2π~2π)
+
+        (0.0,  1.0),     # 진폭  R_horizontal
+        (-0.2,  0.2),     # 주파수 ω_horizontal
+        (-3.14, 3.14)    # θ_horizontal
     ]

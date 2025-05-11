@@ -102,11 +102,12 @@ class JointSineAction(ActionTerm):
         """내부 시뮬레이션 시간을 dt만큼 업데이트"""
         self._current_time += dt
 
-    def process_actions(self, actions: torch.Tensor):
+    def process_actions(self, actions: torch.Tensor, additional_joint_values: torch.Tensor = None):
         # 환경에서 dt 가져오기
         dt = self._env.step_dt  
         self.update_time(dt)
 
+        # 기존 actions 클립
         clip_ranges = getattr(self.cfg, "clip_ranges", [(-1.0, 1.0)] * 6)
         actions_clipped = torch.empty_like(actions)
         for i in range(6):
@@ -122,7 +123,6 @@ class JointSineAction(ActionTerm):
         frequency_horizontal = actions[:, 4]
         phase_horizontal = actions[:, 5]
 
-
         # 현재 시간을 (num_envs, 1) 텐서로 생성
         t = torch.full((self.num_envs, 1), self._current_time, device=self.device)
 
@@ -132,27 +132,31 @@ class JointSineAction(ActionTerm):
         horizontal_joint_sorted = sorted(self._horizontal_joint_names, key=lambda name: int(name[1:]))
         horizontal_numbers = torch.arange(len(horizontal_joint_sorted), device=self.device, dtype=torch.float32).unsqueeze(0)
 
-        # 수직 조인트 위치 계산: amplitude_vertical * sin(2π * frequency_vertical * t + vertical_numbers * phase_vertical)
+        # 수직 조인트 위치 계산
         vertical_pos = amplitude_vertical.unsqueeze(1) * torch.sin(
             2 * np.pi * frequency_vertical.unsqueeze(1) * t + vertical_numbers * phase_vertical.unsqueeze(1)
         )
-        # 수평 조인트 위치 계산: amplitude_horizontal * sin(2π * frequency_horizontal * t + horizontal_numbers * phase_horizontal)
+        # 수평 조인트 위치 계산
         horizontal_pos = amplitude_horizontal.unsqueeze(1) * torch.sin(
             2 * np.pi * frequency_horizontal.unsqueeze(1) * t + horizontal_numbers * phase_horizontal.unsqueeze(1)
         )
 
-        # 원래의 조인트 순서에 맞게 결과 할당 (예: j1, j2, j3, ... 순서대로)
+        # 원래의 조인트 순서에 맞게 결과 할당
         processed = torch.zeros(self.num_envs, self._num_joints, device=self.device)
         for i, name in enumerate(self._joint_names):
             if int(name[1:]) % 2 == 1:
-                # 수직 조인트: vertical 그룹 내 인덱스 찾기
                 idx = vertical_joint_sorted.index(name)
                 processed[:, i] = vertical_pos[:, idx]
             else:
-                # 수평 조인트: horizontal 그룹 내 인덱스 찾기
                 idx = horizontal_joint_sorted.index(name)
                 processed[:, i] = horizontal_pos[:, idx]
-                        
+
+        # 추가적인 조인트 값을 더함
+        if additional_joint_values is not None:
+            # 추가적인 조인트 값에 스케일 적용
+            processed += self.cfg.additional_joint_scale * additional_joint_values
+
+        # 최종 결과를 _processed_actions에 복사
         self._processed_actions.copy_(processed)
 
 

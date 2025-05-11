@@ -53,12 +53,24 @@ class MySceneCfg(InteractiveSceneCfg):
 class ActionsCfg:
     """Action specifications for the MDP."""
     
-    # joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=0.05)
-    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
+    # joint_effort = mdp.JointEffortActionCfg(
+    #     asset_name="robot", 
+    #     joint_names=[".*"], 
+    #     scale=1.0,
+    #     clip={".*": (-1.0, 1.0)}
+    # )
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.7, use_default_offset=True)
 
     # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
+    joint_sine = mdp.JointSineActionCfg(
+        asset_name="robot",
+        joint_names=[".*"],
+        enable_additional_joint_values=True, 
+        additional_joint_scale=1.0
+    )
+    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
+
     # joint_sine_h = mdp.JointSineHorizonActionCfg(
     #     asset_name="robot", 
     #     joint_names=["j2", "j4", "j6",  "j8",  "j10", "j12", "j14", "j16"], 
@@ -67,8 +79,15 @@ class ActionsCfg:
     # joint_pos = mdp.JointPositionActionCfg(
     #     asset_name="robot", 
     #     joint_names=["j1", "j3", "j5", "j7", "j9", "j11", "j13", "j15"], 
-    #     scale=0.5, 
+    #     scale=0.8, 
     #     use_default_offset=True)
+    
+    # joint_effort = mdp.JointEffortActionCfg(
+    #     asset_name="robot", 
+    #     joint_names=["j1", "j3", "j5", "j7", "j9", "j11", "j13", "j15"], 
+    #     scale=1.0
+    #     )
+
     
     # joint_sine_v = mdp.JointSineVerticalActionCfg(
     #     asset_name="robot", 
@@ -95,7 +114,7 @@ class ObservationsCfg:
         # base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
         base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (100.0, 0.0, 0.0)})
         base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (100.0, 0.0, 0.0)})
-        projected_gravity = ObsTerm(func=mdp.projected_gravity)
+        # projected_gravity = ObsTerm(func=mdp.projected_gravity)
         base_pos_to_target = ObsTerm(func=mdp.base_pos_to_target, params={"target_pos": (100.0, 0.0, 0.0)})
         # base_quat_w = ObsTerm(func=mdp.root_quat_w)
         # heading_w = ObsTerm(func=mdp.heading_w)
@@ -120,24 +139,24 @@ class ObservationsCfg:
 class EventCfg:
     """Configuration for events."""
 
-    reset_base = EventTerm(
-        func=mdp.reset_root_state_uniform,
-        mode="reset",
-        params={
-            # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (-1.57,1.57)},
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.1, 0.1),"roll": (0.0, 0.0), "pitch": (0.0,0.0), "yaw": (-1.57,1.57)},
-            # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.05, 0.05),"roll": (0.0, 0.0), "pitch": (0.0,0.0), "yaw": (0.0, 0.0)},
+    # reset_base = EventTerm(
+    #     func=mdp.reset_root_state_uniform,
+    #     mode="reset",
+    #     params={
+    #         # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (-1.57,1.57)},
+    #         "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.1, 0.1),"roll": (0.0, 0.0), "pitch": (0.0,0.0), "yaw": (-1.57,1.57)},
+    #         # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.05, 0.05),"roll": (0.0, 0.0), "pitch": (0.0,0.0), "yaw": (0.0, 0.0)},
 
-            "velocity_range": {
-                "x": (0.0, 0.0),
-                "y": (0.0, 0.0),
-                "z": (0.0, 0.0),
-                "roll": (0.0, 0.0),
-                "pitch": (0.0, 0.0),
-                "yaw": (0.0,0.0),
-            },
-        },
-    )
+    #         "velocity_range": {
+    #             "x": (0.0, 0.0),
+    #             "y": (0.0, 0.0),
+    #             "z": (0.0, 0.0),
+    #             "roll": (0.0, 0.0),
+    #             "pitch": (0.0, 0.0),
+    #             "yaw": (0.0,0.0),
+    #         },
+    #     },
+    # )
 
 
     reset_robot_joints = EventTerm(
@@ -182,15 +201,16 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    progress = RewTerm(func=mdp.progress_reward, weight=10.0, params={"target_pos": (100.0, 0.0, 0.0)})
+    progress = RewTerm(func=mdp.progress_reward, weight=20.0, params={"target_pos": (100.0, 0.0, 0.0)})
+    terminated = RewTerm(func=mdp.is_terminated, weight=-1.0)
     action_rate_l2 = RewTerm(
         func=mdp.action_rate_l2,
-        weight = -0.00001
+        weight = -0.0001
     )
-    action_l2 = RewTerm(
-        func=mdp.action_l2,
-        weight = -0.000001
-    )
+    # action_l2 = RewTerm(
+    #     func=mdp.action_l2,
+    #     weight = -0.0001
+    # )
     # LocalWorldAlignmentReward = RewTerm(
     #     func=mdp.LocalWorldAlignmentReward,
     #     weight=0.01
@@ -211,8 +231,8 @@ class RewardsCfg:
     #     weight=1.0, 
     #     params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     # )
-    move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.0, params={"threshold": 0.9, "target_pos": (100.0, 0.0, 0.0)})
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.85})
+    move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=0.7, params={"threshold": 0.9, "target_pos": (100.0, 0.0, 0.0)})
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=0.5, params={"threshold": 0.9})
     # upright_penalty = RewTerm(func=mdp.upright_posture_penalty, weight=0.5, params={"threshold": 1.0})
     # debug = RewTerm(func=mdp.debug, weight=1.0) #디버깅용
     heading = RewTerm(func=mdp.heading, weight=1.0, params={"target_pos": (100.0, 0.0, 0.0)})
@@ -235,15 +255,15 @@ class RewardsCfg:
 
     # distancereward = RewTerm(
     #     func=mdp.DistanceReward, 
-    #     weight=-0.6,  
+    #     weight=-0.5,  
     #     params={"threshold": 0.2}
     # )
 
-    linealignmentreward = RewTerm(
-        func=mdp.LineAlignmentReward,
-        weight = 1.0,
-        params={"target_pos": (100.0, 0.0, 0.0)}
-    )
+    # linealignmentreward = RewTerm(
+    #     func=mdp.LineAlignmentReward,
+    #     weight = 1.0,
+    #     params={"target_pos": (100.0, 0.0, 0.0)}
+    # )
 
     # joint_limits = RewTerm(
     #     func=mdp.joint_limits_penalty_ratio, weight=-0.1, params={"threshold": 0.80, "gear_ratio": {".*": 1.0}}
@@ -291,7 +311,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    # max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.2})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.15})
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
 
@@ -314,7 +334,7 @@ class CurriculumCfg:
 class kanakeEnvCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=1.5)
+    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=3.0)
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     # commands: CommandsCfg = CommandsCfg()
@@ -328,12 +348,12 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
     def __post_init__(self):
         """Post initialization."""
         # general settings
-        self.decimation = 4
+        self.decimation = 2
         self.episode_length_s = 20.0
         # simulation settings
         self.sim.dt = 0.005
         self.sim.render_interval = self.decimation
-        self.sim.physx.bounce_threshold_velocity = 0.8
+        self.sim.physx.bounce_threshold_velocity = 0.5
         self.sim.physics_material.static_friction = 1.0
         self.sim.physics_material.dynamic_friction = 1.0
-        self.sim.physics_material.restitution = 0.2
+        self.sim.physics_material.restitution = 0.05
