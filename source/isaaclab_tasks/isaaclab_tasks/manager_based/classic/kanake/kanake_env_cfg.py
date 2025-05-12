@@ -56,9 +56,13 @@ class ActionsCfg:
     # joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=0.05)
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.1, use_default_offset=True)
+    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.6, use_default_offset=True)
 
     # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
+    joint_sine_position = mdp.JointSinePositionActionCfg(
+        asset_name="robot",
+        joint_names=[".*"]
+    )
     # joint_sine_h = mdp.JointSineHorizonActionCfg(
     #     asset_name="robot", 
     #     joint_names=["j2", "j4", "j6",  "j8",  "j10", "j12", "j14", "j16"], 
@@ -182,8 +186,8 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    progress = RewTerm(func=mdp.progress_reward, weight=10.0, params={"target_pos": (100.0, 0.0, 0.0)})
-    terminated = RewTerm(func=mdp.is_terminated, weight=-0.1)
+    progress = RewTerm(func=mdp.progress_reward, weight=5.0, params={"target_pos": (100.0, 0.0, 0.0)})
+    terminated = RewTerm(func=mdp.is_terminated, weight=-1.0)
     action_rate_l2 = RewTerm(
         func=mdp.action_rate_l2,
         weight = -0.01

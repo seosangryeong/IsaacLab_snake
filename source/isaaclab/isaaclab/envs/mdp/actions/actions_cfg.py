@@ -9,7 +9,7 @@ from isaaclab.controllers import DifferentialIKControllerCfg, OperationalSpaceCo
 from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.utils import configclass
 
-from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions , cpg_actions
+from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions , cpg_actions, sine_position_action
 import numpy as np
 ##
 # Joint actions.
@@ -31,6 +31,7 @@ class JointActionCfg(ActionTermCfg):
     """Offset factor for the action (float or dict of regex expressions). Defaults to 0.0."""
     preserve_order: bool = False
     """Whether to preserve the order of the joint names in the action output. Defaults to False."""
+    clip: list[tuple[float, float]] = MISSING
 
 
 @configclass
@@ -333,6 +334,29 @@ class JointSineActionCfg(JointActionCfg):
     ]
 
 @configclass
+class JointSinePositionActionCfg(JointActionCfg):
+    class_type: type[ActionTerm] = sine_position_action.JointSinePositionAction
+    preserve_order: bool = True
+
+    clip: list[tuple[float, float]] = [
+
+        # vertical
+
+        (0.5, 0.5),  # amplitude
+        (2.0, 2.0),  # frequency
+        (1.2, 1.2),  #phase
+   
+
+        # horizontal
+
+        (0.7, 0.7),  # amplitude
+        (2.0, 2.0),  # frequency
+        (1.2, 1.2)  #phase
+
+    ]
+
+
+@configclass
 class JointSineHorizonActionCfg(JointActionCfg):
     class_type: type[ActionTerm] = sine_h_actions.JointSineHorizonAction
     preserve_order: bool = True
@@ -353,12 +377,27 @@ class JointSineHorizonActionCfg(JointActionCfg):
 
 @configclass
 class JointCPGActionCfg(JointActionCfg):
+    # ActionTerm 클래스 지정
     class_type: type[ActionTerm] = cpg_actions.JointCPGAction
-    preserve_order: bool = True
 
-    joint_names: list[str] = ["j*"]      # 기존과 동일
-    preserve_order: bool = True
-    a: float = 5.0          # 진폭 ODE 계수 a
-    mu: float | list = 0.3  # 결합 강도 μ (스칼라 또는 관절별 리스트)
-    B: float = 1.0          # 외부 자극 게인
-    clip_ranges: list[tuple[float,float]] = [(-1,1)]*6
+    # CPG-제어에 사용할 관절(와일드카드 가능)
+    joint_names: list[str] = ["j*"]          # 모든 관절
+
+    # 동역학 계수
+    a:  float = 5.0      # 진폭 ODE 계수   (커지면 r 수렴이 빠름)
+    mu: float = 0.3      # 위상 결합 강도  (0.1~0.5 사이에서 조정)
+    B:  float = 1.0      # 외부 자극 게인  (θ 항 가중치)
+
+    preserve_order: bool = True              # USD joint 순서 유지
+
+    # ─────────── Action Clip Ranges ───────────
+    # ( R_vert, ω_vert, θ_vert,  R_horz, ω_horz, θ_horz )
+    clip_ranges: list[tuple[float, float]] = [
+        (0.0,  1.5),     # 진폭  R_vertical   [rad]
+        (-0.1,  0.1),     # 주파수 ω_vertical [Hz]
+        (-3.14, 3.14),   # θ_vertical        [rad s⁻²]  (-2π~2π)
+
+        (0.0,  1.5),     # 진폭  R_horizontal
+        (-0.1,  0.1),     # 주파수 ω_horizontal
+        (-3.14, 3.14),    # θ_horizontal
+    ]
