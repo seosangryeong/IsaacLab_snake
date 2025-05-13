@@ -9,11 +9,7 @@
 [![Linux platform](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/20.04/)
 
 ## IsaacSim 설치 방법(4.5.0, CUDA 12)
-pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121  
-pip install --upgrade pip  
-pip install 'isaacsim[all,extscache]==4.5.0' --extra-index-url https://pypi.nvidia.com  
-설치 확인 - 아이작심 실행  
-isaacsim  
+<pre><code>## IsaacSim 설치 방법 (4.5.0, CUDA 12) ```bash pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121 pip install --upgrade pip pip install 'isaacsim[all,extscache]==4.5.0' --extra-index-url https://pypi.nvidia.com ``` 설치 확인 - 아이작심 실행: ```bash isaacsim ``` </code></pre>
 
 
 
