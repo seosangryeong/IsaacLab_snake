@@ -17,12 +17,12 @@
 
 
 ## IsaacLab 설치 방법
-git clone https://github.com/Ryudolf2020/IssacSim_RL_snake_2025.git  
-sudo apt install cmake build-essential  
+<pre><code> git clone https://github.com/Ryudolf2020/IssacSim_RL_snake_2025.git</code></pre>  
+<pre><code> sudo apt install cmake build-essential</code></pre>  
 디렉토리 접속  
-./isaaclab.sh --install  
+<pre><code> ./isaaclab.sh --install</code></pre>  
 IsaacLab 설치 확인  
-./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py  
+<pre><code> ./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py</code></pre>  
 
 
 ## Getting Started
