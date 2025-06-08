@@ -28,6 +28,20 @@ def upright_posture_bonus(
     # print("up_proj", up_proj)
     return (up_proj > threshold).float()
 
+def upright_posture_shaped(env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Shaped upright posture reward:
+    - 아래는 선형 증가
+    - threshold 이후는 모두 1.0 고정
+    """
+    up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)  # [-1, 1]
+    up_proj_clipped = torch.clip(up_proj, min=0.0)  # [0, 1]로 제한
+    reward = torch.where(
+        up_proj_clipped > threshold,
+        torch.ones_like(up_proj_clipped),
+        up_proj_clipped / threshold
+    )
+    return reward
+
 def upright_posture_penalty(
     env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
@@ -160,9 +174,93 @@ class progress_reward(ManagerTermBase):
         # print(env.step_dt)
 
         return self.potentials - self.prev_potentials
+    
+
+class progress_x_distance_reward(ManagerTermBase):
+    """Reward for forward progress along the x-axis."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.prev_pos_x = torch.zeros(env.num_envs, device=env.device)
+
+    def reset(self, env_ids: torch.Tensor):
+        asset: Articulation = self._env.scene["robot"]
+        self.prev_pos_x[env_ids] = asset.data.head_pos_w[:, 0]  # x축 위치 저장
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        asset: Articulation = env.scene[asset_cfg.name]
+        curr_pos_x = asset.data.head_pos_w[:, 0]  # 현재 x 위치
+        reward = curr_pos_x - self.prev_pos_x
+        self.prev_pos_x[:] = curr_pos_x  # 다음 step을 위해 갱신
+        return reward
+    
+class progress_x_reward(ManagerTermBase):
+    """Reward for cumulative forward progress from the initial position."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.init_pos_x = torch.zeros(env.num_envs, device=env.device)
+
+    def reset(self, env_ids: torch.Tensor):
+        asset: Articulation = self._env.scene["robot"]
+        self.init_pos_x[env_ids] = asset.data.head_pos_w[env_ids, 0]  # 초기 x 저장
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        asset: Articulation = env.scene[asset_cfg.name]
+        curr_pos_x = asset.data.head_pos_w[:, 0]
+        reward = curr_pos_x - self.init_pos_x
+        # print("init_pos_x", self.init_pos_x)
+        # print("curr_pos_x", curr_pos_x)
+        # print("reward", reward)
+        return reward
+    
+
+class progress_y_penalty(ManagerTermBase):
+    """Y-axis deviation penalty reward term."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.init_pos_y = torch.zeros(env.num_envs, device=env.device)
+
+    def reset(self, env_ids: torch.Tensor):
+        asset: Articulation = self._env.scene["robot"]
+        self.init_pos_y[env_ids] = asset.data.head_pos_w[env_ids, 1]  # 초기 y 위치 저장
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        y_threshold: float = 1.0,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        # 로봇 자산 가져오기
+        asset: Articulation = env.scene[asset_cfg.name]
+        curr_pos_y = asset.data.head_pos_w[:, 1]
+        
+        # y축 이탈 계산 (초기 위치와의 차이)
+        y_deviation = torch.abs(curr_pos_y - self.init_pos_y)
+        
+        # 임계값(threshold)을 초과한 경우에만 페널티 적용
+        # 초과한 거리가 클수록 페널티도 커짐
+        y_penalty = torch.where(
+            y_deviation > y_threshold,
+            (y_deviation - y_threshold),  # 음수 보상(페널티)
+            torch.zeros_like(y_deviation)  # 임계값 이내면 페널티 없음
+        )
+        
+        return y_penalty  # 음수 값 반환
+
 
 
 class joint_limits_penalty_ratio(ManagerTermBase):
+
     """Penalty for violating joint limits weighted by the gear ratio."""
 
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
@@ -533,3 +631,133 @@ class LocalWorldAlignmentReward(ManagerTermBase):
         reward = torch.exp(-self.alpha * angle_error)
         
         return reward
+    
+class JointSmoothnessReward(ManagerTermBase):
+    """
+    Reward that penalizes large differences between adjacent joint positions.
+    Encourages smooth spatial transitions along the snake robot body.
+    """
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.asset_cfg = cfg.params.get("asset_cfg", SceneEntityCfg("robot"))
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+
+        asset: Articulation = env.scene[asset_cfg.name]
+        joint_positions = asset.data.joint_pos  # shape: [num_envs, num_joints]
+
+        # 차이 계산: q[i+1] - q[i] → shape: [num_envs, num_joints - 1]
+        diffs = joint_positions[:, 1:] - joint_positions[:, :-1]
+
+        # 제곱합: L2 거리의 제곱
+        penalty = torch.sum(diffs**2, dim=1)
+
+        return penalty
+    
+class BodyOrderReward(ManagerTermBase):
+    """
+    Reward for ensuring that body segments are generally ordered from head to tail 
+    based on distance to target, using Spearman's rank correlation.
+    """
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        target_pos: tuple[float, float, float],
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        asset: Articulation = env.scene[asset_cfg.name]
+        # 타겟 위치에서 (x, y) 좌표만 사용
+        target_pos = torch.tensor(target_pos, device=env.device)[:2]
+
+        # 바디 순서: head, link1, ..., link15, tail (총 17개)
+        order_names = ["head"] + [f"Link{i}" for i in range(1, 16)] + ["tail"]
+        
+        # 이상적인 순위: head가 0, tail이 16
+        ideal_ranks = torch.arange(len(order_names), device=env.device).float()
+
+        # 각 바디의 (x, y) 위치를 추출
+        body_positions = []
+        for name in order_names:
+            idx = asset.body_names.index(name)
+            pos = asset.data.body_pos_w[:, idx, :2]
+            body_positions.append(pos)
+        body_positions = torch.stack(body_positions, dim=1)  # [envs, num_bodies, 2]
+
+        # 각 바디와 타겟 사이의 거리 계산
+        distances = torch.norm(body_positions - target_pos.unsqueeze(0), dim=-1)  # [envs, num_bodies]
+
+        # 각 환경별로 거리에 따른 순위 계산 (가장 가까운 것이 순위 0)
+        ranks = torch.zeros_like(distances)
+        for i in range(distances.shape[0]):  # 각 환경별로 처리
+            ranks[i] = torch.argsort(torch.argsort(distances[i])).float()
+
+        # 스피어만 순위 상관계수 계산
+        n = len(order_names)
+        rewards = torch.zeros(env.num_envs, device=env.device)
+        
+        for i in range(env.num_envs):
+            # 순위 차이의 제곱합 계산
+            d_squared = torch.sum((ranks[i] - ideal_ranks) ** 2)
+            # 스피어만 상관계수 계산: ρ = 1 - (6 * Σd²) / (n(n²-1))
+            rho = 1.0 - (6.0 * d_squared) / (n * (n**2 - 1))
+            
+            # 상관계수를 0~1 범위로 변환 (-1~1 → 0~1)
+            rewards[i] = (rho + 1.0) / 2.0
+
+        return rewards
+    
+
+class BodyLineDistancePenalty(ManagerTermBase):
+
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.threshold = cfg.params.get("threshold", 0.1)
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        target_pos: tuple[float, float, float],
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+        threshold: float = None,
+    ) -> torch.Tensor:
+        if threshold is None:
+            threshold = self.threshold
+
+        asset: Articulation = env.scene[asset_cfg.name]
+
+        # 0,0에서 타겟까지의 직선 (x1, y1)=(0,0), (x2, y2)=target_pos[:2]
+        x1, y1 = 0.0, 0.0
+        x2, y2 = float(target_pos[0]), float(target_pos[1])
+
+        # 직선 방정식: Ax + By + C = 0
+        A = y2 - y1
+        B = x1 - x2
+        C = x2 * y1 - x1 * y2
+
+        denom = (A**2 + B**2) ** 0.5 + 1e-8  # float
+
+
+        # 모든 바디의 (x, y) 위치
+        body_positions = asset.data.body_pos_w[..., :2]  # [num_envs, num_bodies, 2]
+        x = body_positions[..., 0]
+        y = body_positions[..., 1]
+
+        # 각 바디의 직선까지의 거리 (부호 무시)
+        dist = torch.abs(A * x + B * y + C) / denom  # [num_envs, num_bodies]
+
+        # threshold 이내는 0, 초과만 페널티
+        penalty = torch.clamp(dist - threshold, min=0.0)
+        reward = (penalty**2).sum(dim=1)
+
+        return reward
+    

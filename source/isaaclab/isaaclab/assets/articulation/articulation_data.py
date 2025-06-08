@@ -684,6 +684,10 @@ class ArticulationData:
         This quantity is the position of the rigid bodies' actor frame relative to the world.
         """
         return self.body_state_w[..., :3]
+    
+    @property
+    def head_pos_w(self) -> torch.Tensor:
+        return self.body_pos_w[:,16,:]
 
     @property
     def body_quat_w(self) -> torch.Tensor:

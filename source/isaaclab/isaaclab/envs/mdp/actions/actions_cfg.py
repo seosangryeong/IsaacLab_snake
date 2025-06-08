@@ -9,7 +9,7 @@ from isaaclab.controllers import DifferentialIKControllerCfg, OperationalSpaceCo
 from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.utils import configclass
 
-from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions 
+from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions, sine_actions_hold 
 import numpy as np
 ##
 # Joint actions.
@@ -318,24 +318,28 @@ class JointSineActionCfg(JointActionCfg):
     preserve_order: bool = True
 
     clip_ranges: list[tuple[float, float]] = [
+        (0.5, 1.0),  # amplitude_vertical
+        (0.5, 1.0),  # frequency_vertical
+        (np.pi/4, np.pi/4),  # phase_vertical
+        (0.5, 1.5),  # amplitude_horizontal
+        (0.5, 1.0),  # frequency_horizontal
+        (np.pi/4, np.pi/4),  # phase_horizontal
 
-        # vertical
+        # (0.3, 0.5),   # amp_min_v
+        # (0.8, 1.0),    # amp_max_v
+        # (0.6, 1.2),    # freq_v
+        # (np.pi/4, np.pi/4),  # phase_v
+        # (0.3, 0.5),    # amp_min_h
+        # (1.0, 1.5),    # amp_max_h
+        # (0.6, 1.2),    # freq_h
+        # (np.pi/4, np.pi/4),  # phase_h
 
-        (0.5, 0.5),  # amplitude
-        (1/13*30, 1/13*30),  # frequency
-        (1.2, 1.2),  #phase
-   
-
-        # horizontal
-
-        (3.0, 3.0),  # amplitude
-        (1/13*30, 1/13*30),  # frequency
-        (1.2, 1.2)  #phase
 
     ]
-    enable_additional_joint_values: bool = False
-    additional_joint_scale: float = 1.0
 
+    # min_joint_scale: float = 0.5
+    # enable_additional_joint_values: bool = True
+    additional_joint_scale: float = 1.0
 
 
 @configclass
@@ -346,14 +350,14 @@ class JointSineHorizonActionCfg(JointActionCfg):
     clip_ranges: list[tuple[float, float]] = [
 
         # # horizontal
-        # (1.0, 2.0),  # amplitude_horizontal 
-        # (1/13*30, 1/13*30),  # frequency_horizontal 
-        # (0.8, 1.2)   # phase_horizontal 
+        (2.5, 2.5),  # amplitude
+        (0.5, 0.5),  # frequency
+        (1.0, 1.0),  # phase
 
         # horizontal
-        (0.5, 1.2),  # amplitude
-        (0.3, 0.8),  # frequency
-        (0.4,1.2),  # phase
+        # (0.5, 1.5),  # amplitude
+        # (0.5, 1.5),  # frequency
+        # (0.4, 1.2),  # phase
 
 
     ]
@@ -387,12 +391,66 @@ class JointCPGActionCfg(JointActionCfg):
 
     # ─────────── Action Clip Ranges ───────────
     # ( R_vert, ω_vert, θ_vert,  R_horz, ω_horz, θ_horz )
-    clip_ranges: list[tuple[float, float]] = [
-        (0.0,  1.0),     # 진폭  R_vertical   [rad]
-        (-0.2,  0.2),    # 주파수 ω_vertical [Hz]
-        (-3.14, 3.14),   # θ_vertical        [rad s⁻²]  (-2π~2π)
+#     clip_ranges: list[tuple[float, float]] = [
+#     (0.0,  0.5),       # 진폭    R_vertical     [rad]
+#     (-0.2,  0.2),      # 주파수  ω_vertical     [Hz]
+#     (-3.14/4, 3.14/4),     # 위상차  θ_vertical     [rad]
+#     (-0.3,  0.3),      # 오프셋  δ_vertical     [rad]
 
-        (0.0,  1.0),     # 진폭  R_horizontal
-        (-0.2,  0.2),     # 주파수 ω_horizontal
-        (-3.14, 3.14)    # θ_horizontal
-    ]
+#     (0.0,  0.5),       # 진폭    R_horizontal   [rad]
+#     (-0.5,  0.5),      # 주파수  ω_horizontal   [Hz]
+#     (-3.14/4, 3.14/4),     # 위상차  θ_horizontal   [rad]
+#     (-0.3,  0.3)       # 오프셋  δ_horizontal   [rad]
+# ]
+    clip_ranges: list[tuple[float, float]] = [
+    (0.5,  0.5),       # 진폭    R_vertical     [rad]
+    (0.2,  0.2),      # 주파수  ω_vertical     [Hz]
+    (3.14/4, 3.14/4),     # 위상차  θ_vertical     [rad]
+    (0.3,  0.3),      # 오프셋  δ_vertical     [rad]
+
+    (0.5,  0.5),       # 진폭    R_horizontal   [rad]
+    (-0.5,  0.5),      # 주파수  ω_horizontal   [Hz]
+    (3.14/4, 3.14/4),     # 위상차  θ_horizontal   [rad]
+    (0.3,  0.3)       # 오프셋  δ_horizontal   [rad]
+]
+
+
+@configclass
+class JointSineHoldActionCfg(JointActionCfg):
+    class_type: type[ActionTerm] = sine_actions_hold.JointSineHoldAction
+    preserve_order: bool = True
+
+    # 홀드 구간 주기 수(느린 쪽 기준)
+    min_cycles: float = 0.5     # default 0.5
+    max_cycles: float = 1.0     # default 1.0
+
+    clip_ranges: list[tuple[float, float]] = [
+
+            # # vertical
+            # (1.0, 1.0),  # amplitude
+            # (1.0, 1.0),  # frequency
+            # (2.0, 2.0),  # phase
+    
+
+            # # horizontal
+
+            # (2.5, 2.5),  # amplitude
+            # (0.5, 0.5),  # frequency
+            # (1.0, 1.0),  # phase
+
+            # vertical
+            (0.8, 1.2),  # amplitude
+            (1.0, 1.0),  # frequency
+            (1.8, 2.2),  # phase
+    
+
+            # horizontal
+
+            (1.8, 2.2),  # amplitude
+            (0.5, 0.5),  # frequency
+            (0.8, 2.2),  # phase
+            
+
+        ]    
+    enable_additional_joint_values: bool = False
+    additional_joint_scale: float = 1.0

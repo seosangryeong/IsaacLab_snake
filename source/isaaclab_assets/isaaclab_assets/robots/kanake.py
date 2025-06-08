@@ -22,7 +22,7 @@ from isaaclab.managers import SceneEntityCfg
 KANAKE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path="/home/hi/Downloads/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
+        usd_path="/home/hi/Downloads/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             max_depenetration_velocity=10.0,
@@ -43,36 +43,20 @@ KANAKE_CFG = ArticulationCfg(
         copy_from_source=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        joint_pos={
-            "j1": 0.0,
-            "j2": 0.0,
-            "j3": 0.0,
-            "j4": 0.0,
-            "j5": 0.0,
-            "j6": 0.0,
-            "j7": 0.0,
-            "j8": 0.0,
-            "j9": 0.0,
-            "j10": 0.0,
-            "j11": 0.0,
-            "j12": 0.0,
-            "j13": 0.0,
-            "j14": 0.0,
-            "j15": 0.0,
-            "j16": 0.0,
-        },
+        joint_pos={".*": 0.0},
         joint_vel={".*": 0.0},
     ),
 
     actuators={
             "body": ImplicitActuatorCfg(
                 joint_names_expr=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-                stiffness = 10.0,
-                damping = 6.0,
+                stiffness = 3.0,
+                damping = 1.0,
                 # stiffness = 0.0,
                 # damping =0.0,
-                effort_limit = 5.0, #Nm
-                # velocity_limit = 3.0, #rad/s
+                # effort_limit_sim = 3.0, #Nm
+                # effort_limit = 3.0, #Nm
+                # velocity_limit_sim = 5.0, #rad/s
 
             ),
         },
