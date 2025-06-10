@@ -17,24 +17,18 @@ class JointCPGAction(ActionTerm):
     """
     중앙 패턴 생성기(CPG) 기반 액션 Term.
 
-    Raw action (env마다 8차원)
+    Raw action (env마다 6차원)
       0 : R_vertical      (홀수 관절 진폭 목표)
       1 : ω_vertical      (내재 주파수)
       2 : θ_vertical      (외부 위상 자극)
-      3 : δ_vertical      (위상 출력 오프셋)
-
-      4 : R_horizontal    (짝수 관절 진폭 목표)
-      5 : ω_horizontal
-      6 : θ_horizontal
-      7 : δ_horizontal
-
+      3 : R_horizontal    (짝수 관절 진폭 목표)
+      4 : ω_horizontal
+      5 : θ_horizontal
     내부 상태
-      φ     : 위상  (env × joint)
-      r     : 진폭  (env × 2  [vert, horz])
-      ṙ     : 진폭 미분
-      δ     : 오프셋 (env × 2)  # optional, 파형 수직 이동
+      φ   : 위상  (env × joint)
+      r   : 진폭  (env × 2  [vert, horz])
+      ṙ  : 진폭 미분
     """
-
 
     cfg: actions_cfg.JointCPGActionCfg
     _asset: Articulation
@@ -71,13 +65,13 @@ class JointCPGAction(ActionTerm):
         self._a = self.cfg.a
 
         # Raw / Processed 액션 버퍼
-        self._raw_actions      = torch.zeros(self.num_envs, 8,               device=self.device)
+        self._raw_actions      = torch.zeros(self.num_envs, 6,               device=self.device)
         self._processed_actions = torch.zeros(self.num_envs, self._num_joints, device=self.device)
 
     # ───────────────────── 프로퍼티 ─────────────────────
     @property
     def action_dim(self) -> int:
-        return 8
+        return 6
 
     @property
     def raw_actions(self) -> torch.Tensor:
@@ -93,9 +87,8 @@ class JointCPGAction(ActionTerm):
         self._raw_actions.copy_(actions)
 
         # 1) RL 액션 → R, ω, θ 분리
-        # RL 액션 예시
-        R_vert, ω_vert, θ_vert, δ_vert = actions[:, 0], actions[:, 1], actions[:, 2], actions[:, 3]
-        R_horz, ω_horz, θ_horz, δ_horz = actions[:, 4], actions[:, 5], actions[:, 6], actions[:, 7]
+        R_vert, ω_vert, θ_vert = actions[:, 0], actions[:, 1], actions[:, 2]
+        R_horz, ω_horz, θ_horz = actions[:, 3], actions[:, 4], actions[:, 5]
 
         # (env, joint) 크기로 확장
         ω = torch.zeros(self.num_envs, self._num_joints, device=self.device)
@@ -118,10 +111,8 @@ class JointCPGAction(ActionTerm):
 
         # 4) 최종 관절 목표 위치 q = r * sinφ
         q = torch.zeros_like(self._phi)
-        # 최종 위치 명령 생성
-        q[:, self._vertical_ids]   = self._r[:, 0].unsqueeze(1) * torch.sin(self._phi[:, self._vertical_ids]) + δ_vert.unsqueeze(1)
-        q[:, self._horizontal_ids] = self._r[:, 1].unsqueeze(1) * torch.sin(self._phi[:, self._horizontal_ids]) + δ_horz.unsqueeze(1)
-
+        q[:, self._vertical_ids]   = self._r[:, 0].unsqueeze(1) * torch.sin(self._phi[:, self._vertical_ids])
+        q[:, self._horizontal_ids] = self._r[:, 1].unsqueeze(1) * torch.sin(self._phi[:, self._horizontal_ids])
 
         self._processed_actions.copy_(q)
 

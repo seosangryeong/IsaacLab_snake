@@ -75,12 +75,7 @@ def root_height_below_minimum(
 def root_height_over_maximum(
     env: ManagerBasedRLEnv, maximum_height: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    """Terminate when the asset's root height is below the minimum height.
-
-    Note:
-        This is currently only supported for flat terrains, i.e. the minimum height is in the world frame.
-    """
-    # extract the used quantities (to enable type-hinting)
+    
     asset: RigidObject = env.scene[asset_cfg.name]
     return asset.data.root_pos_w[:, 2] > maximum_height
 
