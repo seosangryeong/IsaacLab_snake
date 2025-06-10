@@ -188,22 +188,17 @@ class progress_monotonic_reward(ManagerTermBase):
         asset: Articulation = self._env.scene["robot"]
         target_pos = torch.tensor(self.cfg.params["target_pos"], device=self.device)
         to_target_pos = target_pos - asset.data.root_pos_w[env_ids, :3]
+        to_target_pos[:, 2] = 0.0  # z축 제거
         curr_dist = torch.norm(to_target_pos, p=2, dim=-1)
         self.best_distance[env_ids] = curr_dist
 
-    def __call__(
-        self,
-        env: ManagerBasedRLEnv,
-        target_pos: tuple[float, float, float],
-        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    ) -> torch.Tensor:
+    def __call__(self, env: ManagerBasedRLEnv, target_pos: tuple[float, float, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
         asset: Articulation = env.scene[asset_cfg.name]
         target_pos = torch.tensor(target_pos, device=env.device)
         to_target_pos = target_pos - asset.data.root_pos_w[:, :3]
+        to_target_pos[:, 2] = 0.0  
         curr_dist = torch.norm(to_target_pos, p=2, dim=-1)
-        # 리워드는 best_distance가 줄어들 때만 양수
         reward = torch.clamp(self.best_distance - curr_dist, min=0.0)
-        # best_distance 갱신
         self.best_distance = torch.minimum(self.best_distance, curr_dist)
         return reward
     

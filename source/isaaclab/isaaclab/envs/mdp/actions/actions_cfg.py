@@ -320,14 +320,14 @@ class JointSineActionCfg(JointActionCfg):
     clip_ranges: list[tuple[float, float]] = [
 
 
-        (0.0, 0.5),  
-        (1.0, 1.5),    
-        (-1.0, 1.0),   
-        (np.pi/4, np.pi/4),  
-        # (0.3, 0.5),    # amp_min_h
-        # (1.0, 1.5),    # amp_max_h
-        # (0.6, 1.2),    # freq_h
-        # (np.pi/4, np.pi/4),  # phase_h
+        (0.3, 0.5),  
+        (1.0, 1.2),    
+        (0.6, 1.0),   
+        (np.pi/3, np.pi/3),  
+        (0.0, 0.2),  
+        (0.4, 0.6),    
+        (0.6, 1.0),   
+        (np.pi/3, np.pi/3),
 
 
     ]
@@ -345,9 +345,9 @@ class JointSineHorizonActionCfg(JointActionCfg):
     clip_ranges: list[tuple[float, float]] = [
 
         # # horizontal
-        (2.5, 2.5),  # amplitude
-        (0.5, 0.5),  # frequency
-        (1.0, 1.0),  # phase
+        (0.5, 1.0),  # amplitude
+        (0.5, 1.0),  # frequency
+        (np.pi/2, np.pi/2),  # phase
 
         # horizontal
         # (0.5, 1.5),  # amplitude
