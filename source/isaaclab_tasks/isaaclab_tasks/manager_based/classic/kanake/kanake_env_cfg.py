@@ -94,8 +94,8 @@ class ObservationsCfg:
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
         base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
-        base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (100.0, 0.0, 0.0)})
-        base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (100.0, 0.0, 0.0)})
+        base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (0.0, 10.0, 0.0)})
+        base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (0.0, 10.0, 0.0)})
         # # joint_pos = ObsTerm(func=mdp.joint_pos)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         joint_vel = ObsTerm(func=mdp.joint_vel)
@@ -179,26 +179,31 @@ class RewardsCfg:
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (100.0, 0.0, 0.0)})
     # # alive = RewTerm(func=mdp.is_alive, weight=0.5)
-    move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.0, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
+    move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.0, params={"threshold": 0.95, "target_pos": (0.0, 10.0, 0.0)})
     # upright = RewTerm(func=mdp.upright_kanake_posture_bonus, weight=2.0, params={"threshold": 0.85})
     BodyLineDistancePenalty = RewTerm(
         func=mdp.BodyLineDistancePenalty,
         weight=-3.0,
-        params={"target_pos": (100.0, 0.0, 0.0), "threshold": 0.2}  
+        params={"target_pos": (0.0, 10.0, 0.0), "threshold": 0.2}  
     )
     # action_rate_l2 = RewTerm(
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    progress = RewTerm(func=mdp.progress_reward, weight=20.0, params={"target_pos": (100.0, 0.0, 0.0)})
+    # progress = RewTerm(func=mdp.progress_reward, weight=20.0, params={"target_pos": (0.0, 10.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
     upright = RewTerm(func=mdp.upright_posture_shaped, weight=3.0, params={"threshold": 0.8})
-    BodyOrderReward = RewTerm(
-        func=mdp.BodyOrderReward,
-        weight=1.0,
-        params={"target_pos": (100.0, 0.0, 0.0)}
+    progress_monotonic_reward = RewTerm(
+        func=mdp.progress_monotonic_reward,
+        weight=10.0,
+        params={"target_pos": (0.0, 10.0, 0.0)}
     )
+    # BodyOrderReward = RewTerm(
+    #     func=mdp.BodyOrderReward,
+    #     weight=1.0,
+    #     params={"target_pos": (0.0, 10.0, 0.0)}
+    # )
     # joint_vel_l2 = RewTerm(func=mdp.joint_vel_l2, weight=-0.1)
     # energy = RewTerm(func=mdp.power_consumption, weight=-0.00001, params={"gear_ratio": {".*": 1.0}})
     # ang_vel_0_l2 = RewTerm(func=mdp.ang_vel_0_l2, weight=-0.0003)

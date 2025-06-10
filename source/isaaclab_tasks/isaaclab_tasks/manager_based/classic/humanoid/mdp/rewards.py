@@ -176,6 +176,38 @@ class progress_reward(ManagerTermBase):
         return self.potentials - self.prev_potentials
     
 
+
+class progress_monotonic_reward(ManagerTermBase):
+    """Reward for monotonic progress towards the target (best distance so far)."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.best_distance = torch.full((env.num_envs,), float('inf'), device=env.device)
+
+    def reset(self, env_ids: torch.Tensor):
+        asset: Articulation = self._env.scene["robot"]
+        target_pos = torch.tensor(self.cfg.params["target_pos"], device=self.device)
+        to_target_pos = target_pos - asset.data.root_pos_w[env_ids, :3]
+        curr_dist = torch.norm(to_target_pos, p=2, dim=-1)
+        self.best_distance[env_ids] = curr_dist
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        target_pos: tuple[float, float, float],
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        asset: Articulation = env.scene[asset_cfg.name]
+        target_pos = torch.tensor(target_pos, device=env.device)
+        to_target_pos = target_pos - asset.data.root_pos_w[:, :3]
+        curr_dist = torch.norm(to_target_pos, p=2, dim=-1)
+        # 리워드는 best_distance가 줄어들 때만 양수
+        reward = torch.clamp(self.best_distance - curr_dist, min=0.0)
+        # best_distance 갱신
+        self.best_distance = torch.minimum(self.best_distance, curr_dist)
+        return reward
+    
+
 class progress_x_distance_reward(ManagerTermBase):
     """Reward for forward progress along the x-axis."""
 

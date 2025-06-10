@@ -90,7 +90,7 @@ class ActionTermCfg:
     class for more details.
     """
 
-    debug_vis: bool = False
+    debug_vis: bool = True
     """Whether to visualize debug information. Defaults to False."""
 
     clip: dict[str, tuple] | None = None
