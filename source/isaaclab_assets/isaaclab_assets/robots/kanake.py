@@ -22,7 +22,7 @@ from isaaclab.managers import SceneEntityCfg
 KANAKE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path="/home/nuc/Downloads/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_0403.usd",
+        usd_path="/home/nuc/Downloads/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             max_depenetration_velocity=10.0,
@@ -67,12 +67,12 @@ KANAKE_CFG = ArticulationCfg(
     actuators={
             "body": ImplicitActuatorCfg(
                 joint_names_expr=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-                stiffness = 0.4,
-                damping =0.01,
+                stiffness = 2.4,
+                damping =1.0,
                 # stiffness = 10.0,
                 # damping =5.0,
                 effort_limit = 3.0, #Nm
-                velocity_limit = 5.7, #rad/s
+                # velocity_limit = 5.7, #rad/s
 
             ),
         },
