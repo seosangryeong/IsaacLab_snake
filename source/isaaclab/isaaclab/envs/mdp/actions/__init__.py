@@ -14,4 +14,5 @@ from .sine_actions import *
 from .sine_h_actions import *
 from .cpg_actions import *
 from .sine_position_action import *
+from .sine_amp_actions import *
 

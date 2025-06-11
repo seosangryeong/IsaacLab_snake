@@ -9,7 +9,7 @@ from isaaclab.controllers import DifferentialIKControllerCfg, OperationalSpaceCo
 from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.utils import configclass
 
-from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions, sine_actions_hold 
+from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions, sine_amp_actions,sine_actions_hold 
 import numpy as np
 ##
 # Joint actions.
@@ -315,6 +315,31 @@ class OperationalSpaceControllerActionCfg(ActionTermCfg):
 @configclass
 class JointSineActionCfg(JointActionCfg):
     class_type: type[ActionTerm] = sine_actions.JointSineAction
+    preserve_order: bool = True
+
+    clip_ranges: list[tuple[float, float]] = [
+
+        (0.8, 1.2),  # amplitude
+        (0.8, 1.2),  # frequency
+        (np.pi/2, np.pi/2),  # phase
+   
+
+        # horizontal
+
+        (1.3, 1.7),  # amplitude
+        (0.3, 0.5),  # frequency
+        (np.pi/3, np.pi/3),  # phase
+
+    ]
+
+
+    additional_joint_scale: float = 1.0
+
+
+
+@configclass
+class JointSineAmpActionCfg(JointActionCfg):
+    class_type: type[ActionTerm] = sine_amp_actions.JointSineAmpAction
     preserve_order: bool = True
 
     clip_ranges: list[tuple[float, float]] = [

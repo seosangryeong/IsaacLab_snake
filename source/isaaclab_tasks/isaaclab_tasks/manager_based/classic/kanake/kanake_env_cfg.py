@@ -184,154 +184,34 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (100.0, 0.0, 0.0)})
-    # # alive = RewTerm(func=mdp.is_alive, weight=0.5)
-    move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.0, params={"threshold": 0.95, "target_pos": (0.0, 10.0, 0.0)})
     # upright = RewTerm(func=mdp.upright_kanake_posture_bonus, weight=2.0, params={"threshold": 0.85})
     BodyLineDistancePenalty = RewTerm(
         func=mdp.BodyLineDistancePenalty,
-        weight=-3.0,
+        weight=-2.0,
         params={"target_pos": (10.0, 0.0, 0.0), "threshold": 0.2}  
     )
     # action_rate_l2 = RewTerm(
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    progress = RewTerm(func=mdp.progress_reward, weight=20.0, params={"target_pos": (10.0, 0.0, 0.0)})
+    # progress = RewTerm(func=mdp.progress_reward, weight=20.0, params={"target_pos": (10.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
     upright = RewTerm(func=mdp.upright_posture_shaped, weight=3.0, params={"threshold": 0.8})
-    # progress_monotonic_reward = RewTerm(
-    #     func=mdp.progress_monotonic_reward,
-    #     weight=10.0,
-    #     params={"target_pos": (10.0, 0.0, 0.0)}
-    # )
+
     # BodyOrderReward = RewTerm(
     #     func=mdp.BodyOrderReward,
     #     weight=1.0,
     #     params={"target_pos": (0.0, 10.0, 0.0)}
     # )
-    # joint_vel_l2 = RewTerm(func=mdp.joint_vel_l2, weight=-0.1)
-    # energy = RewTerm(func=mdp.power_consumption, weight=-0.00001, params={"gear_ratio": {".*": 1.0}})
-    # ang_vel_0_l2 = RewTerm(func=mdp.ang_vel_0_l2, weight=-0.0003)
-    # joint_vel_0 = RewTerm(func=mdp.joint_vel_0, weight=0.01)
-    # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.0003)
-    # joint_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-0.0000003)
-    # lin_vel_x_l2 = RewTerm(func=mdp.lin_vel_x_l2, weight=-0.0003)
-    # TorqueEnergyUniformityReward = RewTerm(
-    #     func=mdp.TorqueEnergyUniformityReward,
-    #     weight = -0.1
-
-    # )
-    # distancereward = RewTerm(
-    #     func=mdp.DistanceReward, 
-    #     weight=-0.6,  
-    #     params={"threshold": 0.2}
-    # )
-    # linealignmentreward = RewTerm(
-    #     func=mdp.LineAlignmentReward,
-    #     weight = 0.5,
-    #     params={"target_pos": (100.0, 0.0, 0.0)}
-    # )
-    # joint_limits = RewTerm(
-    #     func=mdp.joint_limits_penalty_ratio, weight=-0.1, params={"threshold": 0.80, "gear_ratio": {".*": 1.0}}
-    # )
-    # HeadTailDistanceReward = RewTerm(
-    #     func=mdp.HeadTailDistanceReward,
-    #     weight = 0.1,
-    #     params={"min_distance": 0.3}
-    # )
+    progress_x_reward = RewTerm(
+        func=mdp.progress_x_reward,
+        weight=20.0,
+    )
     action_rate_l2 = RewTerm(
         func=mdp.action_rate_l2,
-        weight = -0.1,
+        weight = -0.5,
     )
-    # joint_limits = RewTerm(
-    #     func=mdp.joint_limits_penalty_ratio, weight=-0.1, params={"threshold": 0.99, "gear_ratio": {".*": 1.0}}
-    # )
-    # joint_vel_l2 = RewTerm(func=mdp.joint_vel_l2, weight=-0.1)
-    # energy = RewTerm(func=mdp.power_consumption, weight=-0.00001, params={"gear_ratio": {".*": 1.0}})
-    # ang_vel_0_l2 = RewTerm(func=mdp.ang_vel_0_l2, weight=-0.0003)
-    # joint_vel_0 = RewTerm(func=mdp.joint_vel_0, weight=0.01)
-    # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.0003)
-    # joint_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-0.0000003)
-    # lin_vel_x_l2 = RewTerm(func=mdp.lin_vel_x_l2, weight=-0.0003)
-    # TorqueEnergyUniformityReward = RewTerm(
-    #     func=mdp.TorqueEnergyUniformityReward,
-    #     weight = -0.1
-
-    # )
-    # head_move_to_target_bonus = RewTerm(
-    #     func=mdp.move_to_target_bonus,
-    #     weight=0.5,
-    #     params={"threshold": 0.98, "target_pos": (100.0, 0.0, 0.0), "asset_cfg": SceneEntityCfg("robot", body_names="head")}
-    # )
-    # joint_vel_l2_penalty = RewTerm(
-    #     func=mdp.joint_vel_l2_penalty,
-    #     weight=-0.01,
-    # )
-    # distancereward = RewTerm(
-    #     func=mdp.DistanceReward, 
-    #     weight=-0.6,  
-    #     params={"threshold": 0.2}
-    # )
-    # linealignmentreward = RewTerm(
-    #     func=mdp.LineAlignmentReward,
-    #     weight = 1.0,
-    #     params={"target_pos": (100.0, 0.0, 0.0)}
-    # )
-    # joint_limits = RewTerm(
-    #     func=mdp.joint_limits_penalty_ratio, weight=-0.1, params={"threshold": 0.80, "gear_ratio": {".*": 1.0}}
-    # )
-    # HeadTailDistanceReward = RewTerm(
-    #     func=mdp.HeadTailDistanceReward,
-    #     weight = 0.1,
-    #     params={"min_distance": 0.3}
-    # )
-
-
-    # balanced_body_contact_reward = RewTerm(
-    #     func = mdp.balanced_body_contact_reward,
-    #     weight = 0.5,
-    #     params={
-    #          "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*"),
-    #          "force_threshold": 0.7,
-    #          "balance_threshold": 0.2
-    #     }   
-    # )
-    # contact_count = RewTerm(
-    #     func=mdp.contact_count_reward,
-    #     weight=1.0,
-    #     params={
-    #         "sensor_cfg": SceneEntityCfg("contact_forces", body_names="Link.*"),
-    #         "force_threshold": 0.6,
-    #     },
-    # )
-
-    # contact_time = RewTerm(
-    #     func=mdp.body_contact_time_reward,
-    #     weight=0.5,
-    #     params={
-    #         "sensor_cfg": SceneEntityCfg("contact_forces", body_names="Link.*"),
-    #     },
-    # )
-
-    # feet_air_time = RewTerm(
-    #     func=mdp.feet_air_time,
-    #     weight=0.125,
-    #     params={
-    #         "sensor_cfg": SceneEntityCfg("contact_forces", body_names="Link.*"),
-    #         "threshold": 0.5,
-    #     },
-    # )
-
-
-    # continuous_contact_reward = RewTerm(
-    #     func=mdp.continuous_contact_reward,
-    #     params={
-    #         "sensor_cfg": SceneEntityCfg("contact_forces", body_names="Link.*"),
-    #     },
-    #     weight=1.0
-    # )
 
 
 
@@ -391,4 +271,3 @@ class kanakeEnvCfg_PLAY(kanakeEnvCfg):
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
-
