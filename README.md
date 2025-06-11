@@ -31,7 +31,6 @@ PPO알고리즘 강화학습 - rsl rl
 task는 init에서 설정, headless는 UI없이 학습하는 명령어
 
 학습 이후 play
-<pre><code>./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py --task Isaac-kanake-v0 --num_envs 1 --checkpoint /home/nuc/IsaacLab/logs/rsl_rl/kanake/2025-06-10_14-10-15/model_550.pt <pre><code>
-
+<pre><code>./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py --task Isaac-kanake-v0 --num_envs 1 --checkpoint /home/nuc/IsaacLab/logs/rsl_rl/kanake/2025-06-10_14-10-15/model_550.pt </code></pre> 
 num_envs는 병렬화할 환경 개수, checkpoint는 학습한 pt파일이 저장된 경로(isaaclab/logs 에 저장됨)
 
