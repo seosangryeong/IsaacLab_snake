@@ -17,7 +17,7 @@
 
 
 ## IsaacLab 설치 방법
-<pre><code>git clone https://github.com/Ryudolf2020/IssacSim_RL_snake_2025.git</code></pre>  
+<pre><code>git clone https://github.com/seosangryeong/IsaacLab_snake.git</code></pre>  
 <pre><code>sudo apt install cmake build-essential</code></pre>  
 디렉토리 접속  
 <pre><code>./isaaclab.sh --install</code></pre>  
@@ -25,7 +25,13 @@ IsaacLab 설치 확인
 <pre><code>./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py</code></pre>  
 
 
-## Getting Started
+## 학습 방법
+PPO알고리즘 강화학습 - rsl rl
+<pre><code>./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py --task Isaac-kanake-v0 --headless</code></pre> 
+task는 init에서 설정, headless는 UI없이 학습하는 명령어
 
+학습 이후 play
+<pre><code>./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py --task Isaac-kanake-v0 --num_envs 1 --checkpoint /home/nuc/IsaacLab/logs/rsl_rl/kanake/2025-06-10_14-10-15/model_550.pt <pre><code>
 
+num_envs는 병렬화할 환경 개수, checkpoint는 학습한 pt파일이 저장된 경로(isaaclab/logs 에 저장됨)
 
