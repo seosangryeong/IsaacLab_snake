@@ -210,7 +210,7 @@ class RewardsCfg:
     )
     action_rate_l2 = RewTerm(
         func=mdp.action_rate_l2,
-        weight = -0.5,
+        weight = -1.0,
     )
 
 

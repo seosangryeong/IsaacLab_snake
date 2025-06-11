@@ -687,6 +687,7 @@ class ArticulationData:
     
     @property
     def head_pos_w(self) -> torch.Tensor:
+        
         return self.body_pos_w[:,16,:]
 
     @property

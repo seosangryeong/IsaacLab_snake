@@ -43,24 +43,7 @@ KANAKE_CFG = ArticulationCfg(
         copy_from_source=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        joint_pos={
-            "j1": 0.0,
-            "j2": 0.0,
-            "j3": 0.0,
-            "j4": 0.0,
-            "j5": 0.0,
-            "j6": 0.0,
-            "j7": 0.0,
-            "j8": 0.0,
-            "j9": 0.0,
-            "j10": 0.0,
-            "j11": 0.0,
-            "j12": 0.0,
-            "j13": 0.0,
-            "j14": 0.0,
-            "j15": 0.0,
-            "j16": 0.0,
-        },
+        joint_pos={".*": 0.0},
         joint_vel={".*": 0.0},
     ),
 
@@ -71,7 +54,7 @@ KANAKE_CFG = ArticulationCfg(
                 damping =1.0,
                 # stiffness = 10.0,
                 # damping =5.0,
-                effort_limit = 3.0, #Nm
+                # effort_limit = 3.0, #Nm
                 # velocity_limit = 5.7, #rad/s
 
             ),
