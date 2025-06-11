@@ -64,7 +64,9 @@ class ActionsCfg:
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
 
-    joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
+    # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
+    joint_sine_hold = mdp.JointSineHoldActionCfg(asset_name="robot", joint_names=[".*"])
+
     # joint_sine_h = mdp.JointSineHorizonActionCfg(
     #     asset_name="robot", 
     #     joint_names=["j2", "j4", "j6",  "j8",  "j10", "j12", "j14", "j16"], 

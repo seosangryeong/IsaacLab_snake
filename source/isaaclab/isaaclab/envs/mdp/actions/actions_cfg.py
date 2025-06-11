@@ -440,36 +440,18 @@ class JointSineHoldActionCfg(JointActionCfg):
     class_type: type[ActionTerm] = sine_actions_hold.JointSineHoldAction
     preserve_order: bool = True
 
-    # 홀드 구간 주기 수(느린 쪽 기준)
-    min_cycles: float = 0.5     # default 0.5
-    max_cycles: float = 1.0     # default 1.0
-
     clip_ranges: list[tuple[float, float]] = [
 
-            # # vertical
-            # (1.0, 1.0),  # amplitude
-            # (1.0, 1.0),  # frequency
-            # (2.0, 2.0),  # phase
-    
+        (1.0, 1.4),  # amplitude
+        (0.8, 1.2),  # frequency
+        (np.pi/2, np.pi/2),  # phase
+   
 
-            # # horizontal
+        # horizontal
 
-            # (2.5, 2.5),  # amplitude
-            # (0.5, 0.5),  # frequency
-            # (1.0, 1.0),  # phase
-
-            # vertical
-            (0.8, 1.2),  # amplitude
-            (1.0, 1.0),  # frequency
-            (1.8, 2.2),  # phase
-    
-
-            # horizontal
-
-            (1.8, 2.2),  # amplitude
-            (0.5, 0.5),  # frequency
-            (0.8, 2.2),  # phase
-            
+        (1.3, 1.7),  # amplitude
+        (0.3, 0.7),  # frequency
+        (np.pi/3, np.pi/3),  # phase
 
         ]    
     enable_additional_joint_values: bool = False
