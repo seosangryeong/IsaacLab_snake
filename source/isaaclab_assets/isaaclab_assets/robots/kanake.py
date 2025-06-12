@@ -19,10 +19,11 @@ from isaaclab.managers import SceneEntityCfg
 # Configuration
 ##
 # /home/smarthc/Downloads/kanake6_sim/kanake6_sim/urdf/kanake_0610/
+
 KANAKE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path="/home/nuc/Downloads/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
+        usd_path="/home/nuc/Downloads/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             max_depenetration_velocity=10.0,
