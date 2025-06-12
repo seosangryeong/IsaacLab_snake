@@ -91,10 +91,10 @@ def main():
     
     
     from isaaclab.markers import VisualizationMarkers
-    from isaaclab_tasks.manager_based.classic.kanake.kanake_env_cfg import my_marker_cfg,TARGET_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG, BLUE_ARROW_X_MARKER_CFG
+    from isaaclab_tasks.manager_based.classic.kanake.kanake_env_cfg import TARGET_MARKER_CFG,TARGET_BOX
 
     import torch
-    target_marker = VisualizationMarkers(my_marker_cfg)
+    target_marker = VisualizationMarkers(TARGET_BOX)
 
 
 
@@ -107,8 +107,8 @@ def main():
     quat = r.as_quat()  # [x, y, z, w]
     orientation = torch.tensor([quat], device=device)  # shape: (1, 4)
 
-    position = torch.tensor([[10.0, 0.0, 1.0]], device=device)
-    scales = torch.tensor([[0.5,0.5, 0.5]], device=device)
+    position = torch.tensor([[3.0, 0.0, 0.1]], device=device)
+    scales = torch.tensor([[0.5, 0.5, 0.5]], device=device)
     target_marker.set_visibility(True)
     target_marker.visualize(position, orientation, scales)
     # ------------------------
