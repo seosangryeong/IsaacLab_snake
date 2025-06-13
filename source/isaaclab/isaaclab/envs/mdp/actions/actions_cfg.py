@@ -92,6 +92,7 @@ class JointEffortActionCfg(JointActionCfg):
     """
 
     class_type: type[ActionTerm] = joint_actions.JointEffortAction
+
     
 
 
@@ -319,15 +320,33 @@ class JointSineActionCfg(JointActionCfg):
 
     clip_ranges: list[tuple[float, float]] = [
 
-        (0.8, 1.2),  # amplitude
+        # (1.0, 1.2),  # amplitude
+        # (0.8, 1.0),  # frequency
+        # (np.pi/2, np.pi/2),  # phase
+
+        # # horizontal
+
+        # # (1.4, 1.6),  # amplitude
+        # # (0.4, 0.5),  # frequency
+        # # (np.pi/3, np.pi/3),  # phase
+        # (1.0, 1.2),  # amplitude
+        # (0.3, 0.5),  # frequency
+        # (np.pi/2, np.pi/2),  # phase
+
+
+        (0.5, 1.5),  # amplitude
         (0.8, 1.2),  # frequency
-        (np.pi/3, np.pi/2),  # phase
+        (np.pi/2, np.pi/6),  # phase
 
         # horizontal
 
-        (1.3, 1.7),  # amplitude
-        (0.3, 0.5),  # frequency
-        (np.pi/4, np.pi/3),  # phase
+        # (1.4, 1.6),  # amplitude
+        # (0.4, 0.5),  # frequency
+        # (np.pi/3, np.pi/3),  # phase
+        (0.5, 1.5),  # amplitude
+        (0.8, 1.2),  # frequency
+        (np.pi/2, np.pi/6),  # phase
+         
 
     ]
 
@@ -390,10 +409,9 @@ class JointSineVerticalActionCfg(JointActionCfg):
     clip_ranges: list[tuple[float, float]] = [
 
         # vertical
-        (0.5, 1.2),  # amplitude
-        (0.3, 0.8),  # frequency
-        (0.4,1.2),  # phase
-
+        (0.6, 0.8),  # amplitude
+        (0.8, 1.0),  # frequency
+        (np.pi/2, np.pi/2),  # phase
     ]
 
 @configclass
@@ -441,17 +459,15 @@ class JointSineHoldActionCfg(JointActionCfg):
 
     clip_ranges: list[tuple[float, float]] = [
 
-
-        (0.5, 1.0),  # amplitude
-        (0.8, 1.5),  # frequency
-        (np.pi/6, np.pi/2),  # phase
+        (0.5, 0.7),  # amplitude
+        (1.0, 1.2),  # frequency
+        (np.pi/2, np.pi/2),  # phase
 
         # horizontal
 
-        (0.8, 1.0),  # amplitude
-        (0.3, 0.8),  # frequency
-        (np.pi/6, np.pi/2),  # phase
-
+        (1.0, 1.2),  # amplitude
+        (0.5, 0.7),  # frequency
+        (np.pi/3, np.pi/3),  # phase
         ]    
     enable_additional_joint_values: bool = False
     additional_joint_scale: float = 1.0

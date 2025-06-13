@@ -53,17 +53,20 @@ def position_command_error_tanh(
 
 
 def orientation_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg) -> torch.Tensor:
-    """Penalize tracking orientation error using shortest path.
-
-    The function computes the orientation error between the desired orientation (from the command) and the
-    current orientation of the asset's body (in world frame). The orientation error is computed as the shortest
-    path between the desired and current orientations.
-    """
-    # extract the asset (to enable type hinting)
+    """Penalize tracking orientation error using shortest path."""
     asset: RigidObject = env.scene[asset_cfg.name]
+
+    # 명령 불러오기 및 shape 확인
     command = env.command_manager.get_command(command_name)
-    # obtain the desired and current orientations
-    des_quat_b = command[:, 3:7]
-    des_quat_w = quat_mul(asset.data.root_state_w[:, 3:7], des_quat_b)
-    curr_quat_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7]  # type: ignore
+    if command.ndim == 3:
+        command = command.squeeze(1)
+    if command.shape[-1] != 7:
+        raise RuntimeError(f"Expected command shape [N,7], but got {command.shape}")
+
+    des_quat_b = command[:, 3:7]  # shape [N, 4]
+    asset_quat = asset.data.root_state_w[:, 3:7]  # shape [N, 4]
+    des_quat_w = quat_mul(asset_quat, des_quat_b)  # shape [N, 4]
+
+    curr_quat_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7]  # shape [N, 4]
+
     return quat_error_magnitude(curr_quat_w, des_quat_w)

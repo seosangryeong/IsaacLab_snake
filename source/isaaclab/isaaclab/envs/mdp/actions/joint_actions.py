@@ -224,7 +224,7 @@ class JointEffortAction(JointAction):
     def apply_actions(self):
         # set joint effort targets
         self._asset.set_joint_effort_target(self.processed_actions, joint_ids=self._joint_ids)
-
+        
         # print(self.processed_actions)
 
 
