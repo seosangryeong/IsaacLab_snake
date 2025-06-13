@@ -281,7 +281,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 50.0
+        self.episode_length_s = 20.0
         # simulation settings
         self.sim.dt = 1 / 80.0
         self.sim.render_interval = self.decimation
