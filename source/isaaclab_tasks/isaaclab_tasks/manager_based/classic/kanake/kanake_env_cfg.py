@@ -117,7 +117,11 @@ class ActionsCfg:
     #     asset_name="robot",
     #     joint_names=[".*"]
     # )
-    joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
+    # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
+    joint_sine_amp = mdp.JointSineAmpActionCfg(
+        asset_name="robot",
+        joint_names=[".*"]
+    )
     # joint_sine_h = mdp.JointSineHorizonActionCfg(
     #     asset_name="robot", 
     #     joint_names=["j2", "j4", "j6",  "j8",  "j10", "j12", "j14", "j16"], 

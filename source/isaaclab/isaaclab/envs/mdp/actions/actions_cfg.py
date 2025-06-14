@@ -9,7 +9,7 @@ from isaaclab.controllers import DifferentialIKControllerCfg, OperationalSpaceCo
 from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.utils import configclass
 
-from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions, sine_actions_hold 
+from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions, sine_amp_actions,sine_actions_hold 
 import numpy as np
 ##
 # Joint actions.
@@ -92,6 +92,7 @@ class JointEffortActionCfg(JointActionCfg):
     """
 
     class_type: type[ActionTerm] = joint_actions.JointEffortAction
+
     
 
 
@@ -318,32 +319,58 @@ class JointSineActionCfg(JointActionCfg):
     preserve_order: bool = True
 
     clip_ranges: list[tuple[float, float]] = [
-        # (0.3, 0.6),  # amplitude_vertical
-        # (0.8, 1.0),  # frequency_vertical
-        # (np.pi/3, np.pi/2),  # phase_vertical
-        # (0.8, 1.2),  # amplitude_horizontal
-        # (0.8, 1.0),  # frequency_horizontal
-        # (np.pi/3, np.pi/2),  # phase_horizontal
 
-        (0.5, 1.2),  # amplitude
-        (0.5, 1.2),  # frequency
-        (np.pi/4, np.pi/2),  # phase
-   
+        # (1.0, 1.2),  # amplitude
+        # (0.8, 1.0),  # frequency
+        # (np.pi/2, np.pi/2),  # phase
+
+        # # horizontal
+
+        # # (1.4, 1.6),  # amplitude
+        # # (0.4, 0.5),  # frequency
+        # # (np.pi/3, np.pi/3),  # phase
+        # (1.0, 1.2),  # amplitude
+        # (0.3, 0.5),  # frequency
+        # (np.pi/2, np.pi/2),  # phase
+
+
+        (0.5, 1.5),  # amplitude
+        (0.8, 1.2),  # frequency
+        (np.pi/2, np.pi/6),  # phase
 
         # horizontal
 
-        (0.5, 1.2),  # amplitude
-        (0.5, 1.2),  # frequency
-        (np.pi/4, np.pi/2),  # phase
+        # (1.4, 1.6),  # amplitude
+        # (0.4, 0.5),  # frequency
+        # (np.pi/3, np.pi/3),  # phase
+        (0.5, 1.5),  # amplitude
+        (0.8, 1.2),  # frequency
+        (np.pi/2, np.pi/6),  # phase
+         
 
-        # (0.3, 0.5),   # amp_min_v
-        # (0.8, 1.0),    # amp_max_v
-        # (0.6, 1.2),    # freq_v
-        # (np.pi/4, np.pi/4),  # phase_v
-        # (0.3, 0.5),    # amp_min_h
-        # (1.0, 1.5),    # amp_max_h
-        # (0.6, 1.2),    # freq_h
-        # (np.pi/4, np.pi/4),  # phase_h
+    ]
+
+
+    additional_joint_scale: float = 1.0
+
+
+
+@configclass
+class JointSineAmpActionCfg(JointActionCfg):
+    class_type: type[ActionTerm] = sine_amp_actions.JointSineAmpAction
+    preserve_order: bool = True
+
+    clip_ranges: list[tuple[float, float]] = [
+
+
+        (0.0, 1.2),  
+        (0.0, 1.2),    
+        (0.0, 1.2),   
+        (np.pi/3, np.pi/2),  
+        (0.0, 1.2),  
+        (0.0, 1.2),    
+        (0.0, 1.2),   
+        (np.pi/3, np.pi/2),
 
 
     ]
@@ -361,9 +388,9 @@ class JointSineHorizonActionCfg(JointActionCfg):
     clip_ranges: list[tuple[float, float]] = [
 
         # # horizontal
-        (2.5, 2.5),  # amplitude
-        (0.5, 0.5),  # frequency
-        (1.0, 1.0),  # phase
+        (0.5, 1.0),  # amplitude
+        (0.5, 1.0),  # frequency
+        (np.pi/2, np.pi/2),  # phase
 
         # horizontal
         # (0.5, 1.5),  # amplitude
@@ -382,10 +409,9 @@ class JointSineVerticalActionCfg(JointActionCfg):
     clip_ranges: list[tuple[float, float]] = [
 
         # vertical
-        (0.5, 1.2),  # amplitude
-        (0.3, 0.8),  # frequency
-        (0.4,1.2),  # phase
-
+        (0.6, 0.8),  # amplitude
+        (0.8, 1.0),  # frequency
+        (np.pi/2, np.pi/2),  # phase
     ]
 
 @configclass
@@ -431,37 +457,17 @@ class JointSineHoldActionCfg(JointActionCfg):
     class_type: type[ActionTerm] = sine_actions_hold.JointSineHoldAction
     preserve_order: bool = True
 
-    # 홀드 구간 주기 수(느린 쪽 기준)
-    min_cycles: float = 0.5     # default 0.5
-    max_cycles: float = 1.0     # default 1.0
-
     clip_ranges: list[tuple[float, float]] = [
 
-            # # vertical
-            # (1.0, 1.0),  # amplitude
-            # (1.0, 1.0),  # frequency
-            # (2.0, 2.0),  # phase
-    
+        (0.5, 0.7),  # amplitude
+        (1.0, 1.2),  # frequency
+        (np.pi/2, np.pi/2),  # phase
 
-            # # horizontal
+        # horizontal
 
-            # (2.5, 2.5),  # amplitude
-            # (0.5, 0.5),  # frequency
-            # (1.0, 1.0),  # phase
-
-            # vertical
-            (0.8, 1.2),  # amplitude
-            (1.0, 1.0),  # frequency
-            (1.8, 2.2),  # phase
-    
-
-            # horizontal
-
-            (1.8, 2.2),  # amplitude
-            (0.5, 0.5),  # frequency
-            (0.8, 2.2),  # phase
-            
-
+        (1.0, 1.2),  # amplitude
+        (0.5, 0.7),  # frequency
+        (np.pi/3, np.pi/3),  # phase
         ]    
     enable_additional_joint_values: bool = False
     additional_joint_scale: float = 1.0

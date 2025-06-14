@@ -15,3 +15,4 @@ from .sine_h_actions import *
 from .sine_v_actions import *
 from .cpg_actions import *
 from .sine_actions_hold import *
+from .sine_amp_actions import *
