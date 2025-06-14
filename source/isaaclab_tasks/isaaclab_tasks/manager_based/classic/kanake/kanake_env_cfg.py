@@ -10,9 +10,12 @@ from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
+import math
 from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
-from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
+from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, CUBOID_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
 import torch
+# from isaaclab.terrains.config.kanake_plane import KANAKE_PLANE_CFG  # isort: skip
 
 import isaaclab_tasks.manager_based.classic.humanoid.mdp as mdp
 
@@ -20,50 +23,100 @@ import isaaclab_tasks.manager_based.classic.humanoid.mdp as mdp
 from isaaclab_assets.robots.kanake import KANAKE_CFG 
 
 TARGET_MARKER_CFG = FRAME_MARKER_CFG.replace(prim_path="/World/target_marker")
-my_marker_cfg = GREEN_ARROW_X_MARKER_CFG.replace(
+arrow_cfg = GREEN_ARROW_X_MARKER_CFG.replace(
     prim_path="/World/my_green_arrow",
     markers={
         k: v.replace(scale=(1.0, 1.0, 2.0)) for k, v in GREEN_ARROW_X_MARKER_CFG.markers.items()
     }
 )
+TARGET_BOX = CUBOID_MARKER_CFG.replace( prim_path="/World/target_box")
+box_cfg = CUBOID_MARKER_CFG.replace(
+    prim_path="/World/target_box",
+    markers={
+        "cuboid": CUBOID_MARKER_CFG.markers["cuboid"].replace(
+            size=(0.1, 0.1, 0.1),
+        )
+    }
+)
+
+
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
 
-    # terrain
     terrain = TerrainImporterCfg(
+        # prim_path="/World/ground",
+        # terrain_type="generator",
+        # terrain_generator=KANAKE_PLANE_CFG,
+        # max_init_terrain_level=5,
+        # collision_group=-1,
+
         prim_path="/World/ground",
         terrain_type="plane",
         collision_group=-1,
+
+
         physics_material=sim_utils.RigidBodyMaterialCfg(
-            friction_combine_mode="average",
-            restitution_combine_mode="average",
-            static_friction=0.5,
-            dynamic_friction=0.5,
-            restitution=0.0,
+            friction_combine_mode="multiply",
+            restitution_combine_mode="multiply",
+            static_friction=1.0,
+            dynamic_friction=1.0,
         ),
+        # visual_material=sim_utils.PreviewSurfaceCfg(
+        #     # diffuse_color=(0.065, 0.0725, 0.080),#회색
+        #     diffuse_color=(1.0, 1.0, 1.0),
+        #     emissive_color=(0.0, 0.0, 0.0),
+        #     roughness= 0.5,
+        #     metallic = 0.3,
+        #     opacity = 1.0
+        # ),
         debug_vis=False,
     )
 
     # robot
     robot = KANAKE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
-    # lights
-    light = AssetBaseCfg(
-        prim_path="/World/light",
-        spawn=sim_utils.DistantLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
+    sky_light = AssetBaseCfg(
+        prim_path="/World/skyLight",
+        spawn=sim_utils.DomeLightCfg(
+            intensity=750.0,
+            texture_file=f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
+        ),
     )
 
 
+@configclass
+class CommandsCfg:
+    """Command specifications for the MDP."""
+    pose2d_command = mdp.UniformPose2dCommandCfg(
+        asset_name="robot",
+        simple_heading=False,
+        resampling_time_range=(10.0, 10.0), 
+        ranges=mdp.UniformPose2dCommandCfg.Ranges(
+            pos_x=(-4.0, 4.0),
+            pos_y=(-4.0, 4.0),
+            heading=(-math.pi, math.pi),
+        ),
+        debug_vis=True,
+
+    )
 
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
     
-    # joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=0.05)
-    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.7, use_default_offset=True)
+    # joint_effort = mdp.JointEffortActionCfg(
+    #     asset_name="robot", 
+    #     joint_names=[".*"], 
+    #     scale=1.0,
+    #     clip={".*": (-3.0, 3.0)}
+    #     )
+    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
-
+    # joint_sine_hold = mdp.JointSineHoldActionCfg(
+    #     asset_name="robot",
+    #     joint_names=[".*"]
+    # )
     joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
     # joint_sine_h = mdp.JointSineHorizonActionCfg(
     #     asset_name="robot", 
@@ -72,9 +125,15 @@ class ActionsCfg:
     
     # joint_pos = mdp.JointPositionActionCfg(
     #     asset_name="robot", 
-    #     joint_names=["j1", "j3", "j5", "j7", "j9", "j11", "j13", "j15"], 
+    #     joint_names=["j2", "j4", "j6",  "j8",  "j10", "j12", "j14", "j16"], 
     #     scale= 1.0, 
     #    )
+    # joint_pos_v = mdp.JointSineVerticalActionCfg(
+    #     asset_name="robot",
+    #     joint_names=["j1", "j3", "j5", "j7", "j9", "j11", "j13", "j15"],
+    #     scale=1.0,
+    # )
+    
 
 @configclass
 class ObservationsCfg:
@@ -85,6 +144,7 @@ class ObservationsCfg:
         """Observations for the policy."""
         joint_pos = ObsTerm(func=mdp.joint_pos)
         joint_vel = ObsTerm(func=mdp.joint_vel)
+        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose2d_command"})
 
         actions = ObsTerm(func=mdp.last_action)
 
@@ -101,10 +161,12 @@ class ObservationsCfg:
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
         base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
-        base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (10.0, 0.0, 0.0)})
-        base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (10.0, 0.0, 0.0)})
+        base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (5.0, 0.0, 0.0)})
+        base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (5.0, 0.0, 0.0)})
         # # joint_pos = ObsTerm(func=mdp.joint_pos)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
+        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose2d_command"})
+
         joint_vel = ObsTerm(func=mdp.joint_vel)
         joint_pos = ObsTerm(func=mdp.joint_pos)
 
@@ -129,7 +191,7 @@ class EventCfg:
         mode="reset",
         params={
             # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (-1.57,1.57)},
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.1, 0.1), "yaw": (0.0,0.0)},
+            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.2, 0.2), "yaw": (0.0,0.0)},
             "velocity_range": {
                 "x": (0.0, 0.0),
                 "y": (0.0, 0.0),
@@ -185,16 +247,33 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     # upright = RewTerm(func=mdp.upright_kanake_posture_bonus, weight=2.0, params={"threshold": 0.85})
-    BodyLineDistancePenalty = RewTerm(
-        func=mdp.BodyLineDistancePenalty,
-        weight=-2.0,
-        params={"target_pos": (10.0, 0.0, 0.0), "threshold": 0.2}  
-    )
+    # BodyLineDistancePenalty = RewTerm(
+    #     func=mdp.BodyLineDistancePenalty,
+    #     weight=-2.0,
+    #     params={"target_pos": (5.0, 0.0, 0.0), "threshold": 0.4}  
+    # )
     # action_rate_l2 = RewTerm(
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    # progress = RewTerm(func=mdp.progress_reward, weight=20.0, params={"target_pos": (10.0, 0.0, 0.0)})
+    # task terms
+    position_command_error = RewTerm(
+        func=mdp.position_command_error,
+        weight=-0.2,
+        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "pose2d_command"},
+    )
+    position_command_error_tanh = RewTerm(
+        func=mdp.position_command_error_tanh,
+        weight=0.1,
+        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "std": 0.1, "command_name": "pose2d_command"},
+    )
+    orientation_command_error = RewTerm(
+        func=mdp.orientation_command_error,
+        weight=-0.1,
+        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "pose2d_command"},
+    )
+
+    # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
     upright = RewTerm(func=mdp.upright_posture_shaped, weight=3.0, params={"threshold": 0.8})
@@ -204,14 +283,19 @@ class RewardsCfg:
     #     weight=1.0,
     #     params={"target_pos": (0.0, 10.0, 0.0)}
     # )
-    progress_x_reward = RewTerm(
-        func=mdp.progress_x_reward,
-        weight=20.0,
-    )
-    action_rate_l2 = RewTerm(
-        func=mdp.action_rate_l2,
-        weight = -0.5,
-    )
+    # progress_x_reward = RewTerm(
+    #     func=mdp.progress_x_reward,
+    #     weight=20.0,
+    # )
+    # action_rate_l2 = RewTerm(
+    #     func=mdp.action_rate_l2,
+    #     weight = -0.1,
+    # )
+    # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.2)
+    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
+    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
 
 
 
@@ -220,7 +304,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.18})
+    # max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.18})
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
 
@@ -237,7 +321,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
     scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=0.0)
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
-    # commands: CommandsCfg = CommandsCfg()
+    commands: CommandsCfg = CommandsCfg()
 
     # MDP settings
     rewards: RewardsCfg = RewardsCfg()
@@ -249,7 +333,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 16.0
+        self.episode_length_s = 10.0
         # simulation settings
         self.sim.dt = 1 / 80.0
         self.sim.render_interval = self.decimation
@@ -271,3 +355,4 @@ class kanakeEnvCfg_PLAY(kanakeEnvCfg):
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
+
