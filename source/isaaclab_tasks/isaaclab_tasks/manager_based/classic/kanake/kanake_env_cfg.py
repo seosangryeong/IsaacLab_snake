@@ -12,10 +12,11 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 import math
+import numpy as np
 from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
 from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, CUBOID_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
 import torch
-from isaaclab.terrains.config.kanake_plane import KANAKE_PLANE_CFG  # isort: skip
+# from isaaclab.terrains.config.kanake_plane import KANAKE_PLANE_CFG  # isort: skip
 
 import isaaclab_tasks.manager_based.classic.humanoid.mdp as mdp
 
@@ -87,13 +88,14 @@ class MySceneCfg(InteractiveSceneCfg):
 @configclass
 class CommandsCfg:
     """Command specifications for the MDP."""
-    pose2d_command = mdp.UniformPose2dCommandCfg(
+    # command -> (x,y,z)
+    kanake_command = mdp.KanakeCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(8.0, 8.0), 
-        ranges=mdp.UniformPose2dCommandCfg.Ranges(
-            pos_x=(-3.0, 3.0),
-            pos_y=(-3.0, 3.0),
+        resampling_time_range=(10.0, 10.0), 
+        ranges=mdp.KanakeCommandCfg.Ranges(
+            pos_x=(-1.0, 1.0),
+            pos_y=(-1.0, 1.0),
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
@@ -118,6 +120,10 @@ class ActionsCfg:
     #     joint_names=[".*"]
     # )
     joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
+    # joint_sine_amp = mdp.JointSineAmpActionCfg(
+    #     asset_name="robot",
+    #     joint_names=[".*"]
+    # )
     # joint_sine_h = mdp.JointSineHorizonActionCfg(
     #     asset_name="robot", 
     #     joint_names=["j2", "j4", "j6",  "j8",  "j10", "j12", "j14", "j16"], 
@@ -144,7 +150,7 @@ class ObservationsCfg:
         """Observations for the policy."""
         joint_pos = ObsTerm(func=mdp.joint_pos)
         joint_vel = ObsTerm(func=mdp.joint_vel)
-        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose2d_command"})
+        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
 
         actions = ObsTerm(func=mdp.last_action)
 
@@ -161,11 +167,11 @@ class ObservationsCfg:
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
         base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
-        base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (5.0, 0.0, 0.0)})
-        base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (5.0, 0.0, 0.0)})
+        # base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (5.0, 0.0, 0.0)})
+        # base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (5.0, 0.0, 0.0)})
         # # joint_pos = ObsTerm(func=mdp.joint_pos)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
-        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose2d_command"})
+        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
 
         joint_vel = ObsTerm(func=mdp.joint_vel)
         joint_pos = ObsTerm(func=mdp.joint_pos)
@@ -204,14 +210,14 @@ class EventCfg:
     )
 
 
-#     reset_robot_joints = EventTerm(
-#         func=mdp.reset_joints_by_offset,
-#         mode="reset",
-#         params={
-#             "position_range": (-1.0, 1.0),  # -60 ~ 60도 정도
-#             "velocity_range": (0, 0),
-#         },
-#     )
+    reset_robot_joints = EventTerm(
+        func=mdp.reset_joints_by_offset,
+        mode="reset",
+        params={
+            "position_range": (-np.pi/6, np.pi/6),  
+            "velocity_range": (0, 0),
+        },
+    )
 
 #     physics_material = EventTerm(
 #         func=mdp.randomize_rigid_body_material,
@@ -257,15 +263,15 @@ class RewardsCfg:
     #     weight = -0.01,
     # )
     # task terms
-    position_command_error = RewTerm(
-        func=mdp.position_command_error,
-        weight=-0.2,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "pose2d_command"},
+    kanake_position_command_error = RewTerm(
+        func=mdp.kanake_position_command_error,
+        weight=-4.0,
+        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "kanake_command"},
     )
-    position_command_error_tanh = RewTerm(
-        func=mdp.position_command_error_tanh,
-        weight=0.1,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "std": 0.1, "command_name": "pose2d_command"},
+    kanake_position_command_error_tanh = RewTerm(
+        func=mdp.kanake_position_command_error_tanh,
+        weight=2.0,
+        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "std": 0.1, "command_name": "kanake_command"},
     )
     # orientation_command_error = RewTerm(
     #     func=mdp.orientation_command_error,
@@ -355,5 +361,3 @@ class kanakeEnvCfg_PLAY(kanakeEnvCfg):
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
-
-

@@ -822,6 +822,7 @@ def position_command_error_tanh(
     # extract the asset (to enable type hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
+    # print("command shape:", command)
     # obtain the desired and current positions
     des_pos_b = command[:, :3]
     des_pos_w, _ = combine_frame_transforms(asset.data.root_state_w[:, :3], asset.data.root_state_w[:, 3:7], des_pos_b)
@@ -841,14 +842,59 @@ def orientation_command_error(env: ManagerBasedRLEnv, command_name: str, asset_c
     asset: RigidObject = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
     # obtain the desired and current orientations
-    des_quat_b = command[:, 3:7]
-    des_quat_w = quat_mul(asset.data.root_state_w[:, 3:7], des_quat_b)
+    # des_quat_b = command[:, 3:7]
+    des_quat_b = command
+    des_quat_b = des_quat_b.reshape(-1, 4)
+    # print("command shape:", command.shape)
+    # print("des_quat_b shape:", des_quat_b.shape)
+    # print("body_state_w shape:", asset.data.body_state_w.shape)
+    # print("asset_cfg.body_ids:", asset_cfg.body_ids)
+    # print("selected body_state shape:", asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7].shape)
+
+    # des_quat_w = quat_mul(asset.data.root_state_w[:, 3:7], des_quat_b)
+    des_quat_w = quat_mul(asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7], des_quat_b)
     curr_quat_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7]  # type: ignore
+    
     return quat_error_magnitude(curr_quat_w, des_quat_w)
 
-    
+    # asset: RigidObject = env.scene[asset_cfg.name]
+    # command = env.command_manager.get_command(command_name)
+    # # obtain the desired and current orientations
+    # des_quat_b = command[:, 3:7]
+    # des_quat_w = quat_mul(asset.data.root_state_w[:, 3:7], des_quat_b)
+    # curr_quat_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7]  # type: ignore
+    # return quat_error_magnitude(curr_quat_w, des_quat_w)
 
 
+def kanake_position_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+    # 로봇 위치를 항상 (0,0,기본높이), 회전은 [1,0,0,0]로 가정
+    batch = des_pos_b.shape[0]
+    root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
+    root_pos[:, 2] = asset.data.default_root_state[:, 2]  # 기본 높이
+    root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
+    root_quat[:, 0] = 1.0  # [1,0,0,0]
+    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+    curr_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], :3]
+    return torch.norm(curr_pos_w - des_pos_w, dim=1)
+
+def kanake_position_command_error_tanh(
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+    batch = des_pos_b.shape[0]
+    root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
+    root_pos[:, 2] = asset.data.default_root_state[:, 2]
+    root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
+    root_quat[:, 0] = 1.0
+    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+    curr_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], :3]
+    distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
+    return 1 - torch.tanh(distance / std)
 
 # # Copyright (c) 2022-2025, The Isaac Lab Project Developers.
 # # All rights reserved.

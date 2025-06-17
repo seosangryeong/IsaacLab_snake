@@ -334,18 +334,18 @@ class JointSineActionCfg(JointActionCfg):
         # (np.pi/2, np.pi/2),  # phase
 
 
-        (0.5, 1.5),  # amplitude
-        (0.8, 1.2),  # frequency
-        (np.pi/2, np.pi/6),  # phase
+        (0.3, 1.0),  # amplitude
+        (0.3, 1.0),  # frequency
+        (np.pi/4, np.pi/2),  # phase
 
         # horizontal
 
         # (1.4, 1.6),  # amplitude
         # (0.4, 0.5),  # frequency
         # (np.pi/3, np.pi/3),  # phase
-        (0.5, 1.5),  # amplitude
-        (0.8, 1.2),  # frequency
-        (np.pi/2, np.pi/6),  # phase
+        (0.3, 1.0),  # amplitude
+        (0.3, 1.0),  # frequency
+        (np.pi/4, np.pi/2),  # phase
          
 
     ]
@@ -363,14 +363,14 @@ class JointSineAmpActionCfg(JointActionCfg):
     clip_ranges: list[tuple[float, float]] = [
 
 
-        (0.3, 0.5),  
-        (1.0, 1.2),    
-        (0.6, 1.0),   
-        (np.pi/3, np.pi/3),  
-        (0.0, 0.2),  
-        (0.4, 0.6),    
-        (0.6, 1.0),   
-        (np.pi/3, np.pi/3),
+        (0.3, 0.6),  
+        (0.5, 1.2),    
+        (0.5, 1.0),   
+        (np.pi/4, np.pi/2),  
+        (0.3, 0.6),  
+        (0.5, 1.2),    
+        (0.5, 1.0),   
+        (np.pi/4, np.pi/2),  
 
 
     ]
