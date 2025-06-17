@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class KanakeCommand(CommandTerm):
     """
     pose 커맨드. [x,y,z,heading]
-    커맨드는 로봇 위치에서 생성 (로봇이 항상 (0,0,기본높이)라고 가정)
+    커맨드는 로봇 위치에서 생성 (샘플링 시 로봇기준으로 (0,0,기본높이)에서 생성)
     """
 
     cfg: KanakeCommandCfg
