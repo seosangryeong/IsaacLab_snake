@@ -322,28 +322,28 @@ class JointSineActionCfg(JointActionCfg):
 
 
 
-    (0.3, 1.0),  # amplitude for joint 1
-    (0.3, 1.0),  # amplitude for joint 2
-    (0.3, 1.0),  # amplitude for joint 3
-    (0.3, 1.0),  # amplitude for joint 4
-    (0.3, 1.0),  # amplitude for joint 5
-    (0.3, 1.0),  # amplitude for joint 6
-    (0.3, 1.0),  # amplitude for joint 7
-    (0.3, 1.0),  # amplitude for joint 8
-    (0.3, 1.0),  # amplitude for joint 9
-    (0.3, 1.0),  # amplitude for joint 10
-    (0.3, 1.0),  # amplitude for joint 11
-    (0.3, 1.0),  # amplitude for joint 12
-    (0.3, 1.0),  # amplitude for joint 13
-    (0.3, 1.0),  # amplitude for joint 14
-    (0.3, 1.0),  # amplitude for joint 15
-    (0.3, 1.0),  # amplitude for joint 16
+    # (0.0, 0.6),  # amplitude for joint 1
+    # (0.0, 0.6),  # amplitude for joint 2
+    # (0.0, 0.6),  # amplitude for joint 3
+    # (0.0, 0.6),  # amplitude for joint 4
+    # (0.0, 0.6),  # amplitude for joint 5
+    # (0.0, 0.6),  # amplitude for joint 6
+    # (0.0, 0.6),  # amplitude for joint 7
+    # (0.0, 0.6),  # amplitude for joint 8
+    # (0.0, 0.6),  # amplitude for joint 9
+    # (0.0, 0.6),  # amplitude for joint 10
+    # (0.0, 0.6),  # amplitude for joint 11
+    # (0.0, 0.6),  # amplitude for joint 12
+    # (0.0, 0.6),  # amplitude for joint 13
+    # (0.0, 0.6),  # amplitude for joint 14
+    # (0.0, 0.6),  # amplitude for joint 15
+    # (0.0, 0.6),  # amplitude for joint 16
+    *((0.0, 0.8) for _ in range(16)),  # amplitude 
 
 
-
-    (0.5, 1.0),  # frequency_vertical
+    (0.6, 1.4),  # frequency_vertical
     (np.pi/4, np.pi/2),  # phase_vertical
-    (0.5, 1.0),  # frequency_horizontal
+    (0.6, 1.4),  # frequency_horizontal
     (np.pi/4, np.pi/2),  # phase_horizontal
          
 

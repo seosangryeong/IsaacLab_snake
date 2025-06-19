@@ -470,7 +470,44 @@ class BodyOrderReward(ManagerTermBase):
 
         return reward
 
+class JointActionShiftReward(ManagerTermBase):
+    """
+    Reward for encouraging the action of joint i at t to be similar to the action of joint i+1 at t+1.
+    This encourages a "traveling wave" of actions along the joints, like a sine wave.
+    """
 
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        asset: Articulation = env.scene["robot"]
+        self.num_joints = asset.num_joints
+        self.prev_actions = torch.zeros(env.num_envs, self.num_joints, device=env.device)
+
+    def reset(self, env_ids: torch.Tensor):
+        self.prev_actions[env_ids] = 0.0
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        curr_actions = env.action_manager.action[:, :self.num_joints]
+
+        # 3번(인덱스2), 4번(인덱스3)부터 시작해서 2씩 증가
+        odd_idx = torch.arange(2, self.num_joints, 2, device=curr_actions.device)   # 2,4,6,...
+        even_idx = torch.arange(3, self.num_joints, 2, device=curr_actions.device)  # 3,5,7,...
+
+        # 홀수: prev_actions[:, odd_idx-2]와 curr_actions[:, odd_idx] 비교
+        odd_diff = curr_actions[:, odd_idx] - self.prev_actions[:, odd_idx-2]
+        # 짝수: prev_actions[:, even_idx-2]와 curr_actions[:, even_idx] 비교
+        even_diff = curr_actions[:, even_idx] - self.prev_actions[:, even_idx-2]
+
+        reward = -(
+            torch.mean(odd_diff**2, dim=1) +
+            torch.mean(even_diff**2, dim=1)
+        ) / 2.0
+
+        self.prev_actions[:] = curr_actions
+        return reward
 
 class LineAlignmentReward(ManagerTermBase):
     """
@@ -895,6 +932,68 @@ def kanake_position_command_error_tanh(
     curr_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], :3]
     distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
     return 1 - torch.tanh(distance / std)
+
+
+class kanake_progress_command_reward(ManagerTermBase):
+    """Reward for making progress towards the commanded target position."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.potentials = torch.zeros(env.num_envs, device=env.device)
+        self.prev_potentials = torch.zeros_like(self.potentials)
+
+    def reset(self, env_ids: torch.Tensor):
+        asset: Articulation = self._env.scene["robot"]
+
+        # 현재 command 가져오기
+        command = self._env.command_manager.get_command(self.cfg.params["command_name"])
+        des_pos_b = command[:, :3]
+
+        # 로봇 기준 frame → world frame 변환
+        batch = des_pos_b.shape[0]
+        root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
+        root_pos[:, 2] = asset.data.default_root_state[:, 2]
+        root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
+        root_quat[:, 0] = 1.0
+        des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+
+        # 현재 위치
+        curr_pos_w = asset.data.root_pos_w
+
+        to_target_pos = des_pos_w - curr_pos_w
+        to_target_pos[:, 2] = 0.0  # 수평면 projection (선택사항)
+
+        self.potentials[env_ids] = -torch.norm(to_target_pos[env_ids], p=2, dim=-1) / self._env.step_dt
+        self.prev_potentials[env_ids] = self.potentials[env_ids]
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        asset: Articulation = env.scene[asset_cfg.name]
+
+        command = env.command_manager.get_command(command_name)
+        des_pos_b = command[:, :3]
+
+        batch = des_pos_b.shape[0]
+        root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
+        root_pos[:, 2] = asset.data.default_root_state[:, 2]
+        root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
+        root_quat[:, 0] = 1.0
+        des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+
+        curr_pos_w = asset.data.root_pos_w
+
+        to_target_pos = des_pos_w - curr_pos_w
+        to_target_pos[:, 2] = 0.0  # 수평 projection (선택사항)
+
+        self.prev_potentials[:] = self.potentials[:]
+        self.potentials[:] = -torch.norm(to_target_pos, p=2, dim=-1) / env.step_dt
+
+        return self.potentials - self.prev_potentials
+
 
 # # Copyright (c) 2022-2025, The Isaac Lab Project Developers.
 # # All rights reserved.

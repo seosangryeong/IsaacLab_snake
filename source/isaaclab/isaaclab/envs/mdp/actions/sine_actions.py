@@ -252,13 +252,14 @@ class JointSineAction(ActionTerm):
     def process_actions(self, actions: torch.Tensor, additional_joint_values: torch.Tensor = None):
         dt = self._env.step_dt
         self.update_time(dt)
-
+        print("clip before action",actions)
         clip_ranges = getattr(self.cfg, "clip_ranges", [(-1.0, 1.0)] * (self._num_joints + 4))
         actions_clipped = torch.empty_like(actions)
         for i in range(self._num_joints + 4):
             actions_clipped[:, i] = torch.clamp(actions[:, i], min=clip_ranges[i][0], max=clip_ranges[i][1])
         actions = actions_clipped
         self._raw_actions[:] = actions
+        print(f"raw_actions: {self._raw_actions}")
 
         amplitudes = actions[:, :self._num_joints]  # (num_envs, num_joints)
         freq_v = actions[:, self._num_joints]       # (num_envs,)
@@ -303,6 +304,7 @@ class JointSineAction(ActionTerm):
             processed += self.cfg.additional_joint_scale * additional_joint_values
 
         self._processed_actions.copy_(processed)
+        # print(f"processed_actions: {self._processed_actions}")
 
     def apply_actions(self):
         self._asset.set_joint_position_target(self._processed_actions, joint_ids=self._joint_ids)

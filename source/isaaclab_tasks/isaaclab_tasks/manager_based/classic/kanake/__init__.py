@@ -3,9 +3,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""
-Ant locomotion environment (similar to OpenAI Gym Ant-v2).
-"""
 
 import gymnasium as gym
 

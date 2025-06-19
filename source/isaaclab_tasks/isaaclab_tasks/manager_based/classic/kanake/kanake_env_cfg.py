@@ -119,7 +119,7 @@ class ActionsCfg:
     #     asset_name="robot",
     #     joint_names=[".*"]
     # )
-    joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"])
+    joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
     # joint_sine_amp = mdp.JointSineAmpActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
@@ -219,19 +219,19 @@ class EventCfg:
         },
     )
 
-#     physics_material = EventTerm(
-#         func=mdp.randomize_rigid_body_material,
-#         mode="startup",
-#         params={
-#             "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
-#             "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
-# ),
-#             "static_friction_range": (0.1, 1.0),
-#             "dynamic_friction_range": (0.1, 1.0),
-#             "restitution_range": (0.0, 0.0),
-#             "num_buckets": 64,
-#         },
-#     )
+    physics_material = EventTerm(
+        func=mdp.randomize_rigid_body_material,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
+            "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
+),
+            "static_friction_range": (0.4, 1.0),
+            "dynamic_friction_range": (0.4, 1.0),
+            "restitution_range": (0.0, 0.2),
+            "num_buckets": 64,
+        },
+    )
 
 #     add_base_mass = EventTerm(
 #         func=mdp.randomize_rigid_body_mass,
@@ -265,7 +265,7 @@ class RewardsCfg:
     # task terms
     kanake_position_command_error = RewTerm(
         func=mdp.kanake_position_command_error,
-        weight=-3.0,
+        weight=-5.0,
         params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "kanake_command"},
     )
     kanake_position_command_error_tanh = RewTerm(
@@ -273,17 +273,30 @@ class RewardsCfg:
         weight=2.0,
         params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "std": 0.1, "command_name": "kanake_command"},
     )
+
+    kanake_progress_command_reward = RewTerm(
+        func=mdp.kanake_progress_command_reward,
+        weight=5.0,
+        params={
+            "command_name": "kanake_command",
+            "asset_cfg": SceneEntityCfg("robot")
+        }
+    )
+
     # orientation_command_error = RewTerm(
     #     func=mdp.orientation_command_error,
-    #     weight=-0.1,
-    #     params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "pose2d_command"},
+    #     weight=-0.2,
+    #     params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "kanake_command"},
     # )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
     upright = RewTerm(func=mdp.upright_posture_shaped, weight=3.0, params={"threshold": 0.8})
-
+    JointActionShiftReward = RewTerm(
+        func=mdp.JointActionShiftReward,
+        weight=5.0, 
+    )
     # BodyOrderReward = RewTerm(
     #     func=mdp.BodyOrderReward,
     #     weight=1.0,
@@ -301,7 +314,7 @@ class RewardsCfg:
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-1.0)
 
 
 

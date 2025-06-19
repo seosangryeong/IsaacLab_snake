@@ -51,7 +51,8 @@ class KanakeCommand(CommandTerm):
         self.pos_command_b = torch.zeros_like(self.pos_command_w)
         self.heading_command_b = torch.zeros_like(self.heading_command_w)
         # metrics
-        self.metrics["error_pos"] = torch.zeros(self.num_envs, device=self.device)
+        # self.metrics["error_pos"] = torch.zeros(self.num_envs, device=self.device)
+        
         self.metrics["error_heading"] = torch.zeros(self.num_envs, device=self.device)
 
     def __str__(self) -> str:
