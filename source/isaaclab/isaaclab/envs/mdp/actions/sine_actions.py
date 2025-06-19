@@ -183,7 +183,7 @@ if TYPE_CHECKING:
     from . import actions_cfg
 
 class JointSineAction(ActionTerm):
-    """사인파 기반 액션 term.
+    """사인파 기반 액션 .
     
     이 액션 term은 각 환경마다 (조인트 개수 + 4)개의 파라미터를 사용
       - 각 조인트별 진폭 (num_joints)
@@ -252,14 +252,19 @@ class JointSineAction(ActionTerm):
     def process_actions(self, actions: torch.Tensor, additional_joint_values: torch.Tensor = None):
         dt = self._env.step_dt
         self.update_time(dt)
-        print("clip before action",actions)
+        # print("clip before action",actions)
+        actions = 1.5 * torch.sigmoid(actions)
+        # print("sigmoid_actions",actions)
+        # min_vals, _ = actions.min(dim=1, keepdim=True)
+        # max_vals, _ = actions.max(dim=1, keepdim=True)
+        # actions = (actions - min_vals) / (max_vals - min_vals + 1e-8) * 2.0
         clip_ranges = getattr(self.cfg, "clip_ranges", [(-1.0, 1.0)] * (self._num_joints + 4))
         actions_clipped = torch.empty_like(actions)
         for i in range(self._num_joints + 4):
             actions_clipped[:, i] = torch.clamp(actions[:, i], min=clip_ranges[i][0], max=clip_ranges[i][1])
         actions = actions_clipped
         self._raw_actions[:] = actions
-        print(f"raw_actions: {self._raw_actions}")
+        # print(f"raw_actions: {self._raw_actions}")
 
         amplitudes = actions[:, :self._num_joints]  # (num_envs, num_joints)
         freq_v = actions[:, self._num_joints]       # (num_envs,)

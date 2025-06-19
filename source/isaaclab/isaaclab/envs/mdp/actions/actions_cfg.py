@@ -338,12 +338,12 @@ class JointSineActionCfg(JointActionCfg):
     # (0.0, 0.6),  # amplitude for joint 14
     # (0.0, 0.6),  # amplitude for joint 15
     # (0.0, 0.6),  # amplitude for joint 16
-    *((0.0, 0.8) for _ in range(16)),  # amplitude 
+    *((0.2, 1.0) for _ in range(16)),  # amplitude 
 
 
-    (0.6, 1.4),  # frequency_vertical
+    (0.2, 1.0),  # frequency_vertical
     (np.pi/4, np.pi/2),  # phase_vertical
-    (0.6, 1.4),  # frequency_horizontal
+    (0.2, 1.0),  # frequency_horizontal
     (np.pi/4, np.pi/2),  # phase_horizontal
          
 

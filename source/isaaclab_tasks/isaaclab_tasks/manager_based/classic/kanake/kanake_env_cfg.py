@@ -9,6 +9,8 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.terrains import TerrainImporterCfg
+from isaaclab.managers import CurriculumTermCfg as CurrTerm
+
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 import math
@@ -44,34 +46,34 @@ box_cfg = CUBOID_MARKER_CFG.replace(
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
 
-    terrain = TerrainImporterCfg(
-        # prim_path="/World/ground",
-        # terrain_type="generator",
-        # terrain_generator=KANAKE_PLANE_CFG,
-        # max_init_terrain_level=5,
-        # collision_group=-1,
+    # terrain = TerrainImporterCfg(
+    #     # prim_path="/World/ground",
+    #     # terrain_type="generator",
+    #     # terrain_generator=KANAKE_PLANE_CFG,
+    #     # max_init_terrain_level=5,
+    #     # collision_group=-1,
 
-        prim_path="/World/ground",
-        terrain_type="plane",
-        collision_group=-1,
+    #     prim_path="/World/ground",
+    #     terrain_type="plane",
+    #     collision_group=-1,
 
 
-        physics_material=sim_utils.RigidBodyMaterialCfg(
-            friction_combine_mode="multiply",
-            restitution_combine_mode="multiply",
-            static_friction=1.0,
-            dynamic_friction=1.0,
-        ),
-        # visual_material=sim_utils.PreviewSurfaceCfg(
-        #     # diffuse_color=(0.065, 0.0725, 0.080),#회색
-        #     diffuse_color=(1.0, 1.0, 1.0),
-        #     emissive_color=(0.0, 0.0, 0.0),
-        #     roughness= 0.5,
-        #     metallic = 0.3,
-        #     opacity = 1.0
-        # ),
-        debug_vis=False,
-    )
+    #     physics_material=sim_utils.RigidBodyMaterialCfg(
+    #         friction_combine_mode="multiply",
+    #         restitution_combine_mode="multiply",
+    #         static_friction=1.0,
+    #         dynamic_friction=1.0,
+    #     ),
+    #     # visual_material=sim_utils.PreviewSurfaceCfg(
+    #     #     # diffuse_color=(0.065, 0.0725, 0.080),#회색
+    #     #     diffuse_color=(1.0, 1.0, 1.0),
+    #     #     emissive_color=(0.0, 0.0, 0.0),
+    #     #     roughness= 0.5,
+    #     #     metallic = 0.3,
+    #     #     opacity = 1.0
+    #     # ),
+    #     debug_vis=False,
+    # )
 
     # robot
     robot = KANAKE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
@@ -94,8 +96,8 @@ class CommandsCfg:
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeCommandCfg.Ranges(
-            pos_x=(-2.0, 2.0),
-            pos_y=(-2.0, 2.0),
+            pos_x=(3.0, 3.0),
+            pos_y=(0.0, 0.0),
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
@@ -197,7 +199,7 @@ class EventCfg:
         mode="reset",
         params={
             # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (-1.57,1.57)},
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.2, 0.2), "yaw": (0.0,0.0)},
+            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.0, 0.0), "yaw": (0.0,0.0)},
             "velocity_range": {
                 "x": (0.0, 0.0),
                 "y": (0.0, 0.0),
@@ -274,14 +276,14 @@ class RewardsCfg:
         params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "std": 0.1, "command_name": "kanake_command"},
     )
 
-    kanake_progress_command_reward = RewTerm(
-        func=mdp.kanake_progress_command_reward,
-        weight=5.0,
-        params={
-            "command_name": "kanake_command",
-            "asset_cfg": SceneEntityCfg("robot")
-        }
-    )
+    # kanake_progress_command_reward = RewTerm(
+    #     func=mdp.kanake_progress_command_reward,
+    #     weight=5.0,
+    #     params={
+    #         "command_name": "kanake_command",
+    #         "asset_cfg": SceneEntityCfg("robot")
+    #     }
+    # )
 
     # orientation_command_error = RewTerm(
     #     func=mdp.orientation_command_error,
@@ -292,11 +294,11 @@ class RewardsCfg:
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
-    upright = RewTerm(func=mdp.upright_posture_shaped, weight=3.0, params={"threshold": 0.8})
-    JointActionShiftReward = RewTerm(
-        func=mdp.JointActionShiftReward,
-        weight=5.0, 
-    )
+    upright = RewTerm(func=mdp.upright_posture_shaped, weight=2.0, params={"threshold": 0.8})
+    # JointActionShiftReward = RewTerm(
+    #     func=mdp.JointActionShiftReward,
+    #     weight=5.0, 
+    # )
     # BodyOrderReward = RewTerm(
     #     func=mdp.BodyOrderReward,
     #     weight=1.0,
@@ -312,9 +314,9 @@ class RewardsCfg:
     # )
     # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.2)
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
-    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
-    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-1.0)
+    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=0.0)
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=0.0)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
 
 
 
@@ -330,7 +332,17 @@ class TerminationsCfg:
 @configclass
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
-    pass
+    
+    dof_torques_l2 = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "dof_torques_l2", "weight": -1.0e-4, "num_steps": 6000}
+    )
+
+    dof_acc_l2 = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "dof_acc_l2", "weight": -2.5e-5, "num_steps": 6000}
+    )
+    action_rate_l2 = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.1, "num_steps": 6000}
+    )
 
 
 @configclass
@@ -352,14 +364,14 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 20.0
+        self.episode_length_s = 10.0
         # simulation settings
         self.sim.dt = 1 / 80.0
         self.sim.render_interval = self.decimation
         # self.sim.render_interval = 2
         self.sim.physx.bounce_threshold_velocity = 0.2
-        self.sim.physics_material.static_friction = 0.5
-        self.sim.physics_material.dynamic_friction = 0.5
+        self.sim.physics_material.static_friction = 1.0
+        self.sim.physics_material.dynamic_friction = 1.0
         self.sim.physics_material.restitution = 0.0
 
 
