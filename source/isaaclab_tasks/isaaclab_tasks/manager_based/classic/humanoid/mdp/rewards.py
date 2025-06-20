@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -288,16 +288,21 @@ class progress_y_penalty(ManagerTermBase):
 
 
 
+<<<<<<< HEAD
 class joint_limits_penalty_ratio(ManagerTermBase):
 
     """Penalty for violating joint limits weighted by the gear ratio."""
+=======
+class joint_pos_limits_penalty_ratio(ManagerTermBase):
+    """Penalty for violating joint position limits weighted by the gear ratio."""
+>>>>>>> 91ad4944f2b7fad29d52c04a5264a082bcaad71d
 
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
         # add default argument
-        if "asset_cfg" not in cfg.params:
-            cfg.params["asset_cfg"] = SceneEntityCfg("robot")
+        asset_cfg = cfg.params.get("asset_cfg", SceneEntityCfg("robot"))
         # extract the used quantities (to enable type-hinting)
-        asset: Articulation = env.scene[cfg.params["asset_cfg"].name]
+        asset: Articulation = env.scene[asset_cfg.name]
+
         # resolve the gear ratio for each joint
         self.gear_ratio = torch.ones(env.num_envs, asset.num_joints, device=env.device)
         index_list, _, value_list = string_utils.resolve_matching_names_values(
@@ -307,7 +312,11 @@ class joint_limits_penalty_ratio(ManagerTermBase):
         self.gear_ratio_scaled = self.gear_ratio / torch.max(self.gear_ratio)
 
     def __call__(
-        self, env: ManagerBasedRLEnv, threshold: float, gear_ratio: dict[str, float], asset_cfg: SceneEntityCfg
+        self,
+        env: ManagerBasedRLEnv,
+        threshold: float,
+        gear_ratio: dict[str, float],
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     ) -> torch.Tensor:
         # extract the used quantities (to enable type-hinting)
         asset: Articulation = env.scene[asset_cfg.name]
@@ -330,10 +339,10 @@ class power_consumption(ManagerTermBase):
 
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
         # add default argument
-        if "asset_cfg" not in cfg.params:
-            cfg.params["asset_cfg"] = SceneEntityCfg("robot")
+        asset_cfg = cfg.params.get("asset_cfg", SceneEntityCfg("robot"))
         # extract the used quantities (to enable type-hinting)
-        asset: Articulation = env.scene[cfg.params["asset_cfg"].name]
+        asset: Articulation = env.scene[asset_cfg.name]
+
         # resolve the gear ratio for each joint
         self.gear_ratio = torch.ones(env.num_envs, asset.num_joints, device=env.device)
         index_list, _, value_list = string_utils.resolve_matching_names_values(
@@ -342,7 +351,9 @@ class power_consumption(ManagerTermBase):
         self.gear_ratio[:, index_list] = torch.tensor(value_list, device=env.device)
         self.gear_ratio_scaled = self.gear_ratio / torch.max(self.gear_ratio)
 
-    def __call__(self, env: ManagerBasedRLEnv, gear_ratio: dict[str, float], asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    def __call__(
+        self, env: ManagerBasedRLEnv, gear_ratio: dict[str, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+    ) -> torch.Tensor:
         # extract the used quantities (to enable type-hinting)
         asset: Articulation = env.scene[asset_cfg.name]
         # return power = torque * velocity (here actions: joint torques)
