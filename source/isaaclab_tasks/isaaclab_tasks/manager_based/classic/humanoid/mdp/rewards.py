@@ -913,7 +913,7 @@ def kanake_position_command_error(env: ManagerBasedRLEnv, command_name: str, ass
     root_pos[:, 2] = asset.data.default_root_state[:, 2]  # 기본 높이
     root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
     root_quat[:, 0] = 1.0  # [1,0,0,0]
-    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b) #->일단 쿼터니안 안쓰고 포지션값만 사용
     curr_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], :3]
     return torch.norm(curr_pos_w - des_pos_w, dim=1)
 

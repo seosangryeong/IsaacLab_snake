@@ -19,7 +19,7 @@ from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
 from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, CUBOID_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
 import torch
 # from isaaclab.terrains.config.kanake_plane import KANAKE_PLANE_CFG  # isort: skip
-
+import isaaclab_tasks.manager_based.classic.kanake.mdp.target_path as target_path
 import isaaclab_tasks.manager_based.classic.humanoid.mdp as mdp
 
 # Pre-defined configs
@@ -43,37 +43,38 @@ box_cfg = CUBOID_MARKER_CFG.replace(
 )
 
 
+
+
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
 
-    # terrain = TerrainImporterCfg(
-    #     # prim_path="/World/ground",
-    #     # terrain_type="generator",
-    #     # terrain_generator=KANAKE_PLANE_CFG,
-    #     # max_init_terrain_level=5,
-    #     # collision_group=-1,
+    terrain = TerrainImporterCfg(
+        prim_path="/World/ground",
+        terrain_type="usd",
+        usd_path="/home/nuc/IsaacLab/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
+        # terrain_type="plane",
 
-    #     prim_path="/World/ground",
-    #     terrain_type="plane",
-    #     collision_group=-1,
+        collision_group=-1,
 
 
-    #     physics_material=sim_utils.RigidBodyMaterialCfg(
-    #         friction_combine_mode="multiply",
-    #         restitution_combine_mode="multiply",
-    #         static_friction=1.0,
-    #         dynamic_friction=1.0,
-    #     ),
-    #     # visual_material=sim_utils.PreviewSurfaceCfg(
-    #     #     # diffuse_color=(0.065, 0.0725, 0.080),#회색
-    #     #     diffuse_color=(1.0, 1.0, 1.0),
-    #     #     emissive_color=(0.0, 0.0, 0.0),
-    #     #     roughness= 0.5,
-    #     #     metallic = 0.3,
-    #     #     opacity = 1.0
-    #     # ),
-    #     debug_vis=False,
-    # )
+
+
+        physics_material=sim_utils.RigidBodyMaterialCfg(
+            friction_combine_mode="multiply",
+            restitution_combine_mode="multiply",
+            static_friction=1.0,
+            dynamic_friction=1.0,
+        ),
+        # visual_material=sim_utils.PreviewSurfaceCfg(
+        #     # diffuse_color=(0.065, 0.0725, 0.080),#회색
+        #     diffuse_color=(1.0, 1.0, 1.0),
+        #     emissive_color=(0.0, 0.0, 0.0),
+        #     roughness= 0.5,
+        #     metallic = 0.3,
+        #     opacity = 1.0
+        # ),
+        debug_vis=False,
+    )
 
     # robot
     robot = KANAKE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
@@ -96,9 +97,9 @@ class CommandsCfg:
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeCommandCfg.Ranges(
-            pos_x=(3.0, 3.0),
+            pos_x=(5.0, 5.0),
             pos_y=(0.0, 0.0),
-            heading=(-math.pi, math.pi),
+            heading=(0.0, 0.0),
         ),
         debug_vis=True,
 
@@ -152,6 +153,7 @@ class ObservationsCfg:
         """Observations for the policy."""
         joint_pos = ObsTerm(func=mdp.joint_pos)
         joint_vel = ObsTerm(func=mdp.joint_vel)
+        joint_torq = ObsTerm(func=mdp.joint_torq)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
 
         actions = ObsTerm(func=mdp.last_action)
@@ -169,6 +171,8 @@ class ObservationsCfg:
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
         base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+        joint_torq = ObsTerm(func=mdp.joint_torq)
+
         # base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (5.0, 0.0, 0.0)})
         # base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (5.0, 0.0, 0.0)})
         # # joint_pos = ObsTerm(func=mdp.joint_pos)
@@ -199,7 +203,7 @@ class EventCfg:
         mode="reset",
         params={
             # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (-1.57,1.57)},
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.0, 0.0), "yaw": (0.0,0.0)},
+            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.0, 0.02), "yaw": (0.0,0.0)},
             "velocity_range": {
                 "x": (0.0, 0.0),
                 "y": (0.0, 0.0),
@@ -212,14 +216,14 @@ class EventCfg:
     )
 
 
-    reset_robot_joints = EventTerm(
-        func=mdp.reset_joints_by_offset,
-        mode="reset",
-        params={
-            "position_range": (-np.pi/6, np.pi/6),  
-            "velocity_range": (0, 0),
-        },
-    )
+    # reset_robot_joints = EventTerm(
+    #     func=mdp.reset_joints_by_offset,
+    #     mode="reset",
+    #     params={
+    #         "position_range": (-np.pi/6, np.pi/6),  
+    #         "velocity_range": (0, 0),
+    #     },
+    # )
 
     physics_material = EventTerm(
         func=mdp.randomize_rigid_body_material,
@@ -264,10 +268,9 @@ class RewardsCfg:
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    # task terms
     kanake_position_command_error = RewTerm(
         func=mdp.kanake_position_command_error,
-        weight=-5.0,
+        weight=-3.0,
         params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "kanake_command"},
     )
     kanake_position_command_error_tanh = RewTerm(
@@ -295,6 +298,9 @@ class RewardsCfg:
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
     upright = RewTerm(func=mdp.upright_posture_shaped, weight=2.0, params={"threshold": 0.8})
+    terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
+
+
     # JointActionShiftReward = RewTerm(
     #     func=mdp.JointActionShiftReward,
     #     weight=5.0, 
@@ -314,9 +320,9 @@ class RewardsCfg:
     # )
     # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.2)
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
-    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=0.0)
-    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=0.0)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
+    # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
+    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
 
 
 
@@ -325,7 +331,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    # max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.18})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.2})
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
 
@@ -334,14 +340,14 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
     
     dof_torques_l2 = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "dof_torques_l2", "weight": -1.0e-4, "num_steps": 6000}
+        func=mdp.modify_reward_weight, params={"term_name": "dof_torques_l2", "weight": -1.0e-4, "num_steps": 10000}
     )
 
     dof_acc_l2 = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "dof_acc_l2", "weight": -2.5e-5, "num_steps": 6000}
+        func=mdp.modify_reward_weight, params={"term_name": "dof_acc_l2", "weight": -2.5e-5, "num_steps": 10000}
     )
     action_rate_l2 = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.1, "num_steps": 6000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.1, "num_steps": 10000}
     )
 
 

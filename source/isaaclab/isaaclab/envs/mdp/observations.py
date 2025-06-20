@@ -157,6 +157,14 @@ def joint_vel_rel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityC
     return asset.data.joint_vel[:, asset_cfg.joint_ids] - asset.data.default_joint_vel[:, asset_cfg.joint_ids]
 
 
+def joint_torq(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")):
+    """클립 이후의 토크 값"""
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    return asset.data.applied_torque[:,asset_cfg.joint_ids]
+
+
+
 """
 Sensors.
 """

@@ -83,6 +83,18 @@ def base_angle_to_target(
 
     return angle_to_target.unsqueeze(-1)
 
+def target_path(
+    env: ManagerBasedEnv, target_pos: tuple[float, float, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Target path vector from the base to the target position."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    # compute desired heading direction
+    to_target_pos = torch.tensor(target_pos, device=env.device) - asset.data.root_pos_w[:, :3]
+    to_target_pos[:, 2] = 0.0
+    to_target_dir = math_utils.normalize(to_target_pos)
+
+    return to_target_dir
 
 def base_forward_vector(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Forward vector of the base in the simulation world frame."""

@@ -27,6 +27,7 @@ MDP terminations.
 """
 
 
+
 def time_out(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Terminate the episode when the episode length exceeds the maximum episode length."""
     return env.episode_length_buf >= env.max_episode_length
@@ -46,6 +47,15 @@ def command_resample(env: ManagerBasedRLEnv, command_name: str, num_resamples: i
 Root terminations.
 """
 
+def root_pos_x(
+    env: ManagerBasedRLEnv, minimum_x: float, maximum_x: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Terminate when the asset's root position x is outside of the provided limits."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    return torch.logical_or(
+        asset.data.root_pos_w[:, 0] < minimum_x, asset.data.root_pos_w[:, 0] > maximum_x
+    )
 
 def bad_orientation(
     env: ManagerBasedRLEnv, limit_angle: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
