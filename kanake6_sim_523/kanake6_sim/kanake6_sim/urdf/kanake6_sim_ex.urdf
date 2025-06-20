@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-1-g15f4949  Build Version: 1.6.7594.29634
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="kanake6">
+  <link
+    name="tail">
+    <inertial>
+      <origin
+        xyz="0.042357 2.0001E-08 -2.3091E-09"
+        rpy="0 0 0" />
+      <mass
+        value="0.097262" />
+      <inertia
+        ixx="1.3388E-05"
+        ixy="-1.0303E-11"
+        ixz="1.1792E-12"
+        iyy="4.4738E-05"
+        iyz="-3.263E-13"
+        izz="4.3885E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/tail.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/tail.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Link15">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link15.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link15.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j16"
+    type="revolute">
+    <origin
+      xyz="0.07155 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="tail" />
+    <child
+      link="Link15" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link14">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link14.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link14.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j15"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link15" />
+    <child
+      link="Link14" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link13">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link13.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link13.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j14"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link14" />
+    <child
+      link="Link13" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link12">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link12.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link12.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j13"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link13" />
+    <child
+      link="Link12" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link11">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link11.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link11.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j12"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link12" />
+    <child
+      link="Link11" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+   </joint>
+</robot>
+

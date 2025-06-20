@@ -1,0 +1,1878 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-1-g15f4949  Build Version: 1.6.7594.29634
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="kanake6_sim">
+  <link
+    name="tail">
+    <inertial>
+      <origin
+        xyz="0.042357 2.0001E-08 -2.3091E-09"
+        rpy="0 0 0" />
+      <mass
+        value="0.097262" />
+      <inertia
+        ixx="1.3388E-05"
+        ixy="-1.0303E-11"
+        ixz="1.1792E-12"
+        iyy="4.4738E-05"
+        iyz="-3.263E-13"
+        izz="4.3885E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/tail.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/tail.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Link15">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link15.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link15.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j16"
+    type="revolute">
+    <origin
+      xyz="0.07155 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="tail" />
+    <child
+      link="Link15" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link14">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link14.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link14.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j15"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link15" />
+    <child
+      link="Link14" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link13">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link13.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link13.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j14"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link14" />
+    <child
+      link="Link13" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link12">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link12.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link12.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j13"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link13" />
+    <child
+      link="Link12" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link11">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link11.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link11.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j12"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link12" />
+    <child
+      link="Link11" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link10">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link10.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link10.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j11"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link11" />
+    <child
+      link="Link10" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link9">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link9.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link9.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j10"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link10" />
+    <child
+      link="Link9" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link8">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link8.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link8.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j9"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link9" />
+    <child
+      link="Link8" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link7">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link7.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link7.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j8"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link8" />
+    <child
+      link="Link7" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link6">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link6.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link6.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j7"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link7" />
+    <child
+      link="Link6" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link5">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link5.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link5.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j6"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link6" />
+    <child
+      link="Link5" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link4">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link4.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link4.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j5"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link5" />
+    <child
+      link="Link4" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link3">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link3.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j4"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link4" />
+    <child
+      link="Link3" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link2">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8269 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j3"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link3" />
+    <child
+      link="Link2" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="Link1">
+    <inertial>
+      <origin
+        xyz="0.028014 -4.451E-09 2.2161E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.06907" />
+      <inertia
+        ixx="9.6694E-06"
+        ixy="-1.3944E-11"
+        ixz="8.3913E-12"
+        iyy="1.5822E-05"
+        iyz="9.5867E-11"
+        izz="1.5931E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j2"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Link2" />
+    <child
+      link="Link1" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="head">
+    <inertial>
+      <origin
+        xyz="0.0275 1.7311E-06 -1.5899E-07"
+        rpy="0 0 0" />
+      <mass
+        value="0.033765" />
+      <inertia
+        ixx="5.2247E-06"
+        ixy="-1.1806E-09"
+        ixz="-6.205E-11"
+        iyy="7.0127E-06"
+        iyz="3.0927E-11"
+        izz="7.2231E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/head.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.8629 0.1568 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/head.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="j1"
+    type="revolute">
+    <origin
+      xyz="0.0426 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Link1" />
+    <child
+      link="head" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="10" />
+  </joint>
+  <link
+    name="head_cover">
+    <inertial>
+      <origin
+        xyz="0.022832 -3.9351E-07 3.9456E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.0028666" />
+      <inertia
+        ixx="9.8121E-07"
+        ixy="-6.3573E-12"
+        ixz="9.0409E-12"
+        iyy="9.7139E-07"
+        iyz="1.8224E-10"
+        izz="1.0315E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/head_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/head_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="head_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="head" />
+    <child
+      link="head_cover" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Link1_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link1_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link1_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link1_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link1" />
+    <child
+      link="Link1_cover" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Link2_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link2_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link2_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link2_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link2" />
+    <child
+      link="Link2_cover" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Link3_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link3_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link3_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link3_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link3" />
+    <child
+      link="Link3_cover" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Link4_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link4_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link4_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link4_bond_joint"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link4" />
+    <child
+      link="Link4_cover" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Link5_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link5_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link5_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link5_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link5" />
+    <child
+      link="Link5_cover" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Link6_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link6_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link6_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link6_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link6" />
+    <child
+      link="Link6_cover" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Link7_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link7_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link7_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link7_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link7" />
+    <child
+      link="Link7_cover" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Link8_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link8_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link8_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link8_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link8" />
+    <child
+      link="Link8_cover" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Link9_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link9_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link9_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link9_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link9" />
+    <child
+      link="Link9_cover" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Link10_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link10_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link10_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link10_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link10" />
+    <child
+      link="Link10_cover" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Link11_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link11_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link11_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link11_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link11" />
+    <child
+      link="Link11_cover" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Link12_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link12_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link12_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link12_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link12" />
+    <child
+      link="Link12_cover" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Link13_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link13_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link13_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link13_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link13" />
+    <child
+      link="Link13_cover" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Link14_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.56
+        57E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link14_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link14_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link14_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link14" />
+    <child
+      link="Link14_cover" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Link15_cover">
+    <inertial>
+      <origin
+        xyz="0.017298 9.5657E-07 1.1502E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0021812" />
+      <inertia
+        ixx="7.4657E-07"
+        ixy="-1.616E-11"
+        ixz="-1.9461E-10"
+        iyy="6.423E-07"
+        iyz="8.7012E-11"
+        izz="5.4429E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link15_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/Link15_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Link15_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link15" />
+    <child
+      link="Link15_cover" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="tail_cover">
+    <inertial>
+      <origin
+        xyz="0.003826 0 -0.0004"
+        rpy="0 0 0" />
+      <mass
+        value="0.00437" />
+      <inertia
+        ixx="1.4962E-06"
+        ixy="3.14E-09"
+        ixz="3E-11"
+        iyy="1.43478E-06"
+        iyz="-1E-11"
+        izz="1.31077E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/tail_cover.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.78431 0.19608 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://kanake6_sim/meshes/tail_cover.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="tail_bond_cover"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="tail" />
+    <child
+      link="tail_cover" />
+    <axis
+      xyz="0 0 0" />
+      
+  </joint>
+</robot>
