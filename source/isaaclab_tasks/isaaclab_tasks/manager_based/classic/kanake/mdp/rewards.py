@@ -7,16 +7,18 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
+from isaaclab.assets import RigidObject
 
 import isaaclab.utils.math as math_utils
 import isaaclab.utils.string as string_utils
 from isaaclab.assets import Articulation
 from isaaclab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
-
+import torch.nn.functional as F
 from . import observations as obs
+from isaaclab.utils.math import combine_frame_transforms, quat_error_magnitude, quat_mul
 
 if TYPE_CHECKING:
-    from isaaclab.envs import ManagerBasedRLEnv
+    from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedEnv
 
 
 def upright_posture_bonus(
@@ -24,10 +26,23 @@ def upright_posture_bonus(
 ) -> torch.Tensor:
     """Reward for maintaining an upright posture.
     로봇의 로컬좌표계 z축과 월드좌표계 z축의 내적. -1에서 1 사이(1에 가까울수록 upright)"""
-    up_proj = obs.base_up_proj(env, asset_cfg).squeeze(-1)
+    up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)
     # print("up_proj", up_proj)
     return (up_proj > threshold).float()
 
+def upright_posture_shaped(env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Shaped upright posture reward:
+    - 아래는 선형 증가
+    - threshold 이후는 모두 1.0 고정
+    """
+    up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)  # [-1, 1]
+    up_proj_clipped = torch.clip(up_proj, min=0.0)  # [0, 1]로 제한
+    reward = torch.where(
+        up_proj_clipped > threshold,
+        torch.ones_like(up_proj_clipped),
+        up_proj_clipped / threshold
+    )
+    return reward
 
 def move_to_target_bonus(
     env: ManagerBasedRLEnv,
@@ -451,3 +466,150 @@ class LocalWorldAlignmentReward(ManagerTermBase):
         reward = torch.exp(-self.alpha * angle_error)
         
         return reward
+
+def kanake_position_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+    # 로봇 위치를 항상 (0,0,기본높이), 회전은 [1,0,0,0]로 가정
+    batch = des_pos_b.shape[0]
+    root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
+    root_pos[:, 2] = asset.data.default_root_state[:, 2]  # 기본 높이
+    root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
+    root_quat[:, 0] = 1.0  # [1,0,0,0]
+    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b) #->일단 쿼터니안 안쓰고 포지션값만 사용
+    curr_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], :3]
+    return torch.norm(curr_pos_w - des_pos_w, dim=1)
+
+def kanake_position_command_error_tanh(
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+    batch = des_pos_b.shape[0]
+    root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
+    root_pos[:, 2] = asset.data.default_root_state[:, 2]
+    root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
+    root_quat[:, 0] = 1.0
+    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+    curr_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], :3]
+    distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
+    return 1 - torch.tanh(distance / std)
+
+def kanake_position_command_threshold_reward(
+    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg, threshold: float = 0.1) -> torch.Tensor:
+    """
+    명령 좌표에 threshold 이내로 접근하면 보상.
+    """
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+    
+    # 로봇 위치를 항상 (0,0,기본높이), 회전은 [1,0,0,0]로 가정
+    batch = des_pos_b.shape[0]
+    root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
+    root_pos[:, 2] = asset.data.default_root_state[:, 2]  # 기본 높이
+    root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
+    root_quat[:, 0] = 1.0  # [1,0,0,0]
+    
+    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+    curr_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], :3]
+    
+    # 현재 위치와 목표 위치 사이의 거리 계산
+    distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
+    
+    # 거리가 임계값(threshold) 이내이면 보상 부여
+    reward = torch.where(
+        distance <= threshold,
+        torch.ones_like(distance),          # 임계값 이내면 1
+        torch.zeros_like(distance)          # 임계값 초과면 0
+    )
+    
+    return reward
+
+class kanake_progress_command_reward(ManagerTermBase):
+    """Reward for making progress towards the commanded target position."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.potentials = torch.zeros(env.num_envs, device=env.device)
+        self.prev_potentials = torch.zeros_like(self.potentials)
+
+    def reset(self, env_ids: torch.Tensor):
+        asset: Articulation = self._env.scene["robot"]
+
+        # 현재 command 가져오기
+        command = self._env.command_manager.get_command(self.cfg.params["command_name"])
+        des_pos_b = command[:, :3]
+
+        # 로봇 기준 frame → world frame 변환
+        batch = des_pos_b.shape[0]
+        root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
+        root_pos[:, 2] = asset.data.default_root_state[:, 2]
+        root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
+        root_quat[:, 0] = 1.0
+        des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+
+        # 현재 위치
+        curr_pos_w = asset.data.root_pos_w
+
+        to_target_pos = des_pos_w - curr_pos_w
+        to_target_pos[:, 2] = 0.0  # 수평면 projection 
+
+        self.potentials[env_ids] = -torch.norm(to_target_pos[env_ids], p=2, dim=-1) / self._env.step_dt
+        self.prev_potentials[env_ids] = self.potentials[env_ids]
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        asset: Articulation = env.scene[asset_cfg.name]
+
+        command = env.command_manager.get_command(command_name)
+        des_pos_b = command[:, :3]
+
+        batch = des_pos_b.shape[0]
+        root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
+        root_pos[:, 2] = asset.data.default_root_state[:, 2]
+        root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
+        root_quat[:, 0] = 1.0
+        des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+
+        curr_pos_w = asset.data.root_pos_w
+
+        to_target_pos = des_pos_w - curr_pos_w
+        to_target_pos[:, 2] = 0.0  # 수평 projection (선택사항)
+
+        self.prev_potentials[:] = self.potentials[:]
+        self.potentials[:] = -torch.norm(to_target_pos, p=2, dim=-1) / env.step_dt
+
+        return self.potentials - self.prev_potentials
+    
+
+def orientation_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    """Penalize tracking orientation error using shortest path."""
+    # 에셋 가져오기
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    
+    # heading 값(스칼라)만 추출 - 여기가 핵심 변경점
+    heading = command[:, 3]  # 모든 환경에 대한 heading 값 (스칼라)
+    
+    # heading을 z축 회전 쿼터니언으로 변환
+    # 쿼터니언 순서: (w, x, y, z) 형식
+    cos_yaw = torch.cos(heading * 0.5)
+    sin_yaw = torch.sin(heading * 0.5)
+    
+    # z축 회전에 대한 쿼터니언 (w, x, y, z)
+    des_quat_b = torch.zeros((heading.shape[0], 4), device=heading.device)
+    des_quat_b[:, 0] = cos_yaw  # w
+    des_quat_b[:, 3] = sin_yaw  # z
+    
+    # 월드 좌표계로 변환
+    des_quat_w = quat_mul(asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7], des_quat_b)
+    curr_quat_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7]
+    
+    return quat_error_magnitude(curr_quat_w, des_quat_w)

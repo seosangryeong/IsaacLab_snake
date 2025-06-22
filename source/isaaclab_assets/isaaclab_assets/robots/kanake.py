@@ -26,19 +26,23 @@ KANAKE_CFG = ArticulationCfg(
         usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
-            max_depenetration_velocity=10.0,
-            enable_gyroscopic_forces=True,
+            # retain_accelerations=False,
+            # linear_damping=0.0,
+            # angular_damping=0.0,
+            max_linear_velocity=100.0,
+            max_angular_velocity=100.0,
+            max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=False,
-            solver_position_iteration_count=50,
-            solver_velocity_iteration_count=20,
-            sleep_threshold=0.005,
-            stabilization_threshold=0.001,
+            enabled_self_collisions=True,
+            solver_position_iteration_count=20,
+            solver_velocity_iteration_count=0,
+            # sleep_threshold=0.005,
+            # stabilization_threshold=0.001,
         ),
-        collision_props=sim_utils.CollisionPropertiesCfg(
-            collision_enabled = True
-        ),
+        # collision_props=sim_utils.CollisionPropertiesCfg(
+        #     collision_enabled = True
+        # ),
     
             
         copy_from_source=True,
@@ -51,11 +55,12 @@ KANAKE_CFG = ArticulationCfg(
     actuators={
             "body": ImplicitActuatorCfg(
                 joint_names_expr=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-                stiffness = 50.0,
-                damping =30.0,
+                stiffness = 3.0,
+                damping =1.0,
                 # stiffness = 10.0,
                 # damping =5.0,
-                effort_limit = 5.0, #Nm
+                # effort_limit = 5.0, #Nm
+                effort_limit_sim = 10.0, #Nm
                 # velocity_limit = 5.7, #rad/s
 
             ),

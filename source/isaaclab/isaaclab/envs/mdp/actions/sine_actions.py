@@ -253,7 +253,7 @@ class JointSineAction(ActionTerm):
         dt = self._env.step_dt
         self.update_time(dt)
         # print("clip before action",actions)
-        actions = 1.6 * torch.sigmoid(actions)
+        # actions = 1.6 * torch.sigmoid(actions)
         # print("sigmoid_actions",actions)
         # min_vals, _ = actions.min(dim=1, keepdim=True)
         # max_vals, _ = actions.max(dim=1, keepdim=True)

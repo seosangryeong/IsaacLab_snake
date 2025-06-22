@@ -288,14 +288,8 @@ class progress_y_penalty(ManagerTermBase):
 
 
 
-<<<<<<< HEAD
-class joint_limits_penalty_ratio(ManagerTermBase):
-
-    """Penalty for violating joint limits weighted by the gear ratio."""
-=======
 class joint_pos_limits_penalty_ratio(ManagerTermBase):
     """Penalty for violating joint position limits weighted by the gear ratio."""
->>>>>>> 91ad4944f2b7fad29d52c04a5264a082bcaad71d
 
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
         # add default argument

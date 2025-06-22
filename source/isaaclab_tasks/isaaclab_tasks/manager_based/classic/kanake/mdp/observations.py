@@ -15,6 +15,15 @@ from isaaclab.managers import SceneEntityCfg
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
 
+def base_up_proj_kanake(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Projection of the base up vector onto the world up vector."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    # compute base up vector
+    base_up_vec = -asset.data.projected_gravity_b
+
+    return base_up_vec[:, 1].unsqueeze(-1)
+
 
 def base_yaw_roll(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Yaw and roll of the base in the simulation world frame."""

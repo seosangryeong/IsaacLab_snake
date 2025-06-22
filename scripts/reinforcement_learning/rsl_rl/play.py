@@ -157,17 +157,11 @@ def main():
 
     # export policy to onnx/jit
     export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
-<<<<<<< HEAD
     export_policy_as_jit(
         ppo_runner.alg.policy, ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.pt"
     )
     export_policy_as_onnx(
         ppo_runner.alg.policy, normalizer=ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.onnx"
-=======
-    export_policy_as_jit(policy_nn, ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.pt")
-    export_policy_as_onnx(
-        policy_nn, normalizer=ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.onnx"
->>>>>>> 91ad4944f2b7fad29d52c04a5264a082bcaad71d
     )
 
     dt = env.unwrapped.step_dt
