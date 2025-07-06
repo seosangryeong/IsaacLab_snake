@@ -205,7 +205,7 @@ class EventCfg:
         mode="reset",
         params={
             # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (-1.57,1.57)},
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.02, 0.02), "yaw": (0.0,0.0)},
+            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.1, 0.1), "yaw": (0.0,0.0)},
             "velocity_range": {
                 "x": (0.0, 0.0),
                 "y": (0.0, 0.0),
@@ -270,25 +270,26 @@ class RewardsCfg:
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    kanake_position_command_error = RewTerm(
-        func=mdp.kanake_position_command_error,
-        weight=-3.0,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "kanake_command"},
+    kanake_position_command_error_base = RewTerm(
+        func=mdp.kanake_position_command_error_base,
+        weight=-2.0,
+        params={"command_name": "kanake_command"},
     )
-    kanake_position_command_error_tanh = RewTerm(
-        func=mdp.kanake_position_command_error_tanh,
-        weight=2.0,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "std": 0.1, "command_name": "kanake_command"},
+    #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
+    kanake_position_command_error_tanh_base = RewTerm(
+        func=mdp.kanake_position_command_error_tanh_base,
+        weight=1.0,
+        params={"std": 0.3, "command_name": "kanake_command"},
     )
-    kanake_position_threshold_reward = RewTerm(
-        func=mdp.kanake_position_command_threshold_reward,
-        weight=10.0,
-        params={
-            "threshold": 0.1,  # 10cm
-            "command_name": "kanake_command",
-            "asset_cfg": SceneEntityCfg("robot", body_names=["head"])
-        }
-    )
+    # kanake_position_threshold_reward = RewTerm(
+    #     func=mdp.kanake_position_command_threshold_reward,
+    #     weight=10.0,
+    #     params={
+    #         "threshold": 0.1,  # 10cm
+    #         "command_name": "kanake_command",
+    #         "asset_cfg": SceneEntityCfg("robot", body_names=["head"])
+    #     }
+    # )
 
     # kanake_progress_command_reward = RewTerm(
     #     func=mdp.kanake_progress_command_reward,
@@ -299,10 +300,10 @@ class RewardsCfg:
     #     }
     # )
 
-    orientation_command_error = RewTerm(
-        func=mdp.orientation_command_error,
-        weight=-0.2,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), "command_name": "kanake_command"},
+    orientation_command_error_base = RewTerm(
+        func=mdp.orientation_command_error_base,
+        weight=-0.1,
+        params={"command_name": "kanake_command"},
     )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
@@ -335,7 +336,7 @@ class RewardsCfg:
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
 
 
 
@@ -344,7 +345,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.2})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.22})
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
 

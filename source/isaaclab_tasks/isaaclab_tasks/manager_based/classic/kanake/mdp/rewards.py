@@ -467,7 +467,7 @@ class LocalWorldAlignmentReward(ManagerTermBase):
         
         return reward
 
-def kanake_position_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+def kanake_position_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     asset: RigidObject = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
     des_pos_b = command[:, :3]
@@ -482,7 +482,7 @@ def kanake_position_command_error(env: ManagerBasedRLEnv, command_name: str, ass
     return torch.norm(curr_pos_w - des_pos_w, dim=1)
 
 def kanake_position_command_error_tanh(
-    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     asset: RigidObject = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
@@ -494,6 +494,42 @@ def kanake_position_command_error_tanh(
     root_quat[:, 0] = 1.0
     des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
     curr_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], :3]
+    distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
+    return 1 - torch.tanh(distance / std)
+
+def kanake_position_command_error_base(
+    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+    
+    # 로봇 루트의 위치와 자세 기준으로 변환
+    batch = des_pos_b.shape[0]
+    root_pos = asset.data.root_pos_w  # (B, 3)
+    root_quat = asset.data.root_quat_w  # (B, 4)
+
+    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+    curr_pos_w = asset.data.root_pos_w  # 루트 위치 사용
+    return torch.norm(curr_pos_w - des_pos_w, dim=1)
+
+def kanake_position_command_error_tanh_base(
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+
+    # 루트 포즈 사용
+    root_pos = asset.data.root_pos_w       # (B, 3)
+    root_quat = asset.data.root_quat_w     # (B, 4)
+
+    # 목표 위치를 월드 프레임으로 변환
+    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+
+    # 현재 위치: 루트 위치
+    curr_pos_w = asset.data.root_pos_w     # 루트 위치 사용
+
     distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
     return 1 - torch.tanh(distance / std)
 
@@ -589,7 +625,7 @@ class kanake_progress_command_reward(ManagerTermBase):
         return self.potentials - self.prev_potentials
     
 
-def orientation_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+def orientation_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize tracking orientation error using shortest path."""
     # 에셋 가져오기
     asset: RigidObject = env.scene[asset_cfg.name]
@@ -612,4 +648,33 @@ def orientation_command_error(env: ManagerBasedRLEnv, command_name: str, asset_c
     des_quat_w = quat_mul(asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7], des_quat_b)
     curr_quat_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7]
     
+    return quat_error_magnitude(curr_quat_w, des_quat_w)
+
+def orientation_command_error_base(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Penalize tracking orientation error using shortest path (root frame based)."""
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    
+    heading = command[:, 3]  # 각 환경의 yaw 값 (스칼라)
+
+    # z축 회전에 대한 쿼터니언 생성 (w, x, y, z)
+    cos_yaw = torch.cos(heading * 0.5)
+    sin_yaw = torch.sin(heading * 0.5)
+    des_quat_b = torch.zeros((heading.shape[0], 4), device=heading.device)
+    des_quat_b[:, 0] = cos_yaw  # w
+    des_quat_b[:, 3] = sin_yaw  # z
+
+    # 루트 포즈 사용
+    root_quat = asset.data.root_quat_w  # (B, 4)
+    
+    # 바디 기준 쿼터니언을 월드 기준으로 변환
+    des_quat_w = quat_mul(root_quat, des_quat_b)
+
+    # 현재 루트 쿼터니언
+    curr_quat_w = root_quat
+
     return quat_error_magnitude(curr_quat_w, des_quat_w)

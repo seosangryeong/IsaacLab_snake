@@ -29,14 +29,14 @@ KANAKE_CFG = ArticulationCfg(
             # retain_accelerations=False,
             # linear_damping=0.0,
             # angular_damping=0.0,
-            max_linear_velocity=100.0,
-            max_angular_velocity=100.0,
+            max_linear_velocity=10.0,
+            max_angular_velocity=10.0,
             max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
             enabled_self_collisions=True,
             solver_position_iteration_count=20,
-            solver_velocity_iteration_count=0,
+            solver_velocity_iteration_count=10,
             # sleep_threshold=0.005,
             # stabilization_threshold=0.001,
         ),
@@ -60,7 +60,7 @@ KANAKE_CFG = ArticulationCfg(
                 # stiffness = 10.0,
                 # damping =5.0,
                 # effort_limit = 5.0, #Nm
-                effort_limit_sim = 10.0, #Nm
+                # effort_limit_sim = 10.0, #Nm
                 # velocity_limit = 5.7, #rad/s
 
             ),
