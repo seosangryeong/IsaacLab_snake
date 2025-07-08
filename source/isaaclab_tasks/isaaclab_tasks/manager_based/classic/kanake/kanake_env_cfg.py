@@ -205,7 +205,7 @@ class EventCfg:
         mode="reset",
         params={
             # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (-1.57,1.57)},
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.1, 0.1), "yaw": (0.0,0.0)},
+            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.1, 0.1), "yaw": (-np.pi,np.pi)},
             "velocity_range": {
                 "x": (0.0, 0.0),
                 "y": (0.0, 0.0),
@@ -337,6 +337,7 @@ class RewardsCfg:
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0001)
 
 
 

@@ -504,8 +504,7 @@ def kanake_position_command_error_base(
     command = env.command_manager.get_command(command_name)
     des_pos_b = command[:, :3]
     
-    # 로봇 루트의 위치와 자세 기준으로 변환
-    batch = des_pos_b.shape[0]
+    # batch = des_pos_b.shape[0]
     root_pos = asset.data.root_pos_w  # (B, 3)
     root_quat = asset.data.root_quat_w  # (B, 4)
 
@@ -520,7 +519,6 @@ def kanake_position_command_error_tanh_base(
     command = env.command_manager.get_command(command_name)
     des_pos_b = command[:, :3]
 
-    # 루트 포즈 사용
     root_pos = asset.data.root_pos_w       # (B, 3)
     root_quat = asset.data.root_quat_w     # (B, 4)
 

@@ -20,10 +20,11 @@ import os
 # Configuration
 ##
 
+
 KANAKE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
+        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0708.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             # retain_accelerations=False,
