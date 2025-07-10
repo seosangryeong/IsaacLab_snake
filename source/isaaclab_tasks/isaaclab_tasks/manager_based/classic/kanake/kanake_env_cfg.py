@@ -115,7 +115,7 @@ class ActionsCfg:
     #     asset_name="robot", 
     #     joint_names=[".*"], 
     #     scale=1.0,
-    #     clip={".*": (-3.0, 3.0)}
+    #     # clip={".*": (-3.0, 3.0)}
     #     )
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
@@ -272,14 +272,14 @@ class RewardsCfg:
     # )
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-2.0,
+        weight=3.0,
         params={"command_name": "kanake_command"},
     )
     #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
     kanake_position_command_error_tanh_base = RewTerm(
         func=mdp.kanake_position_command_error_tanh_base,
-        weight=1.0,
-        params={"std": 0.3, "command_name": "kanake_command"},
+        weight=3.0,
+        params={"std": 0.2, "command_name": "kanake_command"},
     )
     # kanake_position_threshold_reward = RewTerm(
     #     func=mdp.kanake_position_command_threshold_reward,
@@ -302,14 +302,14 @@ class RewardsCfg:
 
     orientation_command_error_base = RewTerm(
         func=mdp.orientation_command_error_base,
-        weight=-0.1,
+        weight=-0.07,
         params={"command_name": "kanake_command"},
     )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
-    upright = RewTerm(func=mdp.upright_posture_shaped, weight=3.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.upright_posture_shaped, weight=1.0, params={"threshold": 0.8})
     terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
 
 
@@ -334,10 +334,11 @@ class RewardsCfg:
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
+    dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.005)
+    # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0001)
 
 
 

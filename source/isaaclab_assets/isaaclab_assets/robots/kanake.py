@@ -35,9 +35,9 @@ KANAKE_CFG = ArticulationCfg(
             max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=True,
-            solver_position_iteration_count=20,
-            solver_velocity_iteration_count=10,
+            enabled_self_collisions=False,
+            solver_position_iteration_count=4,
+            solver_velocity_iteration_count=4,
             # sleep_threshold=0.005,
             # stabilization_threshold=0.001,
         ),
@@ -56,12 +56,12 @@ KANAKE_CFG = ArticulationCfg(
     actuators={
             "body": ImplicitActuatorCfg(
                 joint_names_expr=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-                stiffness = 3.0,
-                damping =1.0,
+                stiffness = 1.0,
+                damping =0.25,
                 # stiffness = 10.0,
                 # damping =5.0,
                 # effort_limit = 5.0, #Nm
-                # effort_limit_sim = 10.0, #Nm
+                effort_limit_sim = 10.0, #Nm
                 # velocity_limit = 5.7, #rad/s
 
             ),

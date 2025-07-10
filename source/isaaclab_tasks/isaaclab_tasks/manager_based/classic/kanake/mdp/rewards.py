@@ -510,7 +510,8 @@ def kanake_position_command_error_base(
 
     des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
     curr_pos_w = asset.data.root_pos_w  # 루트 위치 사용
-    return torch.norm(curr_pos_w - des_pos_w, dim=1)
+    dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
+    return torch.exp(-dis)  
 
 def kanake_position_command_error_tanh_base(
     env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
@@ -629,7 +630,7 @@ def orientation_command_error(env: ManagerBasedRLEnv, command_name: str, asset_c
     asset: RigidObject = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
     
-    # heading 값(스칼라)만 추출 - 여기가 핵심 변경점
+    # heading 값(스칼라)만 추출 
     heading = command[:, 3]  # 모든 환경에 대한 heading 값 (스칼라)
     
     # heading을 z축 회전 쿼터니언으로 변환
@@ -668,6 +669,7 @@ def orientation_command_error_base(
 
     # 루트 포즈 사용
     root_quat = asset.data.root_quat_w  # (B, 4)
+    # print("root_quat", root_quat[0])
     
     # 바디 기준 쿼터니언을 월드 기준으로 변환
     des_quat_w = quat_mul(root_quat, des_quat_b)
