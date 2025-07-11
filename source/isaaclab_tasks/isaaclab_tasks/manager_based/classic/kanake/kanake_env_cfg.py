@@ -16,7 +16,7 @@ from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 import math
 import numpy as np
 from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
-from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, CUBOID_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
+# from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, CUBOID_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
 import torch
 # from isaaclab.terrains.config.kanake_plane import KANAKE_PLANE_CFG  # isort: skip
 import isaaclab_tasks.manager_based.classic.kanake.mdp.target_path as target_path
@@ -26,22 +26,22 @@ import isaaclab_tasks.manager_based.classic.kanake.mdp as mdp
 # Pre-defined configs
 from isaaclab_assets.robots.kanake import KANAKE_CFG 
 
-TARGET_MARKER_CFG = FRAME_MARKER_CFG.replace(prim_path="/World/target_marker")
-arrow_cfg = GREEN_ARROW_X_MARKER_CFG.replace(
-    prim_path="/World/my_green_arrow",
-    markers={
-        k: v.replace(scale=(1.0, 1.0, 2.0)) for k, v in GREEN_ARROW_X_MARKER_CFG.markers.items()
-    }
-)
-TARGET_BOX = CUBOID_MARKER_CFG.replace( prim_path="/World/target_box")
-box_cfg = CUBOID_MARKER_CFG.replace(
-    prim_path="/World/target_box",
-    markers={
-        "cuboid": CUBOID_MARKER_CFG.markers["cuboid"].replace(
-            size=(0.1, 0.1, 0.1),
-        )
-    }
-)
+# TARGET_MARKER_CFG = FRAME_MARKER_CFG.replace(prim_path="/World/target_marker")
+# arrow_cfg = GREEN_ARROW_X_MARKER_CFG.replace(
+#     prim_path="/World/my_green_arrow",
+#     markers={
+#         k: v.replace(scale=(1.0, 1.0, 2.0)) for k, v in GREEN_ARROW_X_MARKER_CFG.markers.items()
+#     }
+# )
+# TARGET_BOX = CUBOID_MARKER_CFG.replace( prim_path="/World/target_box")
+# box_cfg = CUBOID_MARKER_CFG.replace(
+#     prim_path="/World/target_box",
+#     markers={
+#         "cuboid": CUBOID_MARKER_CFG.markers["cuboid"].replace(
+#             size=(0.1, 0.1, 0.1),
+#         )
+#     }
+# )
 
 
 
@@ -272,14 +272,14 @@ class RewardsCfg:
     # )
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=3.0,
+        weight=2.0,
         params={"command_name": "kanake_command"},
     )
     #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
     kanake_position_command_error_tanh_base = RewTerm(
         func=mdp.kanake_position_command_error_tanh_base,
         weight=3.0,
-        params={"std": 0.2, "command_name": "kanake_command"},
+        params={"std": 0.15, "command_name": "kanake_command"},
     )
     # kanake_position_threshold_reward = RewTerm(
     #     func=mdp.kanake_position_command_threshold_reward,
@@ -300,9 +300,14 @@ class RewardsCfg:
     #     }
     # )
 
-    orientation_command_error_base = RewTerm(
-        func=mdp.orientation_command_error_base,
-        weight=-0.07,
+    # orientation_command_error_base = RewTerm(
+    #     func=mdp.orientation_command_error_base,
+    #     weight=-0.07,
+    #     params={"command_name": "kanake_command"},
+    # )
+    base_x_direction_alignment_reward = RewTerm(
+        func=mdp.base_x_direction_alignment_reward,
+        weight=0.5,
         params={"command_name": "kanake_command"},
     )
 
@@ -332,12 +337,14 @@ class RewardsCfg:
     # )
     # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.2)
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
-    # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
+    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
-    dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
+    # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.005)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    # energy = RewTerm(func=mdp.power_consumption, weight=-0.05, params={"gear_ratio": {".*": 15.0}})
+
     # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0001)
 
 

@@ -678,3 +678,50 @@ def orientation_command_error_base(
     curr_quat_w = root_quat
 
     return quat_error_magnitude(curr_quat_w, des_quat_w)
+
+
+def base_x_direction_alignment_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    threshold_deg: float = 10.0,  # 허용 각도 (degree)
+) -> torch.Tensor:
+    """
+    base의 로컬 x축 방향이 커맨드의 (x, y) 타겟을 바라보면 리워드
+    threshold_deg 이내로 정렬되면 1, 아니면 alignment 값 반환
+    """
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    # 커맨드의 목표 위치 (월드 좌표계)
+    target_xy = command[:, :2]  # shape: [num_envs, 2]
+    # 현재 base 위치 (월드 좌표계)
+    base_pos = asset.data.root_pos_w[:, :2]  # shape: [num_envs, 2]
+    # 현재 base 쿼터니언 (월드 좌표계)
+    base_quat = asset.data.root_quat_w  # shape: [num_envs, 4]
+
+    # base의 x축 방향 벡터 (월드 좌표계)
+    # 로컬 x축 [1, 0, 0]을 월드 좌표계로 변환
+    local_x = torch.tensor([1.0, 0.0, 0.0], device=base_quat.device).expand(base_quat.shape[0], 3)
+    base_x_world = math_utils.quat_apply(base_quat, local_x)[:, :2]  # shape: [num_envs, 2]
+
+    # base에서 타겟까지의 방향 벡터 (월드 좌표계)
+    to_target = target_xy - base_pos
+    to_target_norm = torch.norm(to_target, dim=-1, keepdim=True) + 1e-8
+    to_target_dir = to_target / to_target_norm  # shape: [num_envs, 2]
+
+    # base x축 방향 벡터 정규화
+    base_x_world_norm = torch.norm(base_x_world, dim=-1, keepdim=True) + 1e-8
+    base_x_dir = base_x_world / base_x_world_norm
+
+    # 두 벡터의 코사인 유사도 (alignment)
+    alignment = torch.sum(base_x_dir * to_target_dir, dim=-1)
+    alignment = torch.clamp(alignment, -1.0, 1.0)
+
+    # threshold_deg 이내면 1, 아니면 alignment 값
+    cos_threshold = torch.cos(torch.tensor(threshold_deg * 3.14159265 / 180.0, device=env.device))
+    reward = torch.where(
+        alignment >= cos_threshold,
+        torch.ones_like(alignment),
+        alignment
+    )
+    return reward

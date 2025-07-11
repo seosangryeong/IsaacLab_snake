@@ -94,27 +94,27 @@ def main():
     
     
     
-    from isaaclab.markers import VisualizationMarkers
-    from isaaclab_tasks.manager_based.classic.kanake.kanake_env_cfg import TARGET_MARKER_CFG,TARGET_BOX
+    # from isaaclab.markers import VisualizationMarkers
+    # from isaaclab_tasks.manager_based.classic.kanake.kanake_env_cfg import TARGET_MARKER_CFG,TARGET_BOX
 
-    import torch
-    target_marker = VisualizationMarkers(TARGET_BOX)
+    # import torch
+    # target_marker = VisualizationMarkers(TARGET_BOX)
 
 
 
-    from scipy.spatial.transform import Rotation as R
-    import torch
+    # from scipy.spatial.transform import Rotation as R
+    # import torch
 
-    device = env.unwrapped.device if hasattr(env.unwrapped, "device") else "cuda:0"
+    # device = env.unwrapped.device if hasattr(env.unwrapped, "device") else "cuda:0"
     # 오일러 각 순서: 'xyz', 각도 단위: 도
-    r = R.from_euler('xyz', [0, -90, 0], degrees=True)
-    quat = r.as_quat()  # [x, y, z, w]
-    orientation = torch.tensor([quat], device=device)  # shape: (1, 4)
+    # r = R.from_euler('xyz', [0, -90, 0], degrees=True)
+    # quat = r.as_quat()  # [x, y, z, w]
+    # orientation = torch.tensor([quat], device=device)  # shape: (1, 4)
 
-    position = torch.tensor([[3.0, 0.0, 0.1]], device=device)
-    scales = torch.tensor([[0.5, 0.5, 0.5]], device=device)
-    target_marker.set_visibility(True)
-    target_marker.visualize(position, orientation, scales)
+    # position = torch.tensor([[3.0, 0.0, 0.1]], device=device)
+    # scales = torch.tensor([[0.5, 0.5, 0.5]], device=device)
+    # target_marker.set_visibility(True)
+    # target_marker.visualize(position, orientation, scales)
     # ------------------------
 
 
