@@ -513,6 +513,57 @@ def kanake_position_command_error_base(
     dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
     return torch.exp(-dis)  
 
+class kanake_progress_to_command(ManagerTermBase):
+    """Reward for making progress towards the commanded position compared to initial distance."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        # 각 환경의 초기 거리를 저장할 버퍼
+        self.initial_distances = torch.zeros(env.num_envs, device=env.device)
+
+    def reset(self, env_ids: torch.Tensor):
+        """환경 리셋 시 호출되어 초기 거리를 저장"""
+        asset: RigidObject = self._env.scene[self.cfg.params.get("asset_cfg", SceneEntityCfg("robot")).name]
+        command = self._env.command_manager.get_command(self.cfg.params["command_name"])
+        des_pos_b = command[env_ids, :3]
+        
+        root_pos = asset.data.root_pos_w[env_ids]
+        root_quat = asset.data.root_quat_w[env_ids]
+
+        des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+        curr_pos_w = root_pos
+        
+        # 초기 거리 계산 및 저장
+        self.initial_distances[env_ids] = torch.norm(curr_pos_w - des_pos_w, dim=1)
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        """커맨드 위치까지의 진전 상황에 따른 보상 계산"""
+        asset: RigidObject = env.scene[asset_cfg.name]
+        command = env.command_manager.get_command(command_name)
+        des_pos_b = command[:, :3]
+        
+        root_pos = asset.data.root_pos_w
+        root_quat = asset.data.root_quat_w
+
+        des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+        curr_pos_w = root_pos
+        
+        # 현재 거리 계산
+        current_distances = torch.norm(curr_pos_w - des_pos_w, dim=1)
+        
+        # 거리 감소 비율 계산 (초기 거리에서 얼마나 줄어들었는지)
+        distance_reduction = (self.initial_distances - current_distances) / (self.initial_distances + 1e-6)
+        
+        # 감소 비율에 기반한 보상 (0에서 1 사이로 클램핑)
+        reward = torch.clamp(distance_reduction, 0.0, 1.0)
+        
+        return reward
+
 def kanake_position_command_error_tanh_base(
     env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:

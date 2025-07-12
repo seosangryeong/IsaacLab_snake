@@ -18,7 +18,7 @@ import numpy as np
 from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
 # from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, CUBOID_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
 import torch
-# from isaaclab.terrains.config.kanake_plane import KANAKE_PLANE_CFG  # isort: skip
+from isaaclab.terrains.config.kanake_plane import KANAKE_PLANE_CFG, KANAKE_RANDOM_TERRAIN_CFG # isort: skip
 import isaaclab_tasks.manager_based.classic.kanake.mdp.target_path as target_path
 # import isaaclab_tasks.manager_based.classic.humanoid.mdp as mdp
 import isaaclab_tasks.manager_based.classic.kanake.mdp as mdp
@@ -52,7 +52,9 @@ class MySceneCfg(InteractiveSceneCfg):
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         # terrain_type="usd",
-        terrain_type="plane",
+        # terrain_type="plane",
+        terrain_type="generator",
+        terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
         # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
         # terrain_type="plane",
 
@@ -270,9 +272,14 @@ class RewardsCfg:
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    kanake_position_command_error_base = RewTerm(
-        func=mdp.kanake_position_command_error_base,
-        weight=2.0,
+    # kanake_position_command_error_base = RewTerm(
+    #     func=mdp.kanake_position_command_error_base,
+    #     weight=2.0,
+    #     params={"command_name": "kanake_command"},
+    # )
+    kanake_progress_to_command = RewTerm(
+        func=mdp.kanake_progress_to_command,
+        weight=3.0,  
         params={"command_name": "kanake_command"},
     )
     #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
@@ -378,7 +385,7 @@ class CurriculumCfg:
 class kanakeEnvCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=0.0)
+    scene: MySceneCfg = MySceneCfg(num_envs=2048, env_spacing=0.0)
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
@@ -403,7 +410,9 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.physics_material.dynamic_friction = 1.0
         self.sim.physics_material.restitution = 0.0
 
-
+        self.sim.physx.gpu_max_rigid_contact_count = 2**24  
+        self.sim.physx.gpu_max_rigid_patch_count = 2**18  
+        self.sim.physx.gpu_heap_capacity = 2**27  
 
 
 class kanakeEnvCfg_PLAY(kanakeEnvCfg):
