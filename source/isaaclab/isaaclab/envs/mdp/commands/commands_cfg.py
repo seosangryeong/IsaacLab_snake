@@ -8,9 +8,10 @@ from dataclasses import MISSING
 
 from isaaclab.managers import CommandTermCfg
 from isaaclab.markers import VisualizationMarkersCfg
-from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
+from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, POSITION_GOAL_MARKER_CFG, CUBOID_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
 from isaaclab.utils import configclass
 
+import isaaclab.sim as sim_utils
 from .null_command import NullCommand
 from .pose_2d_command import TerrainBasedPose2dCommand, UniformPose2dCommand
 from .pose_command import UniformPoseCommand
@@ -283,10 +284,15 @@ class KanakeCommandCfg(CommandTermCfg):
     ranges: Ranges = MISSING
     """Distribution ranges for the position commands."""
 
-    goal_pose_visualizer_cfg: VisualizationMarkersCfg = GREEN_ARROW_X_MARKER_CFG.replace(
+    # goal_pose_visualizer_cfg: VisualizationMarkersCfg = GREEN_ARROW_X_MARKER_CFG.replace(
+    #     prim_path="/Visuals/Command/pose_goal"
+    # )
+    goal_pose_visualizer_cfg: VisualizationMarkersCfg = CUBOID_MARKER_CFG.replace(
         prim_path="/Visuals/Command/pose_goal"
     )
     """The configuration for the goal pose visualization marker. Defaults to GREEN_ARROW_X_MARKER_CFG."""
 
     # Set the scale of the visualization markers to (0.2, 0.2, 0.8)
-    goal_pose_visualizer_cfg.markers["arrow"].scale = (0.2, 0.2, 0.8)
+    # goal_pose_visualizer_cfg.markers["arrow"].scale = (0.2, 0.2, 0.8)
+    goal_pose_visualizer_cfg.markers["cuboid"].size = (0.1, 0.1, 0.2)
+    goal_pose_visualizer_cfg.markers["cuboid"].visual_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0))
