@@ -8,6 +8,7 @@ from dataclasses import MISSING
 from isaaclab.controllers import DifferentialIKControllerCfg, OperationalSpaceControllerCfg
 from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.utils import configclass
+from dataclasses import field
 
 from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions, sine_amp_actions,sine_actions_hold 
 import numpy as np
@@ -422,40 +423,45 @@ class JointSineVerticalActionCfg(JointActionCfg):
 
 @configclass
 class JointCPGActionCfg(JointActionCfg):
+    """
+    Matsuoka CPG 기반 Joint Action 설정
+    - 각 관절마다 하나의 oscillator (extensor–flexor 쌍)
+    - 액션으로는 토닉 입력 u와 CPG 파라미터(진폭, 억제, 시간상수 등)를 제어
+    """
+    # 사용할 ActionTerm 클래스 지정
     class_type: type[ActionTerm] = cpg_actions.JointCPGAction
 
-    joint_names: list[str] = ["j*"]          
+    # 적용할 조인트 이름 (USD 상의 prim 이름 와일드카드)
+    joint_names: list[str] = ["j*"]
+    preserve_order: bool = True
 
-    a:  float = 5.0      # 진폭 ODE 계수   (커지면 r 수렴이 빠름)
-    mu: float = 0.3      # 위상 결합 강도  (0.1~0.5 사이에서 조정)
-    B:  float = 1.0      # 외부 자극 게인  (θ 항 가중치)
+    # ────────── CPG 파라미터 ──────────
+    # mutual inhibition 강도 (a)
+    inhibition: float = 2.5
+    # 자기억제 계수 (b)
+    self_inhib: float = 2.5
+    # free-response bias (c)
+    tone_bias: float = 2.5
+    # 회로 응답 시간상수 (τ_r)
+    tau_r: float = 0.3
+    # 적응 시간상수 (τ_a)
+    tau_a: float = 0.6
+    # 출력 스케일 (ψ = scale * (z_e - z_f))
+    output_scale: float = 1.0
 
-    preserve_order: bool = True              # USD joint 순서 유지
+    # ────────── Action 클리핑 ──────────
+    # 토닉 입력 u_i 최소/최대
+    u_min: float = -1.0
+    u_max: float =  1.0
 
-    # ─────────── Action Clip Ranges ───────────
-    # ( R_vert, ω_vert, θ_vert,  R_horz, ω_horz, θ_horz )
-#     clip_ranges: list[tuple[float, float]] = [
-#     (0.0,  0.5),       # 진폭    R_vertical     [rad]
-#     (-0.2,  0.2),      # 주파수  ω_vertical     [Hz]
-#     (-3.14/4, 3.14/4),     # 위상차  θ_vertical     [rad]
-#     (-0.3,  0.3),      # 오프셋  δ_vertical     [rad]
+    # 추가 joint 값 스케일 (optional)
+    additional_joint_scale: float = 1.5
 
-#     (0.0,  0.5),       # 진폭    R_horizontal   [rad]
-#     (-0.5,  0.5),      # 주파수  ω_horizontal   [Hz]
-#     (-3.14/4, 3.14/4),     # 위상차  θ_horizontal   [rad]
-#     (-0.3,  0.3)       # 오프셋  δ_horizontal   [rad]
-# ]
-    clip_ranges: list[tuple[float, float]] = [
-    (0.5,  0.5),       # 진폭    R_vertical     [rad]
-    (0.2,  0.2),      # 주파수  ω_vertical     [Hz]
-    (3.14/4, 3.14/4),     # 위상차  θ_vertical     [rad]
-    (0.3,  0.3),      # 오프셋  δ_vertical     [rad]
-
-    (0.5,  0.5),       # 진폭    R_horizontal   [rad]
-    (-0.5,  0.5),      # 주파수  ω_horizontal   [Hz]
-    (3.14/4, 3.14/4),     # 위상차  θ_horizontal   [rad]
-    (0.3,  0.3)       # 오프셋  δ_horizontal   [rad]
-]
+    # ────────── Oscillator 간 결합 ──────────
+    # num_joints x num_joints 크기의 coupling matrix
+    # (인접만 mu 값으로 설정하려면 __post_init__에서 자동 생성 가능)
+    coupling_matrix: list[list[float]] = field(default_factory=lambda: [])
+    coupling_matrix: list[list[float]] = field(default_factory=list)
 
 
 @configclass

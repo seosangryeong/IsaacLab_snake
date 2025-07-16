@@ -238,42 +238,40 @@ class DistanceReward(ManagerTermBase):
     
 
 class BodyOrderReward(ManagerTermBase):
-    
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
         super().__init__(cfg, env)
 
     def __call__(
         self,
         env: ManagerBasedRLEnv,
-        target_pos: tuple[float, float, float],
+        command_name: str = "kanake_command",  # 커맨드 이름을 파라미터로 받음
         asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     ) -> torch.Tensor:
-
         asset: Articulation = env.scene[asset_cfg.name]
-        # 타겟 위치에서 (x, y) 좌표만 사용
-        target_pos = torch.tensor(target_pos, device=env.device)[:2]
+        # 커맨드에서 타겟 위치 추출
+        command = env.command_manager.get_command(command_name)
+        target_pos = command[:, :2]  # shape: [envs, 2]
 
         # 바디 순서: head, link1, ..., link15, tail (총 17개)
         order_names = ["head"] + [f"Link{i}" for i in range(1, 16)] + ["tail"]
 
-        # 각 바디의 (x, y) 위치를 asset.data.body_pos_w에서 추출 (shape: [envs, 2])
+        # 각 바디의 (x, y) 위치 추출
         body_positions = []
         for name in order_names:
             idx = asset.body_names.index(name)
             pos = asset.data.body_pos_w[:, idx, :2]
             body_positions.append(pos)
-        # shape: [envs, num_bodies (17), 2]
-        body_positions = torch.stack(body_positions, dim=1)
+        body_positions = torch.stack(body_positions, dim=1)  # [envs, 17, 2]
 
-        # 각 바디와 타겟 사이의 유클리드 거리 계산 (shape: [envs, 17])
-        # 타겟 위치는 모든 env에 대해 동일하므로 unsqueeze로 브로드캐스트
-        distances = torch.norm(body_positions - target_pos.unsqueeze(0), dim=-1)
+        # 각 바디와 타겟 사이의 유클리드 거리 계산
+        # target_pos shape: [envs, 2] → unsqueeze(1)로 브로드캐스트
+        distances = torch.norm(body_positions - target_pos.unsqueeze(1), dim=-1)  # [envs, 17]
 
-        # 인접한 바디 쌍마다 올바른 순서인지 확인: d[i] < d[i+1] 이어야 함
+        # 인접한 바디 쌍마다 올바른 순서인지 확인: d[i] < d[i+1]
         correct_order = distances[:, :-1] < distances[:, 1:]
-        # 올바른 쌍의 비율 (0~1): 모든 쌍이 올바르면 1, 하나라도 틀리면 그 비율만큼 보상 감소
         reward = correct_order.to(torch.float32).mean(dim=1)
 
+        return reward
         return reward
 
 
@@ -510,8 +508,8 @@ def kanake_position_command_error_base(
 
     des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
     curr_pos_w = asset.data.root_pos_w  # 루트 위치 사용
-    dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
-    return torch.exp(-dis)  
+    # dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
+    return torch.norm(curr_pos_w - des_pos_w, dim=1)
 
 class kanake_progress_to_command(ManagerTermBase):
     """Reward for making progress towards the commanded position compared to initial distance."""

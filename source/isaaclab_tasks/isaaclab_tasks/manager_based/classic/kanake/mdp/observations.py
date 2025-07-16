@@ -48,6 +48,11 @@ def base_up_proj(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
     return base_up_vec[:, 2].unsqueeze(-1)
 
 
+def base_pos(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Returns the base (root) position of the robot in world coordinates."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    return asset.data.root_pos_w
+
 def base_heading_proj(
     env: ManagerBasedEnv, target_pos: tuple[float, float, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
@@ -66,18 +71,38 @@ def base_heading_proj(
     return heading_proj.view(env.num_envs, 1)
 
 
-def base_angle_to_target(
-    env: ManagerBasedEnv, target_pos: tuple[float, float, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+# def base_angle_to_target(
+#     env: ManagerBasedEnv, target_pos: tuple[float, float, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+# ) -> torch.Tensor:
+#     """Angle between the base forward vector and the vector to the target."""
+#     # extract the used quantities (to enable type-hinting)
+#     asset: Articulation = env.scene[asset_cfg.name]
+#     # compute desired heading direction
+#     to_target_pos = torch.tensor(target_pos, device=env.device) - asset.data.root_pos_w[:, :3]
+#     walk_target_angle = torch.atan2(to_target_pos[:, 1], to_target_pos[:, 0])
+#     # compute base forward vector
+#     _, _, yaw = math_utils.euler_xyz_from_quat(asset.data.root_quat_w)
+#     # normalize angle to target to [-pi, pi]
+#     angle_to_target = walk_target_angle - yaw
+#     angle_to_target = torch.atan2(torch.sin(angle_to_target), torch.cos(angle_to_target))
+
+#     return angle_to_target.unsqueeze(-1)
+
+def base_angle_to_target_command(
+    env: ManagerBasedEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     """Angle between the base forward vector and the vector to the target."""
-    # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
-    # compute desired heading direction
-    to_target_pos = torch.tensor(target_pos, device=env.device) - asset.data.root_pos_w[:, :3]
+    # 커맨드에서 타겟 위치 추출
+    command = env.command_manager.get_command(command_name)
+    target_pos = command[:, :3]  # shape: [envs, 3]
+
+    # 타겟 위치와 현재 위치 차이
+    to_target_pos = target_pos - asset.data.root_pos_w[:, :3]
     walk_target_angle = torch.atan2(to_target_pos[:, 1], to_target_pos[:, 0])
-    # compute base forward vector
+    # 현재 yaw 추출
     _, _, yaw = math_utils.euler_xyz_from_quat(asset.data.root_quat_w)
-    # normalize angle to target to [-pi, pi]
+    # 각도 차이 [-pi, pi]로 정규화
     angle_to_target = walk_target_angle - yaw
     angle_to_target = torch.atan2(torch.sin(angle_to_target), torch.cos(angle_to_target))
 

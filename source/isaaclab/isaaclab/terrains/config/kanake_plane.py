@@ -40,7 +40,7 @@ KANAKE_RANDOM_TERRAIN_CFG = TerrainGeneratorCfg(
     sub_terrains={
         "random": terrain_gen.HfRandomUniformTerrainCfg(
             proportion=1.0,
-            noise_range=(0.0, 0.008),  # 높이 변화
+            noise_range=(0.0, 0.003),  # 높이 변화
             noise_step=0.001,          # 최소 변화
         ),
     },

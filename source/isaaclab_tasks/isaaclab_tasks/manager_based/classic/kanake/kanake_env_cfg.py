@@ -116,17 +116,20 @@ class ActionsCfg:
     # joint_effort = mdp.JointEffortActionCfg(
     #     asset_name="robot", 
     #     joint_names=[".*"], 
-    #     scale=1.0,
-    #     # clip={".*": (-3.0, 3.0)}
+    #     scale=0.2,
+    #     clip={".*": (-5.0, 5.0)}
     #     )
-    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
+    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
     # joint_sine_hold = mdp.JointSineHoldActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
     # )
-    joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
+    # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
+
+    # joint_cpg = mdp.JointCPGActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
+
     # joint_sine_amp = mdp.JointSineAmpActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
@@ -175,9 +178,10 @@ class ObservationsCfg:
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
         base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+        base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)
 
-        # base_angle_to_target = ObsTerm(func=mdp.base_angle_to_target, params={"target_pos": (5.0, 0.0, 0.0)})
+        base_angle_to_target_command = ObsTerm(func=mdp.base_angle_to_target_command, params={"command_name": "kanake_command"})
         # base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (5.0, 0.0, 0.0)})
         # # joint_pos = ObsTerm(func=mdp.joint_pos)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
@@ -272,20 +276,20 @@ class RewardsCfg:
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    # kanake_position_command_error_base = RewTerm(
-    #     func=mdp.kanake_position_command_error_base,
-    #     weight=2.0,
-    #     params={"command_name": "kanake_command"},
-    # )
-    kanake_progress_to_command = RewTerm(
-        func=mdp.kanake_progress_to_command,
-        weight=3.0,  
+    kanake_position_command_error_base = RewTerm(
+        func=mdp.kanake_position_command_error_base,
+        weight=-1.0,
         params={"command_name": "kanake_command"},
     )
+    # kanake_progress_to_command = RewTerm(
+    #     func=mdp.kanake_progress_to_command,
+    #     weight=3.0,  
+    #     params={"command_name": "kanake_command"},
+    # )
     #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
     kanake_position_command_error_tanh_base = RewTerm(
         func=mdp.kanake_position_command_error_tanh_base,
-        weight=3.0,
+        weight=1.0,
         params={"std": 0.15, "command_name": "kanake_command"},
     )
     # kanake_position_threshold_reward = RewTerm(
@@ -297,7 +301,11 @@ class RewardsCfg:
     #         "asset_cfg": SceneEntityCfg("robot", body_names=["head"])
     #     }
     # )
-
+    HeadTailDistancePenalty = RewTerm(
+        func=mdp.HeadTailDistancePenalty,
+        weight=-1.0,    
+        params={"min_distance" : 0.3}
+    )
     # kanake_progress_command_reward = RewTerm(
     #     func=mdp.kanake_progress_command_reward,
     #     weight=1.0,
@@ -329,11 +337,11 @@ class RewardsCfg:
     #     func=mdp.JointActionShiftReward,
     #     weight=5.0, 
     # )
-    # BodyOrderReward = RewTerm(
-    #     func=mdp.BodyOrderReward,
-    #     weight=1.0,
-    #     params={"target_pos": (0.0, 10.0, 0.0)}
-    # )
+    BodyOrderReward = RewTerm(
+        func=mdp.BodyOrderReward,
+        weight=1.0,
+        params={"command_name": "kanake_command"}
+    )
     # progress_x_reward = RewTerm(
     #     func=mdp.progress_x_reward,
     #     weight=20.0,
@@ -344,14 +352,20 @@ class RewardsCfg:
     # )
     # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.2)
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
-    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
+    # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
     # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-    # energy = RewTerm(func=mdp.power_consumption, weight=-0.05, params={"gear_ratio": {".*": 15.0}})
-
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.005)
+    # energy = RewTerm(
+    #     func=mdp.power_consumption,
+    #     weight=-0.005,
+    #     params={
+    #         "gear_ratio": {".*": 15.0},
+    #         "asset_cfg": SceneEntityCfg(name="robot"),  # ← 이 줄 추가
+    #     }
+    # )
     # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0001)
 
 
@@ -361,7 +375,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.22})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.3})
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
 
@@ -406,8 +420,8 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.render_interval = self.decimation
         # self.sim.render_interval = 2
         self.sim.physx.bounce_threshold_velocity = 0.2
-        self.sim.physics_material.static_friction = 1.0
-        self.sim.physics_material.dynamic_friction = 1.0
+        self.sim.physics_material.static_friction = 0.5
+        self.sim.physics_material.dynamic_friction = 0.5
         self.sim.physics_material.restitution = 0.0
 
         self.sim.physx.gpu_max_rigid_contact_count = 2**24  

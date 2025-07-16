@@ -434,3 +434,5 @@ def stepping_stones_terrain(difficulty: float, cfg: hf_terrains_cfg.HfSteppingSt
     hf_raw[x1:x2, y1:y2] = 0
     # round off the heights to the nearest vertical step
     return np.rint(hf_raw).astype(np.int16)
+
+

@@ -24,7 +24,7 @@ import os
 KANAKE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0708.usd",
+        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_0714.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             # retain_accelerations=False,
@@ -35,7 +35,7 @@ KANAKE_CFG = ArticulationCfg(
             max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=False,
+            enabled_self_collisions=True,
             solver_position_iteration_count=4,
             solver_velocity_iteration_count=4,
             # sleep_threshold=0.005,
@@ -46,7 +46,7 @@ KANAKE_CFG = ArticulationCfg(
         # ),
     
             
-        copy_from_source=True,
+        copy_from_source=False,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         joint_pos={".*": 0.0},
@@ -56,11 +56,11 @@ KANAKE_CFG = ArticulationCfg(
     actuators={
             "body": ImplicitActuatorCfg(
                 joint_names_expr=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-                stiffness = 1.0,
-                damping =0.25,
+                stiffness = 0.0,
+                damping =0.0,
                 # stiffness = 10.0,
                 # damping =5.0,
-                # effort_limit = 5.0, #Nm
+                effort_limit = 10.0, #Nm
                 effort_limit_sim = 10.0, #Nm
                 # velocity_limit = 5.7, #rad/s
 
