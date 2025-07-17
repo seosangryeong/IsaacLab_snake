@@ -158,11 +158,32 @@ class ObservationsCfg:
     @configclass
     class PolicyCfg(ObsGroup):
         """Observations for the policy."""
-        joint_pos = ObsTerm(func=mdp.joint_pos)
-        joint_vel = ObsTerm(func=mdp.joint_vel)
+        # joint_pos = ObsTerm(func=mdp.joint_pos)
+        # joint_vel = ObsTerm(func=mdp.joint_vel)
+        # joint_effort = ObsTerm(func=mdp.joint_effort)
+        # pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
+
+        # actions = ObsTerm(func=mdp.last_action)
+        # base_height = ObsTerm(func=mdp.base_pos_z)
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+        base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)
+
+        base_angle_to_target_command = ObsTerm(func=mdp.base_angle_to_target_command, params={"command_name": "kanake_command"})
+        # base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (5.0, 0.0, 0.0)})
+        # # joint_pos = ObsTerm(func=mdp.joint_pos)
+        # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
 
+        joint_vel = ObsTerm(func=mdp.joint_vel)
+        joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
+
+        joint_pos = ObsTerm(func=mdp.joint_pos)
+        joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
+
+        # joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         actions = ObsTerm(func=mdp.last_action)
 
         
@@ -188,9 +209,9 @@ class ObservationsCfg:
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
 
         joint_vel = ObsTerm(func=mdp.joint_vel)
+        joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         joint_pos = ObsTerm(func=mdp.joint_pos)
-
-        # joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
+        joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         actions = ObsTerm(func=mdp.last_action)
         def __post_init__(self):
             self.enable_corruption = False
@@ -303,8 +324,13 @@ class RewardsCfg:
     # )
     HeadTailDistancePenalty = RewTerm(
         func=mdp.HeadTailDistancePenalty,
-        weight=-1.0,    
+        weight=-0.2,    
         params={"min_distance" : 0.3}
+    )
+    DistanceReward = RewTerm(
+        func=mdp.DistanceReward,
+        weight=-0.2,
+        params={"threshold": 0.2}
     )
     # kanake_progress_command_reward = RewTerm(
     #     func=mdp.kanake_progress_command_reward,
@@ -339,7 +365,7 @@ class RewardsCfg:
     # )
     BodyOrderReward = RewTerm(
         func=mdp.BodyOrderReward,
-        weight=1.0,
+        weight=0.5,
         params={"command_name": "kanake_command"}
     )
     # progress_x_reward = RewTerm(
