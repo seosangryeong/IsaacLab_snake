@@ -52,9 +52,9 @@ class MySceneCfg(InteractiveSceneCfg):
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         # terrain_type="usd",
-        # terrain_type="plane",
-        terrain_type="generator",
-        terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
+        terrain_type="plane",
+        # terrain_type="generator",
+        # terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
         # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
         # terrain_type="plane",
 
@@ -96,13 +96,13 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
     # command -> (x,y,z)
-    kanake_command = mdp.KanakeCommandCfg(
+    kanake_command = mdp.KanakeWorldCommandCfg(
         asset_name="robot",
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
-        ranges=mdp.KanakeCommandCfg.Ranges(
-            pos_x=(-2.0, 2.0),
-            pos_y=(-2.0, 2.0),
+        ranges=mdp.KanakeWorldCommandCfg.Ranges(
+            pos_x=(-1.0, 1.0),
+            pos_y=(-1.0, 1.0),
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
@@ -119,14 +119,14 @@ class ActionsCfg:
     #     scale=0.2,
     #     clip={".*": (-5.0, 5.0)}
     #     )
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
     # joint_sine_hold = mdp.JointSineHoldActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
     # )
-    # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
+    joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
 
     # joint_cpg = mdp.JointCPGActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
 
@@ -327,11 +327,11 @@ class RewardsCfg:
         weight=-0.2,    
         params={"min_distance" : 0.3}
     )
-    DistanceReward = RewTerm(
-        func=mdp.DistanceReward,
-        weight=-0.2,
-        params={"threshold": 0.2}
-    )
+    # DistanceReward = RewTerm(
+    #     func=mdp.DistanceReward,
+    #     weight=-0.2,
+    #     params={"threshold": 0.2}
+    # )
     # kanake_progress_command_reward = RewTerm(
     #     func=mdp.kanake_progress_command_reward,
     #     weight=1.0,
@@ -380,7 +380,7 @@ class RewardsCfg:
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
-    # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
+    dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.005)

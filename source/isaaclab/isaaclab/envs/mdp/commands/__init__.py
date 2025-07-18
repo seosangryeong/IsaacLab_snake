@@ -13,6 +13,7 @@ from .commands_cfg import (
     UniformPoseCommandCfg,
     UniformVelocityCommandCfg,
     KanakeCommandCfg,
+    KanakeWorldCommandCfg
 
 )
 from .null_command import NullCommand
@@ -20,3 +21,4 @@ from .pose_2d_command import TerrainBasedPose2dCommand, UniformPose2dCommand
 from .pose_command import UniformPoseCommand
 from .velocity_command import NormalVelocityCommand, UniformVelocityCommand
 from .kanake_command import KanakeCommand
+from .kanake_world_command import KanakeWorldCommand

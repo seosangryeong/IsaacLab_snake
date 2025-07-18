@@ -17,6 +17,7 @@ from .pose_2d_command import TerrainBasedPose2dCommand, UniformPose2dCommand
 from .pose_command import UniformPoseCommand
 from .velocity_command import NormalVelocityCommand, UniformVelocityCommand
 from .kanake_command import KanakeCommand
+from .kanake_world_command import KanakeWorldCommand
 
 
 @configclass
@@ -221,14 +222,18 @@ class UniformPose2dCommandCfg(CommandTermCfg):
     ranges: Ranges = MISSING
     """Distribution ranges for the position commands."""
 
-    goal_pose_visualizer_cfg: VisualizationMarkersCfg = GREEN_ARROW_X_MARKER_CFG.replace(
+    # goal_pose_visualizer_cfg: VisualizationMarkersCfg = GREEN_ARROW_X_MARKER_CFG.replace(
+    #     prim_path="/Visuals/Command/pose_goal"
+    # )
+    goal_pose_visualizer_cfg: VisualizationMarkersCfg = CUBOID_MARKER_CFG.replace(
         prim_path="/Visuals/Command/pose_goal"
     )
     """The configuration for the goal pose visualization marker. Defaults to GREEN_ARROW_X_MARKER_CFG."""
 
     # Set the scale of the visualization markers to (0.2, 0.2, 0.8)
-    goal_pose_visualizer_cfg.markers["arrow"].scale = (0.2, 0.2, 0.8)
-
+    # goal_pose_visualizer_cfg.markers["arrow"].scale = (0.2, 0.2, 0.8)
+    goal_pose_visualizer_cfg.markers["cuboid"].size = (0.1, 0.1, 0.2)
+    goal_pose_visualizer_cfg.markers["cuboid"].visual_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0))
 
 @configclass
 class TerrainBasedPose2dCommandCfg(UniformPose2dCommandCfg):
@@ -255,6 +260,54 @@ class KanakeCommandCfg(CommandTermCfg):
     """Configuration for the uniform 2D-pose command generator."""
 
     class_type: type = KanakeCommand
+
+    asset_name: str = MISSING
+    """Name of the asset in the environment for which the commands are generated."""
+
+    simple_heading: bool = MISSING
+    """Whether to use simple heading or not.
+
+    If True, the heading is in the direction of the target position.
+    """
+
+    @configclass
+    class Ranges:
+        """Uniform distribution ranges for the position commands."""
+
+        pos_x: tuple[float, float] = MISSING
+        """Range for the x position (in m)."""
+
+        pos_y: tuple[float, float] = MISSING
+        """Range for the y position (in m)."""
+
+        heading: tuple[float, float] = MISSING
+        """Heading range for the position commands (in rad).
+
+        Used only if :attr:`simple_heading` is False.
+        """
+
+    ranges: Ranges = MISSING
+    """Distribution ranges for the position commands."""
+
+    # goal_pose_visualizer_cfg: VisualizationMarkersCfg = GREEN_ARROW_X_MARKER_CFG.replace(
+    #     prim_path="/Visuals/Command/pose_goal"
+    # )
+    goal_pose_visualizer_cfg: VisualizationMarkersCfg = CUBOID_MARKER_CFG.replace(
+        prim_path="/Visuals/Command/pose_goal"
+    )
+    """The configuration for the goal pose visualization marker. Defaults to GREEN_ARROW_X_MARKER_CFG."""
+
+    # Set the scale of the visualization markers to (0.2, 0.2, 0.8)
+    # goal_pose_visualizer_cfg.markers["arrow"].scale = (0.2, 0.2, 0.8)
+    goal_pose_visualizer_cfg.markers["cuboid"].size = (0.1, 0.1, 0.2)
+    goal_pose_visualizer_cfg.markers["cuboid"].visual_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0))
+
+
+@configclass
+class KanakeWorldCommandCfg(CommandTermCfg):
+    """Configuration for the uniform 2D-pose command generator."""
+
+    class_type: type = KanakeWorldCommand
 
     asset_name: str = MISSING
     """Name of the asset in the environment for which the commands are generated."""

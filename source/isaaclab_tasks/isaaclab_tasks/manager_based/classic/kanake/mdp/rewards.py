@@ -254,25 +254,27 @@ class BodyOrderReward(ManagerTermBase):
 
         # 바디 순서: head, link1, ..., link15, tail (총 17개)
         order_names = ["head"] + [f"Link{i}" for i in range(1, 16)] + ["tail"]
-
-        # 각 바디의 (x, y) 위치 추출
-        body_positions = []
-        for name in order_names:
-            idx = asset.body_names.index(name)
-            pos = asset.data.body_pos_w[:, idx, :2]
-            body_positions.append(pos)
-        body_positions = torch.stack(body_positions, dim=1)  # [envs, 17, 2]
+        order_indices = [asset.body_names.index(name) for name in order_names]
+        body_positions = asset.data.body_pos_w[:, order_indices, :2]  # [envs, 17, 2]
 
         # 각 바디와 타겟 사이의 유클리드 거리 계산
-        # target_pos shape: [envs, 2] → unsqueeze(1)로 브로드캐스트
         distances = torch.norm(body_positions - target_pos.unsqueeze(1), dim=-1)  # [envs, 17]
 
         # 인접한 바디 쌍마다 올바른 순서인지 확인: d[i] < d[i+1]
         correct_order = distances[:, :-1] < distances[:, 1:]
         reward = correct_order.to(torch.float32).mean(dim=1)
 
+        # 디버깅: 커맨드 xy좌표, 각 바디 xy좌표 프린트
+        # for env_idx in range(distances.shape[0]):
+        #     print(f"[env {env_idx}] Command xy: ({target_pos[env_idx, 0]:.3f}, {target_pos[env_idx, 1]:.3f})")
+        #     for i, name in enumerate(order_names):
+        #         bx, by = body_positions[env_idx, i, 0].item(), body_positions[env_idx, i, 1].item()
+        #         print(f"  {name}: ({bx:.3f}, {by:.3f})  dist={distances[env_idx, i]:.3f}")
+        #     closest_idx = torch.argmin(distances[env_idx])
+        #     print(f"  Closest: {order_names[closest_idx]}")
+
         return reward
-        return reward
+
 
 
 
