@@ -430,7 +430,7 @@ class HeadTailDistancePenalty(ManagerTermBase):
             torch.zeros_like(distance)  # 충분히 멀면 페널티 없음
         )
 
-        return -penalty  # 페널티는 음수 값으로 반환
+        return -penalty  
     
 class LocalWorldAlignmentReward(ManagerTermBase):
     """

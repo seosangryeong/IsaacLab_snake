@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class KanakeWorldCommand(CommandTerm):
     """
     world-coordinate 기반 pose 커맨드. [x, y, z, heading]
-    커맨드는 월드 좌표계에서 직접 샘플링됩니다.
+    커맨드는 월드 좌표계에서 직접 샘플링.
     """
 
     cfg: KanakeWorldCommandCfg

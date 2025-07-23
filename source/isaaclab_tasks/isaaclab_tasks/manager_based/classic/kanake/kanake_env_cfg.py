@@ -322,11 +322,11 @@ class RewardsCfg:
     #         "asset_cfg": SceneEntityCfg("robot", body_names=["head"])
     #     }
     # )
-    HeadTailDistancePenalty = RewTerm(
-        func=mdp.HeadTailDistancePenalty,
-        weight=-0.2,    
-        params={"min_distance" : 0.3}
-    )
+    # HeadTailDistancePenalty = RewTerm(
+    #     func=mdp.HeadTailDistancePenalty,
+    #     weight=-0.2,    
+    #     params={"min_distance" : 0.3}
+    # )
     # DistanceReward = RewTerm(
     #     func=mdp.DistanceReward,
     #     weight=-0.2,
@@ -346,17 +346,17 @@ class RewardsCfg:
     #     weight=-0.07,
     #     params={"command_name": "kanake_command"},
     # )
-    base_x_direction_alignment_reward = RewTerm(
-        func=mdp.base_x_direction_alignment_reward,
-        weight=0.5,
-        params={"command_name": "kanake_command"},
-    )
+    # base_x_direction_alignment_reward = RewTerm(
+    #     func=mdp.base_x_direction_alignment_reward,
+    #     weight=0.5,
+    #     params={"command_name": "kanake_command"},
+    # )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
     upright = RewTerm(func=mdp.upright_posture_shaped, weight=1.0, params={"threshold": 0.8})
-    terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
+    # terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
 
 
     # JointActionShiftReward = RewTerm(
@@ -383,7 +383,7 @@ class RewardsCfg:
     dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.005)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     # energy = RewTerm(
     #     func=mdp.power_consumption,
     #     weight=-0.005,
