@@ -121,12 +121,12 @@ class ActionsCfg:
     #     )
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
-    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
+    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
     # joint_sine_hold = mdp.JointSineHoldActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
     # )
-    joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
+    # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=0.1)
 
     # joint_cpg = mdp.JointCPGActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
 
@@ -365,7 +365,7 @@ class RewardsCfg:
     # )
     BodyOrderReward = RewTerm(
         func=mdp.BodyOrderReward,
-        weight=0.5,
+        weight=1.0,
         params={"command_name": "kanake_command"}
     )
     # progress_x_reward = RewTerm(
