@@ -119,14 +119,14 @@ class ActionsCfg:
     #     scale=0.2,
     #     clip={".*": (-5.0, 5.0)}
     #     )
-    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
+    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
     # joint_sine_hold = mdp.JointSineHoldActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
     # )
-    # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=0.1)
+    # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
 
     # joint_cpg = mdp.JointCPGActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
 
@@ -299,7 +299,7 @@ class RewardsCfg:
     # )
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-2.3,
+        weight=-3.0,
         params={"command_name": "kanake_command"},
     )
     # kanake_progress_to_command = RewTerm(
@@ -346,11 +346,11 @@ class RewardsCfg:
     #     weight=-0.07,
     #     params={"command_name": "kanake_command"},
     # )
-    # base_x_direction_alignment_reward = RewTerm(
-    #     func=mdp.base_x_direction_alignment_reward,
-    #     weight=0.5,
-    #     params={"command_name": "kanake_command"},
-    # )
+    base_x_direction_alignment_reward = RewTerm(
+        func=mdp.base_x_direction_alignment_reward,
+        weight=0.5,
+        params={"command_name": "kanake_command"},
+    )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
@@ -365,7 +365,7 @@ class RewardsCfg:
     # )
     BodyOrderReward = RewTerm(
         func=mdp.BodyOrderReward,
-        weight=1.0,
+        weight=0.5,
         params={"command_name": "kanake_command"}
     )
     # progress_x_reward = RewTerm(
@@ -392,7 +392,7 @@ class RewardsCfg:
     #         "asset_cfg": SceneEntityCfg(name="robot"),  # ← 이 줄 추가
     #     }
     # )
-    # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0001)
+    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0005)
 
 
 
@@ -425,7 +425,7 @@ class CurriculumCfg:
 class kanakeEnvCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=2048, env_spacing=0.0)
+    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=0.0)
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
