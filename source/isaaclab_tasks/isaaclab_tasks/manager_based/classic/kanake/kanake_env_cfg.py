@@ -119,14 +119,14 @@ class ActionsCfg:
     #     scale=0.2,
     #     clip={".*": (-5.0, 5.0)}
     #     )
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
     # joint_sine_hold = mdp.JointSineHoldActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
     # )
-    # joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
+    joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
 
     # joint_cpg = mdp.JointCPGActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
 
@@ -346,11 +346,11 @@ class RewardsCfg:
     #     weight=-0.07,
     #     params={"command_name": "kanake_command"},
     # )
-    base_x_direction_alignment_reward = RewTerm(
-        func=mdp.base_x_direction_alignment_reward,
-        weight=0.5,
-        params={"command_name": "kanake_command"},
-    )
+    # base_x_direction_alignment_reward = RewTerm(
+    #     func=mdp.base_x_direction_alignment_reward,
+    #     weight=0.5,
+    #     params={"command_name": "kanake_command"},
+    # )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
@@ -363,11 +363,11 @@ class RewardsCfg:
     #     func=mdp.JointActionShiftReward,
     #     weight=5.0, 
     # )
-    BodyOrderReward = RewTerm(
-        func=mdp.BodyOrderReward,
-        weight=0.5,
-        params={"command_name": "kanake_command"}
-    )
+    # BodyOrderReward = RewTerm(
+    #     func=mdp.BodyOrderReward,
+    #     weight=0.5,
+    #     params={"command_name": "kanake_command"}
+    # )
     # progress_x_reward = RewTerm(
     #     func=mdp.progress_x_reward,
     #     weight=20.0,
@@ -380,7 +380,7 @@ class RewardsCfg:
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
-    dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
+    # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
@@ -392,7 +392,7 @@ class RewardsCfg:
     #         "asset_cfg": SceneEntityCfg(name="robot"),  # ← 이 줄 추가
     #     }
     # )
-    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0005)
+    # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0005)
 
 
 
