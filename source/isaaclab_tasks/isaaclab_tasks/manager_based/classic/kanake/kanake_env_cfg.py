@@ -96,11 +96,11 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
     # command -> (x,y,z)
-    kanake_command = mdp.KanakeWorldCommandCfg(
+    kanake_command = mdp.KanakeCommandCfg(
         asset_name="robot",
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
-        ranges=mdp.KanakeWorldCommandCfg.Ranges(
+        ranges=mdp.KanakeCommandCfg.Ranges(
             pos_x=(-1.0, 1.0),
             pos_y=(-1.0, 1.0),
             heading=(-math.pi, math.pi),
@@ -299,7 +299,7 @@ class RewardsCfg:
     # )
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-2.0,
+        weight=-2.5,
         params={"command_name": "kanake_command"},
     )
     # kanake_progress_to_command = RewTerm(
@@ -346,11 +346,11 @@ class RewardsCfg:
     #     weight=-0.07,
     #     params={"command_name": "kanake_command"},
     # )
-    base_x_direction_alignment_reward = RewTerm(
-        func=mdp.base_x_direction_alignment_reward,
-        weight=0.5,
-        params={"command_name": "kanake_command"},
-    )
+    # base_x_direction_alignment_reward = RewTerm(
+    #     func=mdp.base_x_direction_alignment_reward,
+    #     weight=0.5,
+    #     params={"command_name": "kanake_command"},
+    # )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
@@ -363,11 +363,11 @@ class RewardsCfg:
     #     func=mdp.JointActionShiftReward,
     #     weight=5.0, 
     # )
-    BodyOrderReward = RewTerm(
-        func=mdp.BodyOrderReward,
-        weight=0.5,
-        params={"command_name": "kanake_command"}
-    )
+    # BodyOrderReward = RewTerm(
+    #     func=mdp.BodyOrderReward,
+    #     weight=0.5,
+    #     params={"command_name": "kanake_command"}
+    # )
     # progress_x_reward = RewTerm(
     #     func=mdp.progress_x_reward,
     #     weight=20.0,
@@ -380,10 +380,10 @@ class RewardsCfg:
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
-    dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
+    # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.005)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     # energy = RewTerm(
     #     func=mdp.power_consumption,
     #     weight=-0.005,
@@ -425,7 +425,7 @@ class CurriculumCfg:
 class kanakeEnvCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=2048, env_spacing=0.0)
+    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=0.0)
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
