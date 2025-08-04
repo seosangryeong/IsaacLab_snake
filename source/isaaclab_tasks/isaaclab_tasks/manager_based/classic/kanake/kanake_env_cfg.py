@@ -96,11 +96,11 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
     # command -> (x,y,z)
-    kanake_command = mdp.KanakeWorldCommandCfg(
+    kanake_command = mdp.KanakeCommandCfg(
         asset_name="robot",
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
-        ranges=mdp.KanakeWorldCommandCfg.Ranges(
+        ranges=mdp.KanakeCommandCfg.Ranges(
             pos_x=(-1.0, 1.0),
             pos_y=(-1.0, 1.0),
             heading=(-math.pi, math.pi),
@@ -299,7 +299,7 @@ class RewardsCfg:
     # )
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-3.0,
+        weight=-2.5,
         params={"command_name": "kanake_command"},
     )
     # kanake_progress_to_command = RewTerm(
