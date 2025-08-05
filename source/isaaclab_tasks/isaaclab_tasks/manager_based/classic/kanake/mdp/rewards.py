@@ -251,6 +251,8 @@ class BodyOrderReward(ManagerTermBase):
         # 커맨드에서 타겟 위치 추출
         command = env.command_manager.get_command(command_name)
         target_pos = command[:, :2]  # shape: [envs, 2]
+        
+        
 
         # 바디 순서: head, link1, ..., link15, tail (총 17개)
         order_names = ["head"] + [f"Link{i}" for i in range(1, 16)] + ["tail"]
@@ -265,13 +267,13 @@ class BodyOrderReward(ManagerTermBase):
         reward = correct_order.to(torch.float32).mean(dim=1)
 
         # 디버깅: 커맨드 xy좌표, 각 바디 xy좌표 프린트
-        # for env_idx in range(distances.shape[0]):
-        #     print(f"[env {env_idx}] Command xy: ({target_pos[env_idx, 0]:.3f}, {target_pos[env_idx, 1]:.3f})")
-        #     for i, name in enumerate(order_names):
-        #         bx, by = body_positions[env_idx, i, 0].item(), body_positions[env_idx, i, 1].item()
-        #         print(f"  {name}: ({bx:.3f}, {by:.3f})  dist={distances[env_idx, i]:.3f}")
-        #     closest_idx = torch.argmin(distances[env_idx])
-        #     print(f"  Closest: {order_names[closest_idx]}")
+        for env_idx in range(distances.shape[0]):
+            print(f"[env {env_idx}] Command xy: ({target_pos[env_idx, 0]:.3f}, {target_pos[env_idx, 1]:.3f})")
+            for i, name in enumerate(order_names):
+                bx, by = body_positions[env_idx, i, 0].item(), body_positions[env_idx, i, 1].item()
+                print(f"  {name}: ({bx:.3f}, {by:.3f})  dist={distances[env_idx, i]:.3f}")
+            closest_idx = torch.argmin(distances[env_idx])
+            print(f"  Closest: {order_names[closest_idx]}")
 
         return reward
 
