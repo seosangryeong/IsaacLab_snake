@@ -15,6 +15,7 @@ from isaaclab.assets import Articulation
 from isaaclab.managers import CommandTerm
 from isaaclab.markers import VisualizationMarkers
 from isaaclab.utils.math import quat_from_euler_xyz, wrap_to_pi
+from isaaclab.utils.math import combine_frame_transforms, quat_error_magnitude, quat_mul
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
@@ -47,6 +48,21 @@ class KanakeBaseCommand(CommandTerm):
         msg += f"\tCommand dimension: {tuple(self.command.shape[1:])}\n"
         msg += f"\tResampling time range: {self.cfg.resampling_time_range}"
         return msg
+    
+    # @property
+    # def command(self) -> torch.Tensor:
+    #     """
+    #     base frame 기준으로 생성된 커맨드를 월드좌표로 변환하여 반환.
+    #     Shape: (num_envs, 4) → [x, y, z, heading] (월드좌표)
+    #     """
+    #     # 현재 로봇의 월드 위치/쿼터니언
+    #     root_pos = self.robot.data.root_pos_w  # (B, 3)
+    #     root_quat = self.robot.data.root_quat_w  # (B, 4)
+    #     # base frame 커맨드 → 월드좌표로 변환
+    #     des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, self.pos_command_b)
+    #     # heading도 월드 기준으로 변환 (base heading + 현재 heading)
+    #     des_heading_w = wrap_to_pi(self.heading_command_b + self.robot.data.heading_w)
+    #     return torch.cat([des_pos_w, des_heading_w.unsqueeze(1)], dim=1)
 
     @property
     def command(self) -> torch.Tensor:
@@ -58,7 +74,7 @@ class KanakeBaseCommand(CommandTerm):
 
     def _resample_command(self, env_ids: Sequence[int]):
         """
-        리샘플링 시점에만 호출됩니다.
+        리샘플링 시점에만 호출
         1) 로봇 기준(0,0,기본높이)에서 x,y,z 오프셋을 uniform 샘플링
         2) simple_heading 여부에 따라 heading 결정
         """

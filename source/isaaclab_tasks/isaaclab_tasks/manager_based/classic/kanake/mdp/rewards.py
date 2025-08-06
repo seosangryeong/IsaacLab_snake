@@ -502,18 +502,65 @@ def kanake_position_command_error_tanh(
 def kanake_position_command_error_base(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
+    # asset: RigidObject = env.scene[asset_cfg.name]
+    # command = env.command_manager.get_command(command_name)
+    # des_pos_b = command[:, :3]
+    
+    # # batch = des_pos_b.shape[0]
+    # root_pos = asset.data.root_pos_w  # (B, 3)
+    # root_quat = asset.data.root_quat_w  # (B, 4)
+
+    # des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+    # curr_pos_w = asset.data.root_pos_w  # 루트 위치 사용
+    # # dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
+    # return torch.norm(curr_pos_w - des_pos_w, dim=1)
+
     asset: RigidObject = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
-    des_pos_b = command[:, :3]
-    
-    # batch = des_pos_b.shape[0]
-    root_pos = asset.data.root_pos_w  # (B, 3)
-    root_quat = asset.data.root_quat_w  # (B, 4)
+    des_pos_xy = command[:, :2]  # 목표 x, y
+    curr_pos_xy = asset.data.root_pos_w[:, :2]  # 현재 x, y
+    print("des_pos_xy", des_pos_xy)
+    print("curr_pos_xy", curr_pos_xy)
+    return torch.norm(curr_pos_xy - des_pos_xy, dim=1)
 
-    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
-    curr_pos_w = asset.data.root_pos_w  # 루트 위치 사용
-    # dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
+    curr_pos_w = asset.data.root_pos_w  # 현재 루트 위치 (월드좌표계)
     return torch.norm(curr_pos_w - des_pos_w, dim=1)
+
+def kanake_position_command_error_base_head(
+    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_xy = command[:, :2]  # 목표 x, y
+
+    # head 바디의 인덱스 찾기
+    head_index = asset.body_names.index("head")
+    curr_pos_xy = asset.data.body_pos_w[:, head_index, :2]  # head의 현재 x, y
+
+    # print("des_pos_xy", des_pos_xy)
+    # print("curr_pos_xy", curr_pos_xy)
+    return torch.norm(curr_pos_xy - des_pos_xy, dim=1)
+
+
+
+def kanake_position_command_error_base_head_tanh(
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_xy = command[:, :2]
+
+    # head 바디의 인덱스 찾기
+    head_index = asset.body_names.index("head")
+    curr_pos_xy = asset.data.body_pos_w[:, head_index, :2]  # head의 현재 x, y
+
+    # print("des_pos_xy", des_pos_xy)
+    # print("curr_pos_xy", curr_pos_xy)
+    distance = torch.norm(curr_pos_xy - des_pos_xy, dim=1)
+    return 1 - torch.tanh(distance / std)
+
+
+
 
 class kanake_progress_to_command(ManagerTermBase):
     """Reward for making progress towards the commanded position compared to initial distance."""

@@ -101,8 +101,8 @@ class CommandsCfg:
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeBaseCommandCfg.Ranges(
-            pos_x=(-1.0, 1.0),
-            pos_y=(-1.0, 1.0),
+            pos_x=(-2.0, 2.0),
+            pos_y=(-2.0, 2.0),
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
@@ -297,9 +297,9 @@ class RewardsCfg:
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    kanake_position_command_error_base = RewTerm(
-        func=mdp.kanake_position_command_error_base,
-        weight=-2.5,
+    kanake_position_command_error_base_head = RewTerm(
+        func=mdp.kanake_position_command_error_base_head,
+        weight=-1.5,
         params={"command_name": "kanake_command"},
     )
     # kanake_progress_to_command = RewTerm(
@@ -308,8 +308,8 @@ class RewardsCfg:
     #     params={"command_name": "kanake_command"},
     # )
     #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
-    kanake_position_command_error_tanh_base = RewTerm(
-        func=mdp.kanake_position_command_error_tanh_base,
+    kanake_position_command_error_base_head_tanh = RewTerm(
+        func=mdp.kanake_position_command_error_base_head_tanh,
         weight=1.0,
         params={"std": 0.15, "command_name": "kanake_command"},
     )

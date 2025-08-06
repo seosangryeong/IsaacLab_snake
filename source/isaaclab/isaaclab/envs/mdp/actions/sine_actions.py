@@ -259,12 +259,12 @@ class JointSineAction(ActionTerm):
         # min_vals, _ = actions.min(dim=1, keepdim=True)
         # max_vals, _ = actions.max(dim=1, keepdim=True)
         # actions = (actions - min_vals) / (max_vals - min_vals + 1e-8) * 2.0
-        # clip_ranges = getattr(self.cfg, "clip_ranges", [(-1.0, 1.0)] * (self._num_joints + 4))
-        # actions_clipped = torch.empty_like(actions)
-        # for i in range(self._num_joints + 4):
-        #     actions_clipped[:, i] = torch.clamp(actions[:, i], min=clip_ranges[i][0], max=clip_ranges[i][1])
-        # actions = actions_clipped
-        # self._raw_actions[:] = actions
+        clip_ranges = getattr(self.cfg, "clip_ranges", [(-1.0, 1.0)] * (self._num_joints + 4))
+        actions_clipped = torch.empty_like(actions)
+        for i in range(self._num_joints + 4):
+            actions_clipped[:, i] = torch.clamp(actions[:, i], min=clip_ranges[i][0], max=clip_ranges[i][1])
+        actions = actions_clipped
+        self._raw_actions[:] = actions
         # print(f"raw_actions: {self._raw_actions}")
 
         amplitudes = actions[:, :self._num_joints]  # (num_envs, num_joints)
