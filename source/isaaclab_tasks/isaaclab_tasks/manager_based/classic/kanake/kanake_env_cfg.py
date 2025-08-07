@@ -96,13 +96,13 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
     # command -> (x,y,z)
-    kanake_command = mdp.KanakeBaseCommandCfg(
+    kanake_command = mdp.KanakeCommandCfg(
         asset_name="robot",
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
-        ranges=mdp.KanakeBaseCommandCfg.Ranges(
-            pos_x=(-2.0, 2.0),
-            pos_y=(-2.0, 2.0),
+        ranges=mdp.KanakeCommandCfg.Ranges(
+            pos_x=(-1.5, 1.5),
+            pos_y=(-1.5, 1.5),
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
@@ -346,11 +346,11 @@ class RewardsCfg:
     #     weight=-0.07,
     #     params={"command_name": "kanake_command"},
     # )
-    # base_x_direction_alignment_reward = RewTerm(
-    #     func=mdp.base_x_direction_alignment_reward,
-    #     weight=0.5,
-    #     params={"command_name": "kanake_command"},
-    # )
+    head_x_direction_alignment_reward = RewTerm(
+        func=mdp.head_x_direction_alignment_reward,
+        weight=0.5,
+        params={"command_name": "kanake_command"},
+    )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
@@ -363,11 +363,11 @@ class RewardsCfg:
     #     func=mdp.JointActionShiftReward,
     #     weight=5.0, 
     # )
-    BodyOrderReward = RewTerm(
-        func=mdp.BodyOrderReward,
-        weight=0.5,
-        params={"command_name": "kanake_command"}
-    )
+    # BodyOrderReward = RewTerm(
+    #     func=mdp.BodyOrderReward,
+    #     weight=0.5,
+    #     params={"command_name": "kanake_command"}
+    # )
     # progress_x_reward = RewTerm(
     #     func=mdp.progress_x_reward,
     #     weight=20.0,

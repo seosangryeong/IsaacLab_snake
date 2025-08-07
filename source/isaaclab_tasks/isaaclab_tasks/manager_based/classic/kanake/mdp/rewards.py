@@ -266,14 +266,14 @@ class BodyOrderReward(ManagerTermBase):
         correct_order = distances[:, :-1] < distances[:, 1:]
         reward = correct_order.to(torch.float32).mean(dim=1)
 
-        # 디버깅: 커맨드 xy좌표, 각 바디 xy좌표 프린트
-        # for env_idx in range(distances.shape[0]):
-        #     print(f"[env {env_idx}] Command xy: ({target_pos[env_idx, 0]:.3f}, {target_pos[env_idx, 1]:.3f})")
-        #     for i, name in enumerate(order_names):
-        #         bx, by = body_positions[env_idx, i, 0].item(), body_positions[env_idx, i, 1].item()
-        #         print(f"  {name}: ({bx:.3f}, {by:.3f})  dist={distances[env_idx, i]:.3f}")
-        #     closest_idx = torch.argmin(distances[env_idx])
-        #     print(f"  Closest: {order_names[closest_idx]}")
+        # # 디버깅: 커맨드 xy좌표, 각 바디 xy좌표 프린트
+        for env_idx in range(distances.shape[0]):
+            print(f"[env {env_idx}] Command xy: ({target_pos[env_idx, 0]:.3f}, {target_pos[env_idx, 1]:.3f})")
+            for i, name in enumerate(order_names):
+                bx, by = body_positions[env_idx, i, 0].item(), body_positions[env_idx, i, 1].item()
+                print(f"  {name}: ({bx:.3f}, {by:.3f})  dist={distances[env_idx, i]:.3f}")
+            closest_idx = torch.argmin(distances[env_idx])
+            print(f"  Closest: {order_names[closest_idx]}")
 
         return reward
 
@@ -815,6 +815,52 @@ def base_x_direction_alignment_reward(
 
     # 두 벡터의 코사인 유사도 (alignment)
     alignment = torch.sum(base_x_dir * to_target_dir, dim=-1)
+    alignment = torch.clamp(alignment, -1.0, 1.0)
+
+    # threshold_deg 이내면 1, 아니면 alignment 값
+    cos_threshold = torch.cos(torch.tensor(threshold_deg * 3.14159265 / 180.0, device=env.device))
+    reward = torch.where(
+        alignment >= cos_threshold,
+        torch.ones_like(alignment),
+        alignment
+    )
+    return reward
+
+
+def head_x_direction_alignment_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    threshold_deg: float = 10.0,  # 허용 각도 (degree)
+) -> torch.Tensor:
+    """
+    head의 로컬 x축 방향이 커맨드의 (x, y) 타겟을 바라보면 리워드
+    threshold_deg 이내로 정렬되면 1, 아니면 alignment 값 반환
+    """
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    target_xy = command[:, :2]  # shape: [num_envs, 2]
+
+    # head의 인덱스와 위치/쿼터니언
+    head_index = asset.body_names.index("head")
+    head_pos = asset.data.body_pos_w[:, head_index, :2]  # [num_envs, 2]
+    head_quat = asset.data.body_quat_w[:, head_index, :]  # [num_envs, 4]
+
+    # head의 로컬 x축 [1, 0, 0]을 월드 좌표계로 변환
+    local_x = torch.tensor([1.0, 0.0, 0.0], device=head_quat.device).expand(head_quat.shape[0], 3)
+    head_x_world = math_utils.quat_apply(head_quat, local_x)[:, :2]  # [num_envs, 2]
+
+    # head에서 타겟까지의 방향 벡터 (월드 좌표계)
+    to_target = target_xy - head_pos
+    to_target_norm = torch.norm(to_target, dim=-1, keepdim=True) + 1e-8
+    to_target_dir = to_target / to_target_norm  # [num_envs, 2]
+
+    # head x축 방향 벡터 정규화
+    head_x_world_norm = torch.norm(head_x_world, dim=-1, keepdim=True) + 1e-8
+    head_x_dir = head_x_world / head_x_world_norm
+
+    # 두 벡터의 코사인 유사도 (alignment)
+    alignment = torch.sum(head_x_dir * to_target_dir, dim=-1)
     alignment = torch.clamp(alignment, -1.0, 1.0)
 
     # threshold_deg 이내면 1, 아니면 alignment 값
