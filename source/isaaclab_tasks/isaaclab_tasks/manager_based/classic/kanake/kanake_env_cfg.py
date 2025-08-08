@@ -254,19 +254,19 @@ class EventCfg:
     #     },
     # )
 
-    physics_material = EventTerm(
-        func=mdp.randomize_rigid_body_material,
-        mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
-            "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
-),
-            "static_friction_range": (0.4, 1.0),
-            "dynamic_friction_range": (0.4, 1.0),
-            "restitution_range": (0.0, 0.2),
-            "num_buckets": 64,
-        },
-    )
+#     physics_material = EventTerm(
+#         func=mdp.randomize_rigid_body_material,
+#         mode="startup",
+#         params={
+#             "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
+#             "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
+# ),
+#             "static_friction_range": (0.4, 1.0),
+#             "dynamic_friction_range": (0.4, 1.0),
+#             "restitution_range": (0.0, 0.2),
+#             "num_buckets": 64,
+#         },
+#     )
 
 #     add_base_mass = EventTerm(
 #         func=mdp.randomize_rigid_body_mass,
@@ -297,9 +297,9 @@ class RewardsCfg:
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    kanake_position_command_error_base_head = RewTerm(
-        func=mdp.kanake_position_command_error_base_head,
-        weight=-1.5,
+    kanake_position_command_error_base = RewTerm(
+        func=mdp.kanake_position_command_error_base,
+        weight=-0.1,
         params={"command_name": "kanake_command"},
     )
     # kanake_progress_to_command = RewTerm(
@@ -308,9 +308,9 @@ class RewardsCfg:
     #     params={"command_name": "kanake_command"},
     # )
     #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
-    kanake_position_command_error_base_head_tanh = RewTerm(
-        func=mdp.kanake_position_command_error_base_head_tanh,
-        weight=1.0,
+    kanake_position_command_error_tanh_base = RewTerm(
+        func=mdp.kanake_position_command_error_tanh_base,
+        weight=0.1,
         params={"std": 0.15, "command_name": "kanake_command"},
     )
     # kanake_position_threshold_reward = RewTerm(
@@ -346,16 +346,16 @@ class RewardsCfg:
     #     weight=-0.07,
     #     params={"command_name": "kanake_command"},
     # )
-    head_x_direction_alignment_reward = RewTerm(
-        func=mdp.head_x_direction_alignment_reward,
-        weight=0.5,
-        params={"command_name": "kanake_command"},
-    )
+    # head_x_direction_alignment_reward = RewTerm(
+    #     func=mdp.head_x_direction_alignment_reward,
+    #     weight=0.5,
+    #     params={"command_name": "kanake_command"},
+    # )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
-    upright = RewTerm(func=mdp.upright_posture_shaped, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.upright_posture_shaped, weight=0.1, params={"threshold": 0.8})
     # terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
 
 
@@ -377,13 +377,13 @@ class RewardsCfg:
     #     weight = -0.1,
     # )
     # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.2)
-    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.0005)
+    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.00005)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
     # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
     # energy = RewTerm(
     #     func=mdp.power_consumption,
     #     weight=-0.005,

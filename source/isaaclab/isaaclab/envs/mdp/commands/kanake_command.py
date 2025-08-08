@@ -16,7 +16,8 @@ from isaaclab.managers import CommandTerm
 from isaaclab.markers import VisualizationMarkers
 from isaaclab.terrains import TerrainImporter
 from isaaclab.utils.math import quat_from_euler_xyz, quat_rotate_inverse, wrap_to_pi, yaw_quat
-from isaaclab.utils.math import quat_apply_inverse
+from isaaclab.utils.math import quat_apply_inverse, quat_apply
+from isaaclab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
@@ -124,4 +125,5 @@ class KanakeCommand(CommandTerm):
                 self.heading_command_w,
             ),
         )
+
 

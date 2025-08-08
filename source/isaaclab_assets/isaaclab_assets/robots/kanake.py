@@ -24,7 +24,8 @@ import os
 KANAKE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0806.usd",
+# /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0808_4.SLDASM/urdf/
+        usd_path="./kanake6_sim_523/kanake6_sim_0808_4.SLDASM/urdf/kanake6_0808.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             # retain_accelerations=False,
@@ -35,7 +36,7 @@ KANAKE_CFG = ArticulationCfg(
             max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=True,
+            enabled_self_collisions=False,
             solver_position_iteration_count=4,
             solver_velocity_iteration_count=4,
             # sleep_threshold=0.005,
