@@ -96,11 +96,11 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
     # command -> (x,y,z)
-    kanake_command = mdp.KanakeCommandCfg(
+    kanake_command = mdp.KanakeBaseCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(10.0, 10.0), 
-        ranges=mdp.KanakeCommandCfg.Ranges(
+        resampling_time_range=(20.0, 20.0), 
+        ranges=mdp.KanakeBaseCommandCfg.Ranges(
             pos_x=(-1.5, 1.5),
             pos_y=(-1.5, 1.5),
             heading=(-math.pi, math.pi),
@@ -363,11 +363,11 @@ class RewardsCfg:
     #     func=mdp.JointActionShiftReward,
     #     weight=5.0, 
     # )
-    # BodyOrderReward = RewTerm(
-    #     func=mdp.BodyOrderReward,
-    #     weight=0.5,
-    #     params={"command_name": "kanake_command"}
-    # )
+    BodyOrderReward = RewTerm(
+        func=mdp.BodyOrderReward,
+        weight=0.05,
+        params={"command_name": "kanake_command"}
+    )
     # progress_x_reward = RewTerm(
     #     func=mdp.progress_x_reward,
     #     weight=20.0,
@@ -377,13 +377,13 @@ class RewardsCfg:
     #     weight = -0.1,
     # )
     # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.2)
-    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.00005)
+    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.00005)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
     # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
     # energy = RewTerm(
     #     func=mdp.power_consumption,
     #     weight=-0.005,

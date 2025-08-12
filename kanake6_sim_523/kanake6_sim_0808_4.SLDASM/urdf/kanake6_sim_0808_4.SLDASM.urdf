@@ -625,7 +625,7 @@
       velocity="0" />
   </joint>
   <link
-    name="LInk11">
+    name="Link11">
     <inertial>
       <origin
         xyz="-0.0149144121016217 -3.73601403947252E-07 2.49693079064027E-08"
@@ -646,7 +646,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://kanake6_sim_0808_4.SLDASM/meshes/LInk11.STL" />
+          filename="package://kanake6_sim_0808_4.SLDASM/meshes/Link11.STL" />
       </geometry>
       <material
         name="">
@@ -660,7 +660,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://kanake6_sim_0808_4.SLDASM/meshes/LInk11.STL" />
+          filename="package://kanake6_sim_0808_4.SLDASM/meshes/Link11.STL" />
       </geometry>
     </collision>
   </link>
@@ -673,7 +673,7 @@
     <parent
       link="Link10" />
     <child
-      link="LInk11" />
+      link="Link11" />
     <axis
       xyz="0 0 1" />
     <limit
@@ -729,7 +729,7 @@
       xyz="-0.0426 0 0"
       rpy="1.5707963267949 0 0" />
     <parent
-      link="LInk11" />
+      link="Link11" />
     <child
       link="Link12" />
     <axis

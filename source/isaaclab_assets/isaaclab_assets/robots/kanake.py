@@ -26,7 +26,7 @@ KANAKE_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
 # /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0808_4.SLDASM/urdf/
 #/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/
-        usd_path="./kanake6_sim_523/kanake6_sim_0808_4.SLDASM/urdf/kanake6_0811.usd",
+        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0806.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             # retain_accelerations=False,
