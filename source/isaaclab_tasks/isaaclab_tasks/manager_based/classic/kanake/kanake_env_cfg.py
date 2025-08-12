@@ -299,7 +299,7 @@ class RewardsCfg:
     # )
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-0.1,
+        weight=-0.2,
         params={"command_name": "kanake_command"},
     )
     # kanake_progress_to_command = RewTerm(
