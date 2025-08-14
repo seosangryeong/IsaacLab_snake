@@ -96,13 +96,13 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
     # command -> (x,y,z)
-    kanake_command = mdp.KanakeBaseCommandCfg(
+    kanake_command = mdp.KanakeCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(20.0, 20.0), 
-        ranges=mdp.KanakeBaseCommandCfg.Ranges(
-            pos_x=(-1.5, 1.5),
-            pos_y=(-1.5, 1.5),
+        resampling_time_range=(10.0, 10.0), 
+        ranges=mdp.KanakeCommandCfg.Ranges(
+            pos_x=(-0.5, 0.5),
+            pos_y=(-0.5, 0.5),
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
@@ -310,7 +310,7 @@ class RewardsCfg:
     #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
     kanake_position_command_error_tanh_base = RewTerm(
         func=mdp.kanake_position_command_error_tanh_base,
-        weight=0.1,
+        weight=0.3,
         params={"std": 0.15, "command_name": "kanake_command"},
     )
     # kanake_position_threshold_reward = RewTerm(
@@ -363,11 +363,11 @@ class RewardsCfg:
     #     func=mdp.JointActionShiftReward,
     #     weight=5.0, 
     # )
-    BodyOrderReward = RewTerm(
-        func=mdp.BodyOrderReward,
-        weight=0.05,
-        params={"command_name": "kanake_command"}
-    )
+    # BodyOrderReward = RewTerm(
+    #     func=mdp.BodyOrderReward,
+    #     weight=0.05,
+    #     params={"command_name": "kanake_command"}
+    # )
     # progress_x_reward = RewTerm(
     #     func=mdp.progress_x_reward,
     #     weight=20.0,
@@ -389,7 +389,7 @@ class RewardsCfg:
     #     weight=-0.005,
     #     params={
     #         "gear_ratio": {".*": 15.0},
-    #         "asset_cfg": SceneEntityCfg(name="robot"),  # ← 이 줄 추가
+    #         "asset_cfg": SceneEntityCfg(name="robot"),  
     #     }
     # )
     # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0005)

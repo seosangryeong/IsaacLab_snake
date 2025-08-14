@@ -256,9 +256,9 @@ class JointSineAction(ActionTerm):
         actions = torch.pi / 2 * torch.tanh(actions)
         # actions = torch.pi/2 * ( 8*torch.sigmoid(actions)-1 )
         # print("tanh_actions",actions)
-        min_vals, _ = actions.min(dim=1, keepdim=True)
-        max_vals, _ = actions.max(dim=1, keepdim=True)
-        actions = (actions - min_vals) / (max_vals - min_vals + 1e-8) * 2.0
+        # min_vals, _ = actions.min(dim=1, keepdim=True)
+        # max_vals, _ = actions.max(dim=1, keepdim=True)
+        # actions = (actions - min_vals) / (max_vals - min_vals + 1e-8) * 2.0
         clip_ranges = getattr(self.cfg, "clip_ranges", [(-1.0, 1.0)] * (self._num_joints + 4))
         actions_clipped = torch.empty_like(actions)
         for i in range(self._num_joints + 4):
