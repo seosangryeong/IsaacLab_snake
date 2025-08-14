@@ -186,6 +186,13 @@ class ObservationsCfg:
         # joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         actions = ObsTerm(func=mdp.last_action)
 
+
+        base_height = ObsTerm(func=mdp.base_pos_z)
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+
+
         
 
         def __post_init__(self):
@@ -199,19 +206,19 @@ class ObservationsCfg:
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
         base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
-        base_pos = ObsTerm(func=mdp.base_pos)
+        # base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)
 
-        base_angle_to_target_command = ObsTerm(func=mdp.base_angle_to_target_command, params={"command_name": "kanake_command"})
+        # base_angle_to_target_command = ObsTerm(func=mdp.base_angle_to_target_command, params={"command_name": "kanake_command"})
         # base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (5.0, 0.0, 0.0)})
         # # joint_pos = ObsTerm(func=mdp.joint_pos)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
 
         joint_vel = ObsTerm(func=mdp.joint_vel)
-        joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
+        # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         joint_pos = ObsTerm(func=mdp.joint_pos)
-        joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
+        # joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         actions = ObsTerm(func=mdp.last_action)
         def __post_init__(self):
             self.enable_corruption = False
@@ -401,7 +408,8 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    # max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.3})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.25})
+
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
 

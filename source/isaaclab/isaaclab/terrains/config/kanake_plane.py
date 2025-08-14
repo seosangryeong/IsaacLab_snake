@@ -20,8 +20,28 @@ KANAKE_PLANE_CFG = TerrainGeneratorCfg(
     use_cache=False,
     sub_terrains={
         "flat": terrain_gen.HfTerrainBaseCfg(proportion=1.0),
+        
     },
 )
+
+# KANAKE_WAVE_TERRATIN_CFG = TerrainGeneratorCfg(
+#     size=(8.0, 8.0),
+#     border_width=2.0,
+#     num_rows=1,
+#     num_cols=1,
+#     horizontal_scale=0.1,
+#     vertical_scale=0.005,
+#     slope_threshold=0.75,
+#     use_cache=False,
+#     sub_terrains={
+#         "wave": terrain_gen.HfWaveTerrainCfg(
+#             proportion=1.0, 
+#             wave_height_range=(0.01, 0.05), 
+#             wave_length_range=(0.5, 2.0)
+#         ),
+#     },
+# )
+
 
 KANAKE_RANDOM_TERRAIN_CFG = TerrainGeneratorCfg(
     # 가로세로 길이

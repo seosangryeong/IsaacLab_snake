@@ -520,7 +520,7 @@ def kanake_position_command_error_base(
     des_pos_xy = command[:, :2]  # 목표 x, y
     curr_pos_xy = asset.data.root_pos_w[:, :2]  # 현재 x, y
     # print("des_pos_xy", des_pos_xy)
-    # print("curr_pos_xy", curr_pos_xy)
+    print("curr_pos_xy", curr_pos_xy)
     return torch.norm(curr_pos_xy - des_pos_xy, dim=1)
 
     curr_pos_w = asset.data.root_pos_w  # 현재 루트 위치 (월드좌표계)

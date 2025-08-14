@@ -27,6 +27,7 @@ KANAKE_CFG = ArticulationCfg(
 # /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0808_4.SLDASM/urdf/
 #/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/
         usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0806.usd",
+        # usd_path="./kanake6_sim_523/kanake6_sim_0814/kanake6_0814_flat.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             # retain_accelerations=False,
@@ -58,8 +59,8 @@ KANAKE_CFG = ArticulationCfg(
     actuators={
             "body": ImplicitActuatorCfg(
                 joint_names_expr=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-                stiffness =1.0,
-                damping =0.3,
+                stiffness =0.5,
+                damping =0.1,
                 # stiffness = 10.0,
                 # damping =5.0,
                 effort_limit = 10.0, #Nm

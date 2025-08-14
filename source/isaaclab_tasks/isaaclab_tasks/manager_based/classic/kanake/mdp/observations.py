@@ -9,11 +9,14 @@ import torch
 from typing import TYPE_CHECKING
 
 import isaaclab.utils.math as math_utils
-from isaaclab.assets import Articulation
+from isaaclab.assets import Articulation, RigidObject
 from isaaclab.managers import SceneEntityCfg
+from isaaclab.managers.manager_base import ManagerTermBase
+from isaaclab.managers.manager_term_cfg import ObservationTermCfg
+from isaaclab.sensors import Camera, Imu, RayCaster, RayCasterCamera, TiledCamera
 
 if TYPE_CHECKING:
-    from isaaclab.envs import ManagerBasedEnv
+    from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv
 
 def base_up_proj_kanake(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Projection of the base up vector onto the world up vector."""
@@ -25,6 +28,40 @@ def base_up_proj_kanake(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneE
     return base_up_vec[:, 1].unsqueeze(-1)
 
 
+#base를 head로 하면 여기서 NaN이 발생함
+def base_lin_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Root linear velocity in the asset's root frame."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    # print(asset.data.root_lin_vel_b)
+    base_lin_vel = asset.data.root_lin_vel_b
+
+    if torch.any(torch.isnan(base_lin_vel)):
+
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("!! [DEBUG] NaN DETECTED in 'base_lin_vel' observation !!")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(base_lin_vel)
+
+    return base_lin_vel
+
+
+def base_ang_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Root angular velocity in the asset's root frame."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    base_ang_vel = asset.data.root_ang_vel_b
+
+    if torch.any(torch.isnan(base_ang_vel)):
+
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("!! [DEBUG] NaN DETECTED in 'base_ang_vel' observation !!")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(base_ang_vel)
+    # print(asset.data.root_ang_vel_b)
+    return asset.data.root_ang_vel_b
+
+
 def base_yaw_roll(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Yaw and roll of the base in the simulation world frame."""
     # extract the used quantities (to enable type-hinting)
@@ -34,6 +71,7 @@ def base_yaw_roll(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityC
     # normalize angle to [-pi, pi]
     roll = torch.atan2(torch.sin(roll), torch.cos(roll))
     yaw = torch.atan2(torch.sin(yaw), torch.cos(yaw))
+
 
     return torch.cat((yaw.unsqueeze(-1), roll.unsqueeze(-1)), dim=-1)
 

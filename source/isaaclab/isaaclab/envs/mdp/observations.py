@@ -41,13 +41,20 @@ def base_lin_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
     """Root linear velocity in the asset's root frame."""
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
-    return asset.data.root_lin_vel_b
+    # print(asset.data.root_lin_vel_b)
+    base_lin_vel = asset.data.root_lin_vel_b
+
+
+    return base_lin_vel
 
 
 def base_ang_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Root angular velocity in the asset's root frame."""
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
+    base_ang_vel = asset.data.root_ang_vel_b
+
+    # print(asset.data.root_ang_vel_b)
     return asset.data.root_ang_vel_b
 
 
@@ -196,6 +203,7 @@ def joint_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
+    # print(asset.data.joint_vel[:, asset_cfg.joint_ids])
     return asset.data.joint_vel[:, asset_cfg.joint_ids]
 
 
@@ -223,7 +231,9 @@ def joint_effort(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
+    # print(asset.data.applied_torque[:, asset_cfg.joint_ids])
     return asset.data.applied_torque[:, asset_cfg.joint_ids]
+
 
 
 """
