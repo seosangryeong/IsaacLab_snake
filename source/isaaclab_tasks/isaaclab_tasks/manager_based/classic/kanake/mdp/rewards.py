@@ -244,36 +244,32 @@ class BodyOrderReward(ManagerTermBase):
     def __call__(
         self,
         env: ManagerBasedRLEnv,
-        command_name: str = "kanake_command",  # 커맨드 이름을 파라미터로 받음
+        command_name: str = "kanake_command",  
         asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     ) -> torch.Tensor:
         asset: Articulation = env.scene[asset_cfg.name]
         # 커맨드에서 타겟 위치 추출
         command = env.command_manager.get_command(command_name)
         target_pos = command[:, :2]  # shape: [envs, 2]
-        
-        
 
         # 바디 순서: head, link1, ..., link15, tail (총 17개)
         order_names = ["head"] + [f"Link{i}" for i in range(1, 16)] + ["tail"]
-        order_indices = [asset.body_names.index(name) for name in order_names]
-        body_positions = asset.data.body_pos_w[:, order_indices, :2]  # [envs, 17, 2]
+
+        # 각 바디의 (x, y) 위치 추출
+        body_positions = []
+        for name in order_names:
+            idx = asset.body_names.index(name)
+            pos = asset.data.body_pos_w[:, idx, :2]
+            body_positions.append(pos)
+        body_positions = torch.stack(body_positions, dim=1)  # [envs, 17, 2]
 
         # 각 바디와 타겟 사이의 유클리드 거리 계산
+        # target_pos shape: [envs, 2] → unsqueeze(1)로 브로드캐스트
         distances = torch.norm(body_positions - target_pos.unsqueeze(1), dim=-1)  # [envs, 17]
 
         # 인접한 바디 쌍마다 올바른 순서인지 확인: d[i] < d[i+1]
         correct_order = distances[:, :-1] < distances[:, 1:]
         reward = correct_order.to(torch.float32).mean(dim=1)
-
-        # # 디버깅: 커맨드 xy좌표, 각 바디 xy좌표 프린트
-        # for env_idx in range(distances.shape[0]):
-        #     print(f"[env {env_idx}] Command xy: ({target_pos[env_idx, 0]:.3f}, {target_pos[env_idx, 1]:.3f})")
-        #     for i, name in enumerate(order_names):
-        #         bx, by = body_positions[env_idx, i, 0].item(), body_positions[env_idx, i, 1].item()
-        #         print(f"  {name}: ({bx:.3f}, {by:.3f})  dist={distances[env_idx, i]:.3f}")
-        #     closest_idx = torch.argmin(distances[env_idx])
-        #     print(f"  Closest: {order_names[closest_idx]}")
 
         return reward
 
@@ -432,7 +428,7 @@ class HeadTailDistancePenalty(ManagerTermBase):
             torch.zeros_like(distance)  # 충분히 멀면 페널티 없음
         )
 
-        return -penalty  
+        return -penalty  # 페널티는 음수 값으로 반환
     
 class LocalWorldAlignmentReward(ManagerTermBase):
     """
@@ -502,65 +498,20 @@ def kanake_position_command_error_tanh(
 def kanake_position_command_error_base(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    # asset: RigidObject = env.scene[asset_cfg.name]
-    # command = env.command_manager.get_command(command_name)
-    # des_pos_b = command[:, :3]
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
     
-    # # batch = des_pos_b.shape[0]
-    # root_pos = asset.data.root_pos_w  # (B, 3)
-    # root_quat = asset.data.root_quat_w  # (B, 4)
+    # batch = des_pos_b.shape[0]
+    root_pos = asset.data.root_pos_w  # (B, 3)
+    root_quat = asset.data.root_quat_w  # (B, 4)
 
-    # des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
-    # curr_pos_w = asset.data.root_pos_w  # 루트 위치 사용
-    # # dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
-    # return torch.norm(curr_pos_w - des_pos_w, dim=1)
-
-    asset: RigidObject = env.scene[asset_cfg.name]
-    command = env.command_manager.get_command(command_name)
-    des_pos_xy = command[:, :2]  # 목표 x, y
-    curr_pos_xy = asset.data.root_pos_w[:, :2]  # 현재 x, y
-    # print("des_pos_xy", des_pos_xy)
-    print("curr_pos_xy", curr_pos_xy)
-    return torch.norm(curr_pos_xy - des_pos_xy, dim=1)
-
-    curr_pos_w = asset.data.root_pos_w  # 현재 루트 위치 (월드좌표계)
+    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+    curr_pos_w = asset.data.root_pos_w  # 루트 위치 사용
+    # print("des_pos_w", des_pos_w)
+    # print("curr_pos_w", curr_pos_w)
+    # dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
     return torch.norm(curr_pos_w - des_pos_w, dim=1)
-
-def kanake_position_command_error_base_head(
-    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-) -> torch.Tensor:
-    asset: RigidObject = env.scene[asset_cfg.name]
-    command = env.command_manager.get_command(command_name)
-    des_pos_xy = command[:, :2]  # 목표 x, y
-
-    # head 바디의 인덱스 찾기
-    head_index = asset.body_names.index("head")
-    curr_pos_xy = asset.data.body_pos_w[:, head_index, :2]  # head의 현재 x, y
-
-    # print("des_pos_xy", des_pos_xy)
-    # print("curr_pos_xy", curr_pos_xy)
-    return torch.norm(curr_pos_xy - des_pos_xy, dim=1)
-
-
-
-def kanake_position_command_error_base_head_tanh(
-    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-) -> torch.Tensor:
-    asset: RigidObject = env.scene[asset_cfg.name]
-    command = env.command_manager.get_command(command_name)
-    des_pos_xy = command[:, :2]
-
-    # head 바디의 인덱스 찾기
-    head_index = asset.body_names.index("head")
-    curr_pos_xy = asset.data.body_pos_w[:, head_index, :2]  # head의 현재 x, y
-
-    # print("des_pos_xy", des_pos_xy)
-    # print("curr_pos_xy", curr_pos_xy)
-    distance = torch.norm(curr_pos_xy - des_pos_xy, dim=1)
-    return 1 - torch.tanh(distance / std)
-
-
-
 
 class kanake_progress_to_command(ManagerTermBase):
     """Reward for making progress towards the commanded position compared to initial distance."""
@@ -826,48 +777,87 @@ def base_x_direction_alignment_reward(
     )
     return reward
 
+def action_rate_l2_clipped(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Penalize the rate of change of the actions using L2 squared kernel with safety clipping."""
+    # 현재 액션과 이전 액션 추출
+    current_action = env.action_manager.action
+    prev_action = env.action_manager.prev_action
+    
+    # NaN 또는 Inf 체크 (안정성을 위해)
+    if torch.isnan(current_action).any() or torch.isinf(current_action).any() or \
+       torch.isnan(prev_action).any() or torch.isinf(prev_action).any():
+        return torch.ones(env.num_envs, device=env.device) * 10.0  # 안전한 기본값 반환
+    
+    # 차이 계산 및 요소별 클리핑
+    action_diff = torch.clamp(current_action - prev_action, min=-10.0, max=10.0)
+    
+    # L2 제곱 계산 및 합계 클리핑
+    rate_l2 = torch.sum(torch.square(action_diff), dim=1)
+    
+    # 최종 결과 클리핑 (매우 큰 값 방지)
+    return torch.clamp(rate_l2, max=100.0)
 
-def head_x_direction_alignment_reward(
-    env: ManagerBasedRLEnv,
-    command_name: str,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    threshold_deg: float = 10.0,  # 허용 각도 (degree)
-) -> torch.Tensor:
+
+class BaseTargetAlignmentReward(ManagerTermBase):
     """
-    head의 로컬 x축 방향이 커맨드의 (x, y) 타겟을 바라보면 리워드
-    threshold_deg 이내로 정렬되면 1, 아니면 alignment 값 반환
+    로봇 베이스의 x축 방향이 목표 지점을 향하도록 하는 리워드
     """
-    asset: RigidObject = env.scene[asset_cfg.name]
-    command = env.command_manager.get_command(command_name)
-    target_xy = command[:, :2]  # shape: [num_envs, 2]
-
-    # head의 인덱스와 위치/쿼터니언
-    head_index = asset.body_names.index("head")
-    head_pos = asset.data.body_pos_w[:, head_index, :2]  # [num_envs, 2]
-    head_quat = asset.data.body_quat_w[:, head_index, :]  # [num_envs, 4]
-
-    # head의 로컬 x축 [1, 0, 0]을 월드 좌표계로 변환
-    local_x = torch.tensor([1.0, 0.0, 0.0], device=head_quat.device).expand(head_quat.shape[0], 3)
-    head_x_world = math_utils.quat_apply(head_quat, local_x)[:, :2]  # [num_envs, 2]
-
-    # head에서 타겟까지의 방향 벡터 (월드 좌표계)
-    to_target = target_xy - head_pos
-    to_target_norm = torch.norm(to_target, dim=-1, keepdim=True) + 1e-8
-    to_target_dir = to_target / to_target_norm  # [num_envs, 2]
-
-    # head x축 방향 벡터 정규화
-    head_x_world_norm = torch.norm(head_x_world, dim=-1, keepdim=True) + 1e-8
-    head_x_dir = head_x_world / head_x_world_norm
-
-    # 두 벡터의 코사인 유사도 (alignment)
-    alignment = torch.sum(head_x_dir * to_target_dir, dim=-1)
-    alignment = torch.clamp(alignment, -1.0, 1.0)
-
-    # threshold_deg 이내면 1, 아니면 alignment 값
-    cos_threshold = torch.cos(torch.tensor(threshold_deg * 3.14159265 / 180.0, device=env.device))
-    reward = torch.where(
-        alignment >= cos_threshold,
-        torch.ones_like(alignment),
-        alignment
-    )
-    return reward
+    
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        # 이전 정렬 상태 저장
+        self.prev_alignment = torch.zeros(env.num_envs, device=env.device)
+        
+    def reset(self, env_ids: torch.Tensor):
+        """환경 리셋 시 이전 정렬 상태 초기화"""
+        self.prev_alignment[env_ids] = -1.0  # 가장 나쁜 정렬 값으로 초기화
+    
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+        perfect_alignment_deg: float = 10.0,
+        smooth_factor: float = 2.0,
+        improvement_bonus: float = 0.2
+    ) -> torch.Tensor:
+        """베이스의 x축이 타겟을 향하도록 리워드 계산"""
+        asset = env.scene[asset_cfg.name]
+        command = env.command_manager.get_command(command_name)
+        
+        # 타겟 위치와 로봇 위치 (XY평면)
+        target_xy = command[:, :2]  # [num_envs, 2]
+        base_pos = asset.data.root_pos_w[:, :2]  # [num_envs, 2]
+        base_quat = asset.data.root_quat_w  # [num_envs, 4]
+        
+        # 로봇 베이스 x축 방향 벡터 (월드 좌표계)
+        local_x = torch.tensor([1.0, 0.0, 0.0], device=base_quat.device).expand(base_quat.shape[0], 3)
+        base_x_world = math_utils.quat_apply(base_quat, local_x)[:, :2]
+        base_x_dir = F.normalize(base_x_world, dim=-1)  # 단위 벡터화
+        
+        # 타겟 방향 벡터 (베이스 → 타겟)
+        to_target = target_xy - base_pos
+        to_target_dir = F.normalize(to_target, dim=-1)  # 단위 벡터화
+        
+        # 두 방향 간 각도 정렬 (코사인 유사도)
+        alignment = torch.sum(base_x_dir * to_target_dir, dim=-1)
+        alignment = torch.clamp(alignment, -1.0, 1.0)
+        
+        # 각도 계산 (라디안)
+        angle_rad = torch.acos(alignment)
+        
+        # 보상 계산: 부드러운 감소 곡선 (각도가 작을수록 높은 보상)
+        perfect_rad = perfect_alignment_deg * torch.pi / 180.0
+        reward_base = torch.exp(-(angle_rad / perfect_rad) ** smooth_factor)
+        
+        # 이전 상태 대비 개선도 측정
+        improvement = torch.clamp(alignment - self.prev_alignment, min=0.0)
+        improvement_reward = improvement * improvement_bonus
+        
+        # 최종 보상 = 기본 보상 + 개선 보상
+        reward = reward_base + improvement_reward
+        
+        # 이전 상태 업데이트
+        self.prev_alignment[:] = alignment
+        
+        return reward

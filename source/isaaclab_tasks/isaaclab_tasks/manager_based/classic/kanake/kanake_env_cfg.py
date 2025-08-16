@@ -101,8 +101,8 @@ class CommandsCfg:
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeCommandCfg.Ranges(
-            pos_x=(-0.5, 0.5),
-            pos_y=(-0.5, 0.5),
+            pos_x=(-1.0, 1.0),
+            pos_y=(-1.0, 1.0),
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
@@ -187,10 +187,7 @@ class ObservationsCfg:
         actions = ObsTerm(func=mdp.last_action)
 
 
-        base_height = ObsTerm(func=mdp.base_pos_z)
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+
 
 
         
@@ -202,11 +199,11 @@ class ObservationsCfg:
     @configclass
     class CriticCfg(ObsGroup):
 
-        # base_height = ObsTerm(func=mdp.base_pos_z)
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
-        # base_pos = ObsTerm(func=mdp.base_pos)
+        base_height = ObsTerm(func=mdp.base_pos_z)
+        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        # base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+        base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)
 
         # base_angle_to_target_command = ObsTerm(func=mdp.base_angle_to_target_command, params={"command_name": "kanake_command"})
@@ -320,6 +317,16 @@ class RewardsCfg:
         weight=0.3,
         params={"std": 0.15, "command_name": "kanake_command"},
     )
+    base_target_alignment = RewTerm(
+        func=mdp.BaseTargetAlignmentReward,
+        weight=0.1,
+        params={
+            "command_name": "kanake_command",
+            "perfect_alignment_deg": 15.0,
+            "smooth_factor": 1.5,
+            "improvement_bonus": 0.3
+        }
+)
     # kanake_position_threshold_reward = RewTerm(
     #     func=mdp.kanake_position_command_threshold_reward,
     #     weight=10.0,
@@ -383,14 +390,19 @@ class RewardsCfg:
     #     func=mdp.action_rate_l2,
     #     weight = -0.1,
     # )
-    # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.2)
-    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.00005)
+    lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.00002)
+    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.00005)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
     # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
+    # action_rate_l2_clipped = RewTerm(
+
+    #     func=mdp.action_rate_l2_clipped,  # 새로운 함수 필요
+    #     weight=-0.0001,
+    # )
     # energy = RewTerm(
     #     func=mdp.power_consumption,
     #     weight=-0.005,
