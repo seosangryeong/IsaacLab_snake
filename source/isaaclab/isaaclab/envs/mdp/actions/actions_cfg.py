@@ -346,13 +346,13 @@ class JointSineActionCfg(JointActionCfg):
     # (np.pi/4, np.pi/2),  # phase_vertical (0.78~1.57)
     # (0.4, 1.2),  # frequency_horizontal
     # # (np.pi/4, np.pi/2),  # phase_horizontal (0.78~1.57)
-    *((-np.pi/2, np.pi/2) for _ in range(16)),  # amplitude 
+    # *((-np.pi/2, np.pi/2) for _ in range(16)),  # amplitude 
 
 
-    (-np.pi/2, np.pi/2),  # frequency_vertical
-    (-np.pi/2, np.pi/2),  # phase_vertical (0.78~1.57)
-    (-np.pi/2, np.pi/2),  # frequency_horizontal
-    (-np.pi/2, np.pi/2),  # phase_horizontal (0.78~1.57)
+    # (-np.pi/2, np.pi/2),  # frequency_vertical
+    # (-np.pi/2, np.pi/2),  # phase_vertical (0.78~1.57)
+    # (-np.pi/2, np.pi/2),  # frequency_horizontal
+    # (-np.pi/2, np.pi/2),  # phase_horizontal (0.78~1.57)
 
     # *((0.0, 0.0) for _ in range(16)),  # amplitude 
 

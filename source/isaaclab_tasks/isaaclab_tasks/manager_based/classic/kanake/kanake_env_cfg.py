@@ -101,8 +101,8 @@ class CommandsCfg:
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeCommandCfg.Ranges(
-            pos_x=(-1.0, 1.0),
-            pos_y=(-1.0, 1.0),
+            pos_x=(-1.5, 1.5),
+            pos_y=(-1.5, 1.5),
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
@@ -200,9 +200,9 @@ class ObservationsCfg:
     class CriticCfg(ObsGroup):
 
         base_height = ObsTerm(func=mdp.base_pos_z)
-        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
-        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        # base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
         base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)
 
@@ -303,7 +303,7 @@ class RewardsCfg:
     # )
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-0.2,
+        weight=-0.5,
         params={"command_name": "kanake_command"},
     )
     # kanake_progress_to_command = RewTerm(
@@ -390,14 +390,14 @@ class RewardsCfg:
     #     func=mdp.action_rate_l2,
     #     weight = -0.1,
     # )
-    lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.00002)
-    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.00005)
+    # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.00002)
+    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.00005)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
     # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
     # action_rate_l2_clipped = RewTerm(
 
     #     func=mdp.action_rate_l2_clipped,  # 새로운 함수 필요
@@ -420,7 +420,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.25})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.3})
 
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 

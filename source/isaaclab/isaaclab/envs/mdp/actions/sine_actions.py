@@ -100,13 +100,12 @@ class JointSineAction(ActionTerm):
         phase_h_action = actions[:, self._num_joints + 3]
 
 
-        # 진폭 (Amplitude): 범위를 [-0.6, 0.6] 라디안 (약 ±35도)으로 제한
-        amplitudes = 0.8 * torch.tanh(amp_actions)
+        # 진폭 (Amplitude)
+        amplitudes = 1.0 * torch.tanh(amp_actions)
 
-        # 주파수 (Frequency): 범위를 [0.1, 0.5] Hz 사이의 양수 값으로 제한 
-        # (tanh(x) + 1) / 2.0 은 출력을 [0, 1] 범위로 변환합니다.
-        freq_v = 0.1 + 0.8 * (torch.tanh(freq_v_action) + 1.0) / 2.0
-        freq_h = 0.1 + 0.8 * (torch.tanh(freq_h_action) + 1.0) / 2.0
+        # 주파수 (Frequency)
+        freq_v = 0.5 + 1.5 * (torch.tanh(freq_v_action) + 1.0) / 2.0
+        freq_h = 0.5 + 1.5 * (torch.tanh(freq_h_action) + 1.0) / 2.0
 
         # 위상 (Phase): 범위를 [-π/2, π/2] 라디안으로 제한
         phase_v = (torch.pi / 2.0) * torch.tanh(phase_v_action)
