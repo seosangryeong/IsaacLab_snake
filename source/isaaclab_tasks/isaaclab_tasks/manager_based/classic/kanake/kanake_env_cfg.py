@@ -18,7 +18,7 @@ import numpy as np
 from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
 # from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, CUBOID_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
 import torch
-from isaaclab.terrains.config.kanake_plane import KANAKE_PLANE_CFG, KANAKE_RANDOM_TERRAIN_CFG # isort: skip
+from isaaclab.terrains.config.kanake_plane import KANAKE_PLANE_CFG, KANAKE_RANDOM_TERRAIN_CFG, KANAKE_WAVE_TERRATIN_CFG # isort: skip
 import isaaclab_tasks.manager_based.classic.kanake.mdp.target_path as target_path
 # import isaaclab_tasks.manager_based.classic.humanoid.mdp as mdp
 import isaaclab_tasks.manager_based.classic.kanake.mdp as mdp
@@ -66,8 +66,8 @@ class MySceneCfg(InteractiveSceneCfg):
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="average",
             restitution_combine_mode="average",
-            static_friction=0.7,
-            dynamic_friction=0.7,
+            static_friction=0.6,
+            dynamic_friction=0.6,
         ),
         # visual_material=sim_utils.PreviewSurfaceCfg(
         #     # diffuse_color=(0.065, 0.0725, 0.080),#회색
@@ -99,7 +99,7 @@ class CommandsCfg:
     kanake_command = mdp.KanakeCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(10.0, 10.0), 
+        resampling_time_range=(20.0, 20.0), 
         ranges=mdp.KanakeCommandCfg.Ranges(
             pos_x=(-1.5, 1.5),
             pos_y=(-1.5, 1.5),
@@ -121,12 +121,14 @@ class ActionsCfg:
     #     )
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
-    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=True)
+    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["j1", "j2", "j3"], scale=1.0, use_default_offset=True)
     # joint_sine_hold = mdp.JointSineHoldActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
     # )
-    joint_sine = mdp.JointSineActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
+    joint_sine = mdp.JointSineActionCfg(asset_name="robot", 
+                                        joint_names=["j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
+                                        scale=1.0)
 
     # joint_cpg = mdp.JointCPGActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
 
@@ -200,8 +202,8 @@ class ObservationsCfg:
     class CriticCfg(ObsGroup):
 
         base_height = ObsTerm(func=mdp.base_pos_z)
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
         base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
         base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)
@@ -236,7 +238,7 @@ class EventCfg:
         mode="reset",
         params={
             # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (-1.57,1.57)},
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.1, 0.1), "yaw": (-np.pi,np.pi)},
+            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.25, 0.25), "yaw": (-np.pi,np.pi)},
             "velocity_range": {
                 "x": (0.0, 0.0),
                 "y": (0.0, 0.0),
@@ -249,28 +251,28 @@ class EventCfg:
     )
 
 
-    # reset_robot_joints = EventTerm(
-    #     func=mdp.reset_joints_by_offset,
-    #     mode="reset",
-    #     params={
-    #         "position_range": (-np.pi/6, np.pi/6),  
-    #         "velocity_range": (0, 0),
-    #     },
-    # )
+    reset_robot_joints = EventTerm(
+        func=mdp.reset_joints_by_offset,
+        mode="reset",
+        params={
+            "position_range": (-np.pi/6, np.pi/6),  
+            "velocity_range": (0, 0),
+        },
+    )
 
-#     physics_material = EventTerm(
-#         func=mdp.randomize_rigid_body_material,
-#         mode="startup",
-#         params={
-#             "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
-#             "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
-# ),
-#             "static_friction_range": (0.4, 1.0),
-#             "dynamic_friction_range": (0.4, 1.0),
-#             "restitution_range": (0.0, 0.2),
-#             "num_buckets": 64,
-#         },
-#     )
+    physics_material = EventTerm(
+        func=mdp.randomize_rigid_body_material,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
+            "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
+),
+            "static_friction_range": (0.4, 1.0),
+            "dynamic_friction_range": (0.4, 1.0),
+            "restitution_range": (0.0, 0.2),
+            "num_buckets": 64,
+        },
+    )
 
 #     add_base_mass = EventTerm(
 #         func=mdp.randomize_rigid_body_mass,
@@ -301,32 +303,37 @@ class RewardsCfg:
     #     func=mdp.action_rate_l2,
     #     weight = -0.01,
     # )
-    kanake_position_command_error_base = RewTerm(
-        func=mdp.kanake_position_command_error_base,
-        weight=-0.5,
-        params={"command_name": "kanake_command"},
-    )
+    # kanake_progress_to_command = RewTerm(
+    #     func=mdp.kanake_progress_to_command,
+    #     weight=0.5,
+    #     params={"command_name": "kanake_command"},
+    # )
     # kanake_progress_to_command = RewTerm(
     #     func=mdp.kanake_progress_to_command,
     #     weight=3.0,  
     #     params={"command_name": "kanake_command"},
     # )
     #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
+    kanake_position_command_error_base = RewTerm(
+        func=mdp.kanake_position_command_error_base,
+        weight=-0.5,
+        params={"command_name": "kanake_command"},
+    )
     kanake_position_command_error_tanh_base = RewTerm(
         func=mdp.kanake_position_command_error_tanh_base,
-        weight=0.3,
-        params={"std": 0.15, "command_name": "kanake_command"},
+        weight=0.5,
+        params={"std": 0.5, "command_name": "kanake_command"},
     )
-    base_target_alignment = RewTerm(
-        func=mdp.BaseTargetAlignmentReward,
-        weight=0.1,
-        params={
-            "command_name": "kanake_command",
-            "perfect_alignment_deg": 15.0,
-            "smooth_factor": 1.5,
-            "improvement_bonus": 0.3
-        }
-)
+#     base_target_alignment = RewTerm(
+#         func=mdp.BaseTargetAlignmentReward,
+#         weight=0.05,
+#         params={
+#             "command_name": "kanake_command",
+#             "perfect_alignment_deg": 15.0,
+#             "smooth_factor": 1.5,
+#             "improvement_bonus": 0.3
+#         }
+# )
     # kanake_position_threshold_reward = RewTerm(
     #     func=mdp.kanake_position_command_threshold_reward,
     #     weight=10.0,
@@ -360,16 +367,16 @@ class RewardsCfg:
     #     weight=-0.07,
     #     params={"command_name": "kanake_command"},
     # )
-    # head_x_direction_alignment_reward = RewTerm(
-    #     func=mdp.head_x_direction_alignment_reward,
-    #     weight=0.5,
-    #     params={"command_name": "kanake_command"},
-    # )
+    base_x_direction_alignment_reward = RewTerm(
+        func=mdp.base_x_direction_alignment_reward,
+        weight=0.05,
+        params={"command_name": "kanake_command"},
+    )
 
     # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
     # alive = RewTerm(func=mdp.is_alive, weight=0.5)
     # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
-    upright = RewTerm(func=mdp.upright_posture_shaped, weight=0.1, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.upright_posture_shaped, weight=0.2, params={"threshold": 0.8})
     # terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
 
 
@@ -397,7 +404,7 @@ class RewardsCfg:
     # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.05)
     # action_rate_l2_clipped = RewTerm(
 
     #     func=mdp.action_rate_l2_clipped,  # 새로운 함수 필요
@@ -420,7 +427,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.3})
+    # max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.5})
 
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
@@ -460,7 +467,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 20.0
+        self.episode_length_s = 40.0
         # simulation settings
         self.sim.dt = 1 / 80.0
         self.sim.render_interval = self.decimation

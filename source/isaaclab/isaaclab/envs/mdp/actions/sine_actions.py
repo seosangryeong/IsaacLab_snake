@@ -7,29 +7,24 @@ import omni.log
 
 from isaaclab.assets.articulation import Articulation
 from isaaclab.managers.action_manager import ActionTerm
-from . import actions_cfg # actions_cfg 파일이 필요합니다.
+from . import actions_cfg 
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
-    # from . import actions_cfg # actions_cfg 파일이 필요합니다.
 
 class JointSineAction(ActionTerm):
     """
-    [수정된 버전] 사인파 기반 액션 Term.
+    [
     
-    이 액션 term은 각 환경마다 (조인트 개수 + 4)개의 파라미터를 사용합니다.
+    이 액션 term은 각 환경마다 (조인트 개수 + 4)개의 파라미터를 사용
       - 각 조인트별 진폭 (num_joints)
       - 수직 조인트: frequency_vertical, phase_vertical
       - 수평 조인트: frequency_horizontal, phase_horizontal
 
       position = amplitude[joint] * sin(2π * frequency * t + (조인트 번호) * phase)
       
-    수정 사항:
-    - 모든 파라미터에 동일한 스케일을 적용하던 로직을 삭제.
-    - 진폭(amplitude), 주파수(frequency), 위상(phase)에 대해 각각 물리적으로 
-      안정적인 범위로 개별 스케일링을 적용하여 발산 문제를 해결.
     """
     cfg: actions_cfg.JointSineActionCfg
     _asset: Articulation
@@ -101,15 +96,15 @@ class JointSineAction(ActionTerm):
 
 
         # 진폭 (Amplitude)
-        amplitudes = 1.0 * torch.tanh(amp_actions)
+        amplitudes = torch.tanh(amp_actions+1)/2
 
         # 주파수 (Frequency)
-        freq_v = 0.5 + 1.5 * (torch.tanh(freq_v_action) + 1.0) / 2.0
-        freq_h = 0.5 + 1.5 * (torch.tanh(freq_h_action) + 1.0) / 2.0
+        freq_v = 0.3 + 1.0 * (torch.tanh(freq_v_action) + 1.0) / 2.0
+        freq_h = 0.3 + 1.0 * (torch.tanh(freq_h_action) + 1.0) / 2.0
 
         # 위상 (Phase): 범위를 [-π/2, π/2] 라디안으로 제한
-        phase_v = (torch.pi / 2.0) * torch.tanh(phase_v_action)
-        phase_h = (torch.pi / 2.0) * torch.tanh(phase_h_action)
+        phase_v = (torch.pi / 2) * torch.tanh(phase_v_action)
+        phase_h = (torch.pi / 2) * torch.tanh(phase_h_action)
 
         
         t = torch.full((self.num_envs, 1), self._current_time, device=self.device)

@@ -766,10 +766,11 @@ def base_x_direction_alignment_reward(
 
     # 두 벡터의 코사인 유사도 (alignment)
     alignment = torch.sum(base_x_dir * to_target_dir, dim=-1)
+    # print("alignment", alignment)
     alignment = torch.clamp(alignment, -1.0, 1.0)
 
     # threshold_deg 이내면 1, 아니면 alignment 값
-    cos_threshold = torch.cos(torch.tensor(threshold_deg * 3.14159265 / 180.0, device=env.device))
+    cos_threshold = torch.cos(torch.tensor(threshold_deg * torch.pi / 180.0, device=env.device))
     reward = torch.where(
         alignment >= cos_threshold,
         torch.ones_like(alignment),
@@ -786,15 +787,15 @@ def action_rate_l2_clipped(env: ManagerBasedRLEnv) -> torch.Tensor:
     # NaN 또는 Inf 체크 (안정성을 위해)
     if torch.isnan(current_action).any() or torch.isinf(current_action).any() or \
        torch.isnan(prev_action).any() or torch.isinf(prev_action).any():
-        return torch.ones(env.num_envs, device=env.device) * 10.0  # 안전한 기본값 반환
+        return torch.ones(env.num_envs, device=env.device) * 10.0  
     
     # 차이 계산 및 요소별 클리핑
     action_diff = torch.clamp(current_action - prev_action, min=-10.0, max=10.0)
     
-    # L2 제곱 계산 및 합계 클리핑
+    # L2 계산 
     rate_l2 = torch.sum(torch.square(action_diff), dim=1)
     
-    # 최종 결과 클리핑 (매우 큰 값 방지)
+    # 최종 결과 클리핑 
     return torch.clamp(rate_l2, max=100.0)
 
 
@@ -809,8 +810,7 @@ class BaseTargetAlignmentReward(ManagerTermBase):
         self.prev_alignment = torch.zeros(env.num_envs, device=env.device)
         
     def reset(self, env_ids: torch.Tensor):
-        """환경 리셋 시 이전 정렬 상태 초기화"""
-        self.prev_alignment[env_ids] = -1.0  # 가장 나쁜 정렬 값으로 초기화
+        self.prev_alignment[env_ids] = -1.0  
     
     def __call__(
         self,
@@ -821,7 +821,6 @@ class BaseTargetAlignmentReward(ManagerTermBase):
         smooth_factor: float = 2.0,
         improvement_bonus: float = 0.2
     ) -> torch.Tensor:
-        """베이스의 x축이 타겟을 향하도록 리워드 계산"""
         asset = env.scene[asset_cfg.name]
         command = env.command_manager.get_command(command_name)
         
@@ -846,7 +845,7 @@ class BaseTargetAlignmentReward(ManagerTermBase):
         # 각도 계산 (라디안)
         angle_rad = torch.acos(alignment)
         
-        # 보상 계산: 부드러운 감소 곡선 (각도가 작을수록 높은 보상)
+        # 보상 계산
         perfect_rad = perfect_alignment_deg * torch.pi / 180.0
         reward_base = torch.exp(-(angle_rad / perfect_rad) ** smooth_factor)
         

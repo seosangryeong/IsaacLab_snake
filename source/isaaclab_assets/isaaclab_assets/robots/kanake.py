@@ -26,8 +26,9 @@ KANAKE_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
 # /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0808_4.SLDASM/urdf/
 #/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/
-        # usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0806.usd",
-        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0708.usd",
+        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0818.usd",
+        # /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0814/
+        # usd_path="./kanake6_sim_523/kanake6_sim_0814/kanake6_0820.usd",
         # usd_path="./kanake6_sim_523/kanake6_sim_0814/kanake6_0814_flat.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -40,8 +41,8 @@ KANAKE_CFG = ArticulationCfg(
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
             enabled_self_collisions=False,
-            solver_position_iteration_count=4,
-            solver_velocity_iteration_count=4,
+            solver_position_iteration_count=16,
+            solver_velocity_iteration_count=16,
             # sleep_threshold=0.005,
             # stabilization_threshold=0.001,
         ),
@@ -60,12 +61,12 @@ KANAKE_CFG = ArticulationCfg(
     actuators={
             "body": ImplicitActuatorCfg(
                 joint_names_expr=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-                stiffness =10.0,
-                damping =3.5,
+                stiffness =3.0,
+                damping =1.0,
                 # stiffness = 10.0,
                 # damping =5.0,
-                effort_limit = 5.0, #Nm
-                effort_limit_sim = 5.0, #Nm
+                # effort_limit = 5.0, #Nm
+                # effort_limit_sim = 5.0, #Nm
                 # velocity_limit = 5.7, #rad/s
 
             ),
