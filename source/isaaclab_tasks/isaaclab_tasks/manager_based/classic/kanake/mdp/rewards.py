@@ -430,40 +430,7 @@ class HeadTailDistancePenalty(ManagerTermBase):
 
         return -penalty  # 페널티는 음수 값으로 반환
     
-class LocalWorldAlignmentReward(ManagerTermBase):
-    """
-    로봇의 로컬 좌표계(베이스 프레임)가 월드 좌표계(아이덴티티 쿼터니언)와 일치할 때 보상
-    현재 로봇 베이스의 회전(쿼터니언)과 목표 쿼터니언([1, 0, 0, 0]) 간의 차이를 계산
-    오차가 작을수록 보상이 커지도록 지수 함수를 사용
-    """
-    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
-        super().__init__(cfg, env)
-        self.alpha = cfg.params.get("alpha", 1.0)  # 민감도 상수
 
-    def __call__(
-        self,
-        env: ManagerBasedRLEnv,
-        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    ) -> torch.Tensor:
-        asset: Articulation = env.scene[asset_cfg.name]
-        # 현재 로봇 베이스의 월드 좌표계 상 회전 (쿼터니언, (w, x, y, z) 형식)
-        q_current = asset.data.root_quat_w  # shape: [num_envs, 4]
-        
-        # 목표 쿼터니언: 월드 좌표계와 동일한 방향 (아이덴티티 쿼터니언)
-        q_desired = torch.tensor([1.0, 0.0, 0.0, 0.0], device=env.device).expand_as(q_current)
-        
-        # 두 쿼터니언의 내적의 절대값을 계산
-        dot = torch.abs(torch.sum(q_current * q_desired, dim=-1))
-        dot = torch.clamp(dot, 0.0, 1.0)
-        
-        # 두 쿼터니언 사이의 각 오차 계산 (라디안 단위)
-        angle_error = 2 * torch.acos(dot)
-        # print("angle_error", angle_error)
-        
-        # 오차가 작을수록 높은 보상이 나오도록 지수 함수를 적용
-        reward = torch.exp(-self.alpha * angle_error)
-        
-        return reward
 
 def kanake_position_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     asset: RigidObject = env.scene[asset_cfg.name]
@@ -483,35 +450,28 @@ def kanake_position_command_error_tanh(
     env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     asset: RigidObject = env.scene[asset_cfg.name]
-    command = env.command_manager.get_command(command_name)
-    des_pos_b = command[:, :3]
-    batch = des_pos_b.shape[0]
-    root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
-    root_pos[:, 2] = asset.data.default_root_state[:, 2]
-    root_quat = torch.zeros(batch, 4, device=des_pos_b.device)
-    root_quat[:, 0] = 1.0
-    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
-    curr_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], :3]
+
+    des_pos_w = env.command_manager.get_command(command_name)[:, :2]
+    curr_pos_w = asset.data.root_pos_w[:, :2]  
+    
     distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
     return 1 - torch.tanh(distance / std)
 
-def kanake_position_command_error_base(
-    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-) -> torch.Tensor:
-    asset: RigidObject = env.scene[asset_cfg.name]
-    command = env.command_manager.get_command(command_name)
-    des_pos_b = command[:, :3]
-    
-    # batch = des_pos_b.shape[0]
-    root_pos = asset.data.root_pos_w  # (B, 3)
-    root_quat = asset.data.root_quat_w  # (B, 4)
+# def kanake_position_command_error_base(
+#     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+# ) -> torch.Tensor:
+#     asset: RigidObject = env.scene[asset_cfg.name]
+#     des_pos_w = env.command_manager.get_command(command_name)[:, :2]
+#     # print("des_pos_w", des_pos_w)
 
-    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
-    curr_pos_w = asset.data.root_pos_w  # 루트 위치 사용
-    # print("des_pos_w", des_pos_w)
-    # print("curr_pos_w", curr_pos_w)
-    # dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
-    return torch.norm(curr_pos_w - des_pos_w, dim=1)
+#     curr_pos_w = asset.data.root_pos_w[:, :2]  
+#     # print("curr_pos_w", curr_pos_w)
+#     # dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
+#     return torch.norm(curr_pos_w - des_pos_w, dim=1)
+
+
+
+
 
 class kanake_progress_to_command(ManagerTermBase):
     """Reward for making progress towards the commanded position compared to initial distance."""
@@ -564,24 +524,41 @@ class kanake_progress_to_command(ManagerTermBase):
         
         return reward
 
-def kanake_position_command_error_tanh_base(
+# def kanake_position_command_error_tanh_base(
+#     env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+# ) -> torch.Tensor:
+#     asset: RigidObject = env.scene[asset_cfg.name]
+#     command = env.command_manager.get_command(command_name)
+#     des_pos_b = command[:, :3]
+
+#     root_pos = asset.data.root_pos_w       # (B, 3)
+#     root_quat = asset.data.root_quat_w     # (B, 4)
+
+#     # 목표 위치를 월드 프레임으로 변환
+#     des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
+
+#     # 현재 위치: 루트 위치
+#     curr_pos_w = asset.data.root_pos_w     # 루트 위치 사용
+
+#     distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
+#     return 1 - torch.tanh(distance / std)
+
+def kanake_position_command_error_tanh(
     env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    asset: RigidObject = env.scene[asset_cfg.name]
-    command = env.command_manager.get_command(command_name)
-    des_pos_b = command[:, :3]
+    
+    distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
 
-    root_pos = asset.data.root_pos_w       # (B, 3)
-    root_quat = asset.data.root_quat_w     # (B, 4)
-
-    # 목표 위치를 월드 프레임으로 변환
-    des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
-
-    # 현재 위치: 루트 위치
-    curr_pos_w = asset.data.root_pos_w     # 루트 위치 사용
-
-    distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
     return 1 - torch.tanh(distance / std)
+
+
+def kanake_position_command_error_base(
+    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
+
+
+    return env.command_manager.get_term(command_name).metrics["error_pos_2d"]
 
 def kanake_position_command_threshold_reward(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg, threshold: float = 0.1) -> torch.Tensor:
@@ -731,7 +708,7 @@ def orientation_command_error_base(
     return quat_error_magnitude(curr_quat_w, des_quat_w)
 
 
-def base_x_direction_alignment_reward(
+def head_x_direction_alignment_reward(
     env: ManagerBasedRLEnv,
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -745,18 +722,18 @@ def base_x_direction_alignment_reward(
     command = env.command_manager.get_command(command_name)
     # 커맨드의 목표 위치 (월드 좌표계)
     target_xy = command[:, :2]  # shape: [num_envs, 2]
-    # 현재 base 위치 (월드 좌표계)
-    base_pos = asset.data.root_pos_w[:, :2]  # shape: [num_envs, 2]
-    # 현재 base 쿼터니언 (월드 좌표계)
-    base_quat = asset.data.root_quat_w  # shape: [num_envs, 4]
+    # 현재 head 위치 (월드 좌표계)
+    head_pos = asset.data.head_pos_w[:, :2]  # shape: [num_envs, 2]
+    # 현재 head 쿼터니언 (월드 좌표계)
+    head_quat = asset.data.head_quat_w  # shape: [num_envs, 4]
 
-    # base의 x축 방향 벡터 (월드 좌표계)
+    # head의 x축 방향 벡터 (월드 좌표계)
     # 로컬 x축 [1, 0, 0]을 월드 좌표계로 변환
-    local_x = torch.tensor([1.0, 0.0, 0.0], device=base_quat.device).expand(base_quat.shape[0], 3)
-    base_x_world = math_utils.quat_apply(base_quat, local_x)[:, :2]  # shape: [num_envs, 2]
+    local_x = torch.tensor([1.0, 0.0, 0.0], device=head_quat.device).expand(head_quat.shape[0], 3)
+    base_x_world = math_utils.quat_apply(head_quat, local_x)[:, :2]  # shape: [num_envs, 2]
 
     # base에서 타겟까지의 방향 벡터 (월드 좌표계)
-    to_target = target_xy - base_pos
+    to_target = target_xy - head_pos
     to_target_norm = torch.norm(to_target, dim=-1, keepdim=True) + 1e-8
     to_target_dir = to_target / to_target_norm  # shape: [num_envs, 2]
 
@@ -860,3 +837,18 @@ class BaseTargetAlignmentReward(ManagerTermBase):
         self.prev_alignment[:] = alignment
         
         return reward
+    
+
+# head높이
+def head_height_reward(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    target_height: float = 0.15,
+    tolerance: float = 0.01,
+) -> torch.Tensor:
+
+    asset: Articulation = env.scene[asset_cfg.name]
+    head_z = asset.data.head_pos_w[:, 2]  # [num_envs]
+    # print("head_z", head_z)
+    reward = ((head_z >= target_height - tolerance) & (head_z <= target_height + tolerance)).float()
+    return reward

@@ -554,7 +554,25 @@ class RigidObjectData:
     ##
     # Properties for backwards compatibility.
     ##
+    @property
+    def head_pos_w(self) -> torch.Tensor:
 
+        if self.body_names is None:
+            raise ValueError("body_names is not initialized.")
+        head_idx = self.body_names.index("head")
+        return self.body_pos_w[:, head_idx, :]
+    
+    @property
+    def head_quat_w(self) -> torch.Tensor:
+        """
+        (w, x, y, z) of the body named 'head'.
+        Shape: (num_instances, 4)
+        """
+        if self.body_names is None:
+            raise ValueError("body_names is not initialized.")
+        head_idx = self.body_names.index("head")
+        return self.body_quat_w[:, head_idx, :]
+    
     @property
     def root_pose_w(self) -> torch.Tensor:
         """Same as :attr:`root_link_pose_w`."""

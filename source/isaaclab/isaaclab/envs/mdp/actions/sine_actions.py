@@ -96,11 +96,11 @@ class JointSineAction(ActionTerm):
 
 
         # 진폭 (Amplitude)
-        amplitudes = torch.tanh(amp_actions+1)/2
+        amplitudes = torch.tanh(amp_actions)
 
         # 주파수 (Frequency)
-        freq_v = 0.3 + 1.0 * (torch.tanh(freq_v_action) + 1.0) / 2.0
-        freq_h = 0.3 + 1.0 * (torch.tanh(freq_h_action) + 1.0) / 2.0
+        freq_v = 0.5 + 0.5 * (torch.tanh(freq_v_action) + 1.0) / 2.0
+        freq_h = 0.5 + 0.5 * (torch.tanh(freq_h_action) + 1.0) / 2.0
 
         # 위상 (Phase): 범위를 [-π/2, π/2] 라디안으로 제한
         phase_v = (torch.pi / 2) * torch.tanh(phase_v_action)
@@ -112,10 +112,13 @@ class JointSineAction(ActionTerm):
         # 조인트별로 진폭을 나눠서 적용
         vertical_joint_sorted = sorted(self._vertical_joint_names, key=lambda name: int(name[1:]))
         vertical_indices = [self._joint_names.index(name) for name in vertical_joint_sorted]
+        # vertical_numbers = torch.arange(len(vertical_joint_sorted), device=self.device, dtype=torch.float32).unsqueeze(0)
         vertical_numbers = torch.arange(len(vertical_joint_sorted), device=self.device, dtype=torch.float32).unsqueeze(0)
+
 
         horizontal_joint_sorted = sorted(self._horizontal_joint_names, key=lambda name: int(name[1:]))
         horizontal_indices = [self._joint_names.index(name) for name in horizontal_joint_sorted]
+        # horizontal_numbers = torch.arange(len(horizontal_joint_sorted), device=self.device, dtype=torch.float32).unsqueeze(0)
         horizontal_numbers = torch.arange(len(horizontal_joint_sorted), device=self.device, dtype=torch.float32).unsqueeze(0)
 
         # 각 조인트별 진폭 추출 (스케일링된 amplitudes 사용)

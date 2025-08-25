@@ -99,10 +99,10 @@ class CommandsCfg:
     kanake_command = mdp.KanakeCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(20.0, 20.0), 
+        resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeCommandCfg.Ranges(
-            pos_x=(-1.5, 1.5),
-            pos_y=(-1.5, 1.5),
+            pos_x=(-1.0, 1.0),
+            pos_y=(-1.0, 1.0),
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
@@ -178,6 +178,15 @@ class ObservationsCfg:
         # # joint_pos = ObsTerm(func=mdp.joint_pos)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
+        # image_features = ObsTerm(
+        #     func=mdp.image_features,
+        #     params={
+        #         "sensor_cfg": SceneEntityCfg("Camera"),  
+        #         "data_type": "rgb",
+        #         "model_name": "resnet18",  
+        #         "model_device": "cuda",   
+        #     }
+        # )
 
         joint_vel = ObsTerm(func=mdp.joint_vel)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
@@ -293,132 +302,43 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    # upright = RewTerm(func=mdp.upright_kanake_posture_bonus, weight=2.0, params={"threshold": 0.85})
-    # BodyLineDistancePenalty = RewTerm(
-    #     func=mdp.BodyLineDistancePenalty,
-    #     weight=-2.0,
-    #     params={"target_pos": (5.0, 0.0, 0.0), "threshold": 0.4}  
-    # )
-    # action_rate_l2 = RewTerm(
-    #     func=mdp.action_rate_l2,
-    #     weight = -0.01,
-    # )
-    # kanake_progress_to_command = RewTerm(
-    #     func=mdp.kanake_progress_to_command,
-    #     weight=0.5,
-    #     params={"command_name": "kanake_command"},
-    # )
-    # kanake_progress_to_command = RewTerm(
-    #     func=mdp.kanake_progress_to_command,
-    #     weight=3.0,  
-    #     params={"command_name": "kanake_command"},
-    # )
-    #"asset_cfg": SceneEntityCfg("robot", body_names=["head"]), 
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-0.5,
+        weight=-3.0,
         params={"command_name": "kanake_command"},
     )
-    kanake_position_command_error_tanh_base = RewTerm(
-        func=mdp.kanake_position_command_error_tanh_base,
-        weight=0.5,
-        params={"std": 0.5, "command_name": "kanake_command"},
+    
+    kanake_position_command_error_tanh = RewTerm(
+        func=mdp.kanake_position_command_error_tanh,
+        weight=3.0,
+        params={"std": 0.1, "command_name": "kanake_command"},
     )
-#     base_target_alignment = RewTerm(
-#         func=mdp.BaseTargetAlignmentReward,
-#         weight=0.05,
-#         params={
-#             "command_name": "kanake_command",
-#             "perfect_alignment_deg": 15.0,
-#             "smooth_factor": 1.5,
-#             "improvement_bonus": 0.3
-#         }
-# )
-    # kanake_position_threshold_reward = RewTerm(
-    #     func=mdp.kanake_position_command_threshold_reward,
-    #     weight=10.0,
-    #     params={
-    #         "threshold": 0.1,  # 10cm
-    #         "command_name": "kanake_command",
-    #         "asset_cfg": SceneEntityCfg("robot", body_names=["head"])
-    #     }
-    # )
-    # HeadTailDistancePenalty = RewTerm(
-    #     func=mdp.HeadTailDistancePenalty,
-    #     weight=-0.2,    
-    #     params={"min_distance" : 0.3}
-    # )
-    # DistanceReward = RewTerm(
-    #     func=mdp.DistanceReward,
-    #     weight=-0.2,
-    #     params={"threshold": 0.2}
-    # )
-    # kanake_progress_command_reward = RewTerm(
-    #     func=mdp.kanake_progress_command_reward,
-    #     weight=1.0,
-    #     params={
-    #         "command_name": "kanake_command",
-    #         "asset_cfg": SceneEntityCfg("robot")
-    #     }
-    # )
+
+    head_x_direction_alignment_reward = RewTerm(
+        func=mdp.head_x_direction_alignment_reward,
+        weight=0.5,
+        params={"command_name": "kanake_command"},
+    )
+
+    upright = RewTerm(func=mdp.upright_posture_shaped, weight=1.0, params={"threshold": 0.8})
+
+    head_height_reward = RewTerm(func=mdp.head_height_reward, weight=0.5, params={"target_height": 0.2, "tolerance": 0.01})
+    
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+
+
+
 
     # orientation_command_error_base = RewTerm(
     #     func=mdp.orientation_command_error_base,
     #     weight=-0.07,
     #     params={"command_name": "kanake_command"},
     # )
-    base_x_direction_alignment_reward = RewTerm(
-        func=mdp.base_x_direction_alignment_reward,
-        weight=0.05,
-        params={"command_name": "kanake_command"},
-    )
-
-    # progress = RewTerm(func=mdp.progress_reward, weight=15.0, params={"target_pos": (5.0, 0.0, 0.0)})
-    # alive = RewTerm(func=mdp.is_alive, weight=0.5)
-    # move_to_target = RewTerm(func=mdp.move_to_target_bonus, weight=1.2, params={"threshold": 0.95, "target_pos": (100.0, 0.0, 0.0)})
-    upright = RewTerm(func=mdp.upright_posture_shaped, weight=0.2, params={"threshold": 0.8})
-    # terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
 
 
-    # JointActionShiftReward = RewTerm(
-    #     func=mdp.JointActionShiftReward,
-    #     weight=5.0, 
-    # )
-    # BodyOrderReward = RewTerm(
-    #     func=mdp.BodyOrderReward,
-    #     weight=0.05,
-    #     params={"command_name": "kanake_command"}
-    # )
-    # progress_x_reward = RewTerm(
-    #     func=mdp.progress_x_reward,
-    #     weight=20.0,
-    # )
-    # action_rate_l2 = RewTerm(
-    #     func=mdp.action_rate_l2,
-    #     weight = -0.1,
-    # )
-    # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.00002)
-    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.00005)
-    # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-4)
-    # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-5)
-    # dof_pos_l2 = RewTerm(func=mdp.joint_pos_limits, weight=-0.5)
-    # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
-    # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.05)
-    # action_rate_l2_clipped = RewTerm(
 
-    #     func=mdp.action_rate_l2_clipped,  # 새로운 함수 필요
-    #     weight=-0.0001,
-    # )
-    # energy = RewTerm(
-    #     func=mdp.power_consumption,
-    #     weight=-0.005,
-    #     params={
-    #         "gear_ratio": {".*": 15.0},
-    #         "asset_cfg": SceneEntityCfg(name="robot"),  
-    #     }
-    # )
-    # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.0005)
+
+
 
 
 
@@ -467,7 +387,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 40.0
+        self.episode_length_s = 20.0
         # simulation settings
         self.sim.dt = 1 / 80.0
         self.sim.render_interval = self.decimation
