@@ -10,6 +10,8 @@ from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
+from isaaclab.sensors import CameraCfg, ContactSensorCfg, RayCasterCfg, patterns
+from isaaclab.sensors import FrameTransformerCfg, FrameTransformer
 
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
@@ -57,12 +59,7 @@ class MySceneCfg(InteractiveSceneCfg):
         # terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
         # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
         # terrain_type="plane",
-
         collision_group=-1,
-
-
-
-
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="average",
             restitution_combine_mode="average",
@@ -83,6 +80,19 @@ class MySceneCfg(InteractiveSceneCfg):
     # robot
     robot = KANAKE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
+    # camera = CameraCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/head/Camera",
+    #     update_period=0.1,
+    #     height=480,
+    #     width=640,
+    #     data_types=["rgb", "distance_to_image_plane"],
+    #     spawn= None,
+    #     offset=CameraCfg.OffsetCfg(pos=(0.510, 0.0, 0.015), rot=(0.5, -0.5, 0.5, -0.5), convention="ros"),
+    # )
+    # camera = FrameTransformerCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/head/Camera",  
+    #     target_frames=[],  
+    # )
     sky_light = AssetBaseCfg(
         prim_path="/World/skyLight",
         spawn=sim_utils.DomeLightCfg(
@@ -302,42 +312,37 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
+    # Task1 - 이동
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-3.0,
+        weight=-2.0,
         params={"command_name": "kanake_command"},
     )
     
     kanake_position_command_error_tanh = RewTerm(
         func=mdp.kanake_position_command_error_tanh,
-        weight=3.0,
+        weight=2.0,
         params={"std": 0.1, "command_name": "kanake_command"},
     )
 
-    head_x_direction_alignment_reward = RewTerm(
-        func=mdp.head_x_direction_alignment_reward,
-        weight=0.5,
-        params={"command_name": "kanake_command"},
+    # Task2 - head가 타겟을 보도록
+    camera_x_direction_alignment_reward = RewTerm(
+        func=mdp.camera_x_direction_alignment_reward,
+        weight=0.001,
+        params={
+            "command_name": "kanake_command"},
     )
 
+    head_height_reward = RewTerm(func=mdp.head_height_reward, weight=0.001, params={"target_height": 0.2, "sigma": 0.01})
+    
+    head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-0.001)
+
+    head_orientation_reward = RewTerm(func=mdp.head_orientation_reward, weight=0.001)
+
+    # 자세 유지
     upright = RewTerm(func=mdp.upright_posture_shaped, weight=1.0, params={"threshold": 0.8})
 
-    head_height_reward = RewTerm(func=mdp.head_height_reward, weight=0.5, params={"target_height": 0.2, "tolerance": 0.01})
-    
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-
-
-
-
-    # orientation_command_error_base = RewTerm(
-    #     func=mdp.orientation_command_error_base,
-    #     weight=-0.07,
-    #     params={"command_name": "kanake_command"},
-    # )
-
-
-
-
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
 
 
 
@@ -356,16 +361,22 @@ class TerminationsCfg:
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
     
-    # dof_torques_l2 = CurrTerm(
-    #     func=mdp.modify_reward_weight, params={"term_name": "dof_torques_l2", "weight": -1.0e-4, "num_steps": 10000}
-    # )
+    camera_x_direction_alignment_reward = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "camera_x_direction_alignment_reward", "weight": 2.0, "num_steps": 100000}
+    )
 
-    # dof_acc_l2 = CurrTerm(
-    #     func=mdp.modify_reward_weight, params={"term_name": "dof_acc_l2", "weight": -2.5e-5, "num_steps": 10000}
-    # )
-    # action_rate_l2 = CurrTerm(
-    #     func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.1, "num_steps": 10000}
-    # )
+    head_height_reward = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "head_height_reward", "weight": 1.0, "num_steps": 100000}
+    )
+    head_vertical_velocity_penalty = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "head_vertical_velocity_penalty", "weight": -1.0, "num_steps": 100000}
+    )
+    head_orientation_reward = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "head_orientation_reward", "weight": 1.0, "num_steps": 100000}
+    )
+    action_rate_l2 = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.01, "num_steps": 1000000}
+    )
 
 
 @configclass
