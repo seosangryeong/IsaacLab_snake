@@ -116,7 +116,17 @@ class CommandsCfg:
             heading=(-math.pi, math.pi),
         ),
         debug_vis=True,
+    )
 
+    head_command = mdp.KanakeWorldCommandCfg(
+        asset_name="robot",
+        resampling_time_range=(10.0, 10.0), 
+        ranges=mdp.KanakeWorldCommandCfg.Ranges(
+            pos_z=(0.1, 0.3),
+            pitch=(-0.1, 0.1),
+            yaw=(-1.57, 1.57),
+        ),
+        debug_vis=True,
     )
 
 @configclass
@@ -326,18 +336,20 @@ class RewardsCfg:
     )
 
     # Task2 - head가 타겟을 보도록
-    camera_x_direction_alignment_reward = RewTerm(
-        func=mdp.camera_x_direction_alignment_reward,
-        weight=0.001,
-        params={
-            "command_name": "kanake_command"},
+    camera_orientation_alignment_reward = RewTerm(
+        func=mdp.camera_orientation_alignment_reward,
+        weight=0.1,
+        params={"command_name": "head_command"},
     )
 
-    head_height_reward = RewTerm(func=mdp.head_height_reward, weight=0.001, params={"target_height": 0.2, "sigma": 0.01})
+    head_height_reward = RewTerm(
+        func=mdp.head_height_reward, 
+        weight=0.01, 
+        params={"command_name": "head_command",  "sigma": 0.01})
     
-    head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-0.001)
+    head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-0.01)
 
-    head_orientation_reward = RewTerm(func=mdp.head_orientation_reward, weight=0.001)
+    # head_orientation_reward = RewTerm(func=mdp.head_orientation_reward, weight=0.01)
 
     # 자세 유지
     upright = RewTerm(func=mdp.upright_posture_shaped, weight=1.0, params={"threshold": 0.8})
@@ -361,21 +373,21 @@ class TerminationsCfg:
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
     
-    camera_x_direction_alignment_reward = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "camera_x_direction_alignment_reward", "weight": 2.0, "num_steps": 100000}
+    camera_orientation_alignment_reward = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "camera_orientation_alignment_reward", "weight": 2.0, "num_steps": 10000}
     )
 
     head_height_reward = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "head_height_reward", "weight": 1.0, "num_steps": 100000}
+        func=mdp.modify_reward_weight, params={"term_name": "head_height_reward", "weight": 1.0, "num_steps": 10000}
     )
     head_vertical_velocity_penalty = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "head_vertical_velocity_penalty", "weight": -1.0, "num_steps": 100000}
+        func=mdp.modify_reward_weight, params={"term_name": "head_vertical_velocity_penalty", "weight": -1.0, "num_steps": 10000}
     )
-    head_orientation_reward = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "head_orientation_reward", "weight": 1.0, "num_steps": 100000}
-    )
+    # head_orientation_reward = CurrTerm(
+    #     func=mdp.modify_reward_weight, params={"term_name": "head_orientation_reward", "weight": 1.0, "num_steps": 10000}
+    # )
     action_rate_l2 = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.01, "num_steps": 1000000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.01, "num_steps": 10000}
     )
 
 

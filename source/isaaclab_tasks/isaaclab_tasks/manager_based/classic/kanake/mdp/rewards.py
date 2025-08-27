@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from isaaclab.assets import RigidObject
 
 import isaaclab.utils.math as math_utils
+import math
 import isaaclab.utils.string as string_utils
 from isaaclab.assets import Articulation
 from isaaclab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
@@ -760,13 +761,14 @@ def head_x_direction_alignment_reward(
 
 
 def camera_x_direction_alignment_reward(
-    env: "ManagerBasedRLEnv",
+    env: ManagerBasedRLEnv,
     command_name: str,
     threshold_deg: float = 10.0,
 ) -> torch.Tensor:
     robot: Articulation = env.scene["robot"]
     command = env.command_manager.get_command(command_name)
-    target_pos_w = command[:, :3]
+    target_pos_w = command[:, :]
+    print("target_pos_w", target_pos_w)
 
     try:
         head_link_idx = robot.body_names.index("head")
@@ -800,6 +802,8 @@ def camera_x_direction_alignment_reward(
     angle_rad = torch.acos(alignment.clamp(-1.0, 1.0))
     angle_deg = torch.rad2deg(angle_rad)
 
+    # print("target_pos_w", target_pos_w)
+    # print("camera_pos_w", camera_pos_w)
     # print("camera_x_dir_w: ", camera_x_dir_w)
     # print("dir_to_target_w: ", dir_to_target_w)
     # print("alignment: ", alignment)
@@ -937,17 +941,20 @@ class BaseTargetAlignmentReward(ManagerTermBase):
 # head높이
 def head_height_reward(
     env: ManagerBasedRLEnv,
+    command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    target_height: float = 0.15,
     sigma: float = 0.05,  
 ) -> torch.Tensor:
     
     asset: Articulation = env.scene[asset_cfg.name]
-    
-    head_z = asset.data.head_pos_w[:, 2]  # [num_envs]
+    command = env.command_manager.get_command(command_name)
 
+    head_z = asset.data.head_pos_w[:, 2]  # [num_envs]
+    target_height = command[:, 0]
+
+    # print("head_z: ", head_z)
     error = head_z - target_height
-    reward = torch.exp(-torch.square(error) / (2 * sigma**2))
+    reward = torch.exp(-torch.square(error) / (sigma**2))
     return reward
 
 # head 수직 속도 페널티
@@ -991,5 +998,56 @@ def head_orientation_reward(
     
     # 월드 좌표계의 위쪽 방향 벡터
     world_z_up_vec = torch.tensor([0.0, 0.0, 1.0], device=env.device).repeat(env.num_envs, 1)
-    
-    return torch.sum(world_up_axis * world_z_up_vec, dim=1)
+    # print("world_up_axis: ", world_up_axis)
+    # print("world_z_up_vec: ", world_z_up_vec)
+    return torch.sum(world_up_axis * world_z_up_vec - 1.0, dim=1)
+
+def camera_orientation_alignment_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    threshold_deg: float = 5.0,
+) -> torch.Tensor:
+
+    robot: Articulation = env.scene["robot"]
+    command = env.command_manager.get_command(command_name)
+    target_yaw_w = command[:, 1]
+    target_pitch_w = command[:, 2]
+
+    try:
+        head_link_idx = robot.body_names.index("head")
+    except ValueError:
+        raise ValueError("The robot asset does not have a body named 'head'.")
+        
+    head_pos_w = robot.data.body_pos_w[:, head_link_idx]
+    head_quat_w = robot.data.body_quat_w[:, head_link_idx]
+
+    offset_pos_single = torch.tensor([0.048, 0.0, 0.0], device=env.device)
+    offset_quat_single = torch.tensor([1.0, 0.0, 0.0, 0.0], device=env.device)
+    offset_pos = offset_pos_single.expand(env.num_envs, -1)
+    offset_quat = offset_quat_single.expand(env.num_envs, -1)
+
+    _ , camera_quat_w = math_utils.combine_frame_transforms(
+        head_pos_w, head_quat_w, offset_pos, offset_quat
+    )
+
+    target_quat_w = math_utils.quat_from_euler_xyz(
+        torch.zeros_like(target_pitch_w), target_pitch_w, target_yaw_w
+    )
+
+    roll_correction_rad = math.pi / 2.0
+    correction_rolls = torch.full_like(target_pitch_w, roll_correction_rad)
+    zeros = torch.zeros_like(target_pitch_w)
+    frame_correction_quat = math_utils.quat_from_euler_xyz(correction_rolls, zeros, zeros)
+
+    final_target_quat_w = math_utils.quat_mul(target_quat_w, frame_correction_quat)
+
+    camera_quat_inv = math_utils.quat_inv(camera_quat_w)
+    diff_quat = math_utils.quat_mul(final_target_quat_w, camera_quat_inv)
+
+    angle_rad = 2.0 * torch.acos(torch.abs(diff_quat[:, 0]).clamp(-1.0, 1.0))
+    angle_deg = torch.rad2deg(angle_rad)
+
+    alignment = torch.cos(angle_rad)
+    reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
+
+    return reward

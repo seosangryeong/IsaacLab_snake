@@ -56,13 +56,13 @@ FRAME_MARKER_CFG = VisualizationMarkersCfg(
     markers={
         "frame": sim_utils.UsdFileCfg(
             usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/frame_prim.usd",
-            scale=(0.5, 0.5, 0.5),
+            scale=(0.1, 0.1, 0.1),
         ),
-        "connecting_line": sim_utils.CylinderCfg(
-            radius=0.002,
-            height=1.0,
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 1.0, 0.0), roughness=1.0),
-        ),
+        # "connecting_line": sim_utils.CylinderCfg(
+        #     radius=0.002,
+        #     height=1.0,
+        #     visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 1.0, 0.0), roughness=1.0),
+        # ),
     }
 )
 """Configuration for the frame marker."""
@@ -111,6 +111,15 @@ CUBOID_MARKER_CFG = VisualizationMarkersCfg(
     markers={
         "cuboid": sim_utils.CuboidCfg(
             size=(0.1, 0.1, 0.1),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),
+        ),
+    }
+)
+
+SPHERE_MARKER_CFG = VisualizationMarkersCfg(
+    markers={
+        "cuboid": sim_utils.SphereCfg(
+            radius=(0.01),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),
         ),
     }

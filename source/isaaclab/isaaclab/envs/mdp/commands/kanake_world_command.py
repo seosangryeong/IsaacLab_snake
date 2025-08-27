@@ -15,7 +15,7 @@ from isaaclab.assets import Articulation
 from isaaclab.managers import CommandTerm
 from isaaclab.markers import VisualizationMarkers
 from isaaclab.terrains import TerrainImporter
-from isaaclab.utils.math import quat_from_euler_xyz, quat_rotate_inverse, wrap_to_pi, yaw_quat
+from isaaclab.utils.math import quat_from_euler_xyz, quat_rotate_inverse, wrap_to_pi, yaw_quat, euler_xyz_from_quat
 from isaaclab.utils.math import combine_frame_transforms, quat_apply_inverse
 
 if TYPE_CHECKING:
@@ -26,127 +26,108 @@ if TYPE_CHECKING:
 
 class KanakeWorldCommand(CommandTerm):
     """
-    pose 커맨드. [x, y, z, heading]
-    로봇 베이스를 기준으로 커맨드를 생성하고, 아웃풋은 월드 좌표로 반환합니다.
+    월드 좌표계 기준으로 Z 위치, Yaw, Pitch를 목표로 하는 커맨드 생성기.
+
+    이 클래스는 (x, y)를 제외하고 로봇이 도달해야 할 목표 [z, yaw, pitch]를
+    월드 좌표계에서 직접 샘플링하여 제공합니다.
     """
 
     cfg: KanakeWorldCommandCfg
-    """Configuration for the command generator."""
 
     def __init__(self, cfg: KanakeWorldCommandCfg, env: ManagerBasedEnv):
-        """Initialize the command generator class.
-
-        Args:
-            cfg: The configuration parameters for the command generator.
-            env: The environment object.
-        """
-        # initialize the base class
+        """초기화 함수."""
         super().__init__(cfg, env)
 
-        # obtain the robot and terrain assets
+        # 제어할 로봇 에셋 가져오기
         self.robot: Articulation = env.scene[cfg.asset_name]
 
-        # create buffers to store the command
-        # 월드 좌표계의 목표 위치/헤딩 (리샘플링 시점에 생성)
-        self.pos_command_w = torch.zeros(self.num_envs, 3, device=self.device)
-        self.heading_command_w = torch.zeros(self.num_envs, device=self.device)
+        # 커맨드 버퍼 생성 (월드 좌표계 기준)
+        # command_w의 _w는 world frame을 의미
+        self.z_command_w = torch.zeros(self.num_envs, device=self.device)
+        self.pitch_command_w = torch.zeros(self.num_envs, device=self.device)
+        self.yaw_command_w = torch.zeros(self.num_envs, device=self.device)
 
-        # 베이스 좌표계의 상대 위치/헤딩 (매 프레임 업데이트됨)
-        self.pos_command_b = torch.zeros_like(self.pos_command_w)
-        self.heading_command_b = torch.zeros_like(self.heading_command_w)
-
-        # metrics
-        self.metrics["error_pos_2d"] = torch.zeros(self.num_envs, device=self.device)
-        self.metrics["error_heading"] = torch.zeros(self.num_envs, device=self.device)
+        # 메트릭(오차) 버퍼 생성
+        self.metrics["error_z"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["error_pitch"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["error_yaw"] = torch.zeros(self.num_envs, device=self.device)
 
     def __str__(self) -> str:
-        msg = "KanakeCommand:\n"
-        msg += f"\tCommand dimension: {tuple(self.command.shape[1:])}\n"
+        """클래스 정보를 문자열로 반환."""
+        msg = "WorldPoseCommand:\n"
+        msg += f"\tCommand dimension: (3,) -> [z, yaw, pitch]\n"
         msg += f"\tResampling time range: {self.cfg.resampling_time_range}"
         return msg
 
     @property
     def command(self) -> torch.Tensor:
         """
-        베이스 프레임 기준으로 변환된 커맨드.
-        Shape: (num_envs, 4) -> [x, y, z, heading].
+        목표 커맨드 [z, yaw, pitch]를 반환합니다. (월드 좌표계 기준)
+        Shape: (num_envs, 3)
         """
-        return torch.cat([self.pos_command_b, self.heading_command_b.unsqueeze(1)], dim=1)
+        return torch.stack([self.z_command_w, self.yaw_command_w, self.pitch_command_w], dim=1)
+
+    def _resample_command(self, env_ids: Sequence[int]):
+        """
+        새로운 커맨드를 월드 좌표계에서 샘플링합니다.
+        """
+        num_resamples = len(env_ids)
+        # 설정된 범위 내에서 z, pitch, yaw 값을 균등하게 샘플링
+        self.z_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_z)
+        self.pitch_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pitch)
+        self.yaw_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.yaw)
+
+    def _update_command(self):
+        """
+        이 클래스는 월드 커맨드를 직접 사용하므로, 베이스 기준으로 변환할 필요가 없습니다.
+        따라서 이 함수는 비워둡니다.
+        """
+        pass
 
     def _update_metrics(self):
         """
-        월드 좌표계 목표와 현재 로봇 상태의 오차를 계산합니다.
+        목표 커맨드와 로봇의 현재 상태 사이의 오차를 계산합니다.
         """
-        self.metrics["error_pos_2d"] = torch.norm(
-            self.pos_command_w[:, :2] - self.robot.data.root_pos_w[:, :2], dim=1
-        )
-        self.metrics["error_heading"] = torch.abs(
-            wrap_to_pi(self.heading_command_w - self.robot.data.heading_w)
-        )
+        # Z 위치 오차
+        self.metrics["error_z"] = torch.abs(self.z_command_w - self.robot.data.root_pos_w[:, 2])
 
-    def _resample_command(self, env_ids: Sequence[int]):
-            """
-            로봇의 베이스 좌표계 기준으로 오프셋을 샘플링한 후,
-            이를 월드 좌표로 변환하여 목표를 설정합니다.
-            """
-            # 1. 로봇 베이스 좌표계 기준 오프셋 샘플링
-            # Z 좌표는 항상 0으로 설정하여 로봇의 현재 z 높이를 따라가도록 합니다.
-            pos_offset_b = torch.zeros((len(env_ids), 3), device=self.device)
-            pos_offset_b[:, 0] = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.pos_x)
-            pos_offset_b[:, 1] = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.pos_y)
-            # pos_offset_b[:, 2] = 0.0  # Z 오프셋을 0으로 설정
+        # Pitch 및 Yaw 오차 계산
+        # 로봇의 현재 쿼터니언으로부터 오일러 각 (roll, pitch, yaw) 추출
+        _, current_pitch, current_yaw = euler_xyz_from_quat(self.robot.data.root_quat_w)
+        # 각도 오차는 wrap_to_pi를 사용해 -pi ~ pi 범위에서 최단 거리를 계산
+        self.metrics["error_pitch"] = torch.abs(wrap_to_pi(self.pitch_command_w - current_pitch))
+        self.metrics["error_yaw"] = torch.abs(wrap_to_pi(self.yaw_command_w - current_yaw))
 
-            # 2. 샘플링된 오프셋을 월드 좌표로 변환하여 목표 위치 설정
-            root_pos_w = self.robot.data.root_pos_w[env_ids]
-            root_quat_w = self.robot.data.root_quat_w[env_ids]
-            
-            # combine_frame_transforms를 사용하여 x, y 오프셋만 변환
-            pos_command_w_xy, _ = combine_frame_transforms(root_pos_w, root_quat_w, pos_offset_b)
-            
-            # 월드 좌표 z는 로봇의 현재 z 좌표를 그대로 사용
-            self.pos_command_w[env_ids, :2] = pos_command_w_xy[:, :2]
-            self.pos_command_w[env_ids, 2] = root_pos_w[:, 2]
-
-            # 3. 헤딩 샘플링 및 월드 좌표로 변환하여 목표 헤딩 설정
-            if self.cfg.simple_heading:
-                # 오프셋 벡터 방향을 헤딩으로 사용
-                target_direction_b = torch.atan2(pos_offset_b[:, 1], pos_offset_b[:, 0])
-                self.heading_command_w[env_ids] = wrap_to_pi(target_direction_b + self.robot.data.heading_w[env_ids])
-            else:
-                # 지정된 범위에서 랜덤 헤딩을 월드 좌표로 변환
-                random_heading_b = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.heading)
-                self.heading_command_w[env_ids] = wrap_to_pi(random_heading_b + self.robot.data.heading_w[env_ids])
-    def _update_command(self):
-        """
-        매 프레임 호출되어, 월드 좌표계의 목표를 현재 로봇 위치/헤딩 기준의
-        베이스 좌표계 커맨드로 재계산합니다.
-        """
-        # 월드 목표까지 남은 상대 벡터 계산
-        target_vec_w = self.pos_command_w - self.robot.data.root_pos_w
-        # 이 벡터를 로봇 베이스 좌표계로 변환
-        self.pos_command_b[:] = quat_apply_inverse(self.robot.data.root_quat_w, target_vec_w)
-
-        # 월드 목표 heading과 현재 로봇 heading 간의 상대 heading 계산
-        self.heading_command_b[:] = wrap_to_pi(self.heading_command_w - self.robot.data.heading_w)
 
     def _set_debug_vis_impl(self, debug_vis: bool):
+        """디버그 시각화 활성화/비활성화를 설정합니다."""
         if debug_vis:
+            # 시각화가 켜지면 마커를 생성 (최초 한 번만)
             if not hasattr(self, "goal_pose_visualizer"):
                 self.goal_pose_visualizer = VisualizationMarkers(self.cfg.goal_pose_visualizer_cfg)
             self.goal_pose_visualizer.set_visibility(True)
         else:
+            # 시각화가 꺼지면 마커를 숨김
             if hasattr(self, "goal_pose_visualizer"):
                 self.goal_pose_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
-        """
-        디버그 시각화: 월드 좌표계의 목표 위치를 표시합니다.
-        """
+        """매 시뮬레이션 스텝마다 호출되어 시각화를 업데이트합니다."""
+        # 목표 위치(translation) 설정
+        # x, y는 현재 로봇의 위치를 그대로 사용하고, z만 목표값으로 설정
+        translations = self.robot.data.root_pos_w.clone()
+        translations[:, 2] = self.z_command_w
+
+        # 목표 회전(orientation) 설정
+        # 목표 roll은 0, pitch와 yaw는 목표값으로 하여 쿼터니언 생성
+        orientations = quat_from_euler_xyz(
+            torch.zeros(self.num_envs, device=self.device),
+            self.pitch_command_w,
+            self.yaw_command_w,
+        )
+
+        # 마커를 해당 위치와 회전으로 업데이트
         self.goal_pose_visualizer.visualize(
-            translations=self.pos_command_w,
-            orientations=quat_from_euler_xyz(
-                torch.zeros_like(self.heading_command_w),
-                torch.zeros_like(self.heading_command_w),
-                self.heading_command_w,
-            ),
+            translations=translations,
+            orientations=orientations,
         )
