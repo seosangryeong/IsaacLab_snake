@@ -26,7 +26,9 @@ KANAKE_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
 # /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0808_4.SLDASM/urdf/
 #/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/
-        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0818.usd",
+        # usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0818.usd",
+        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
+
         # /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0814/
         # usd_path="./kanake6_sim_523/kanake6_sim_0814/kanake6_0820.usd",
         # usd_path="./kanake6_sim_523/kanake6_sim_0814/kanake6_0814_flat.usd",

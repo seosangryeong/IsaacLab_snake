@@ -78,10 +78,7 @@ class KanakeWorldCommand(CommandTerm):
         self.yaw_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.yaw)
 
     def _update_command(self):
-        """
-        이 클래스는 월드 커맨드를 직접 사용하므로, 베이스 기준으로 변환할 필요가 없습니다.
-        따라서 이 함수는 비워둡니다.
-        """
+
         pass
 
     def _update_metrics(self):
@@ -100,34 +97,56 @@ class KanakeWorldCommand(CommandTerm):
 
 
     def _set_debug_vis_impl(self, debug_vis: bool):
-        """디버그 시각화 활성화/비활성화를 설정합니다."""
         if debug_vis:
-            # 시각화가 켜지면 마커를 생성 (최초 한 번만)
             if not hasattr(self, "goal_pose_visualizer"):
+                # -- goal pose
                 self.goal_pose_visualizer = VisualizationMarkers(self.cfg.goal_pose_visualizer_cfg)
+                # -- current head pose
+                self.current_pose_visualizer = VisualizationMarkers(self.cfg.current_pose_visualizer_cfg)
+            # set their visibility to true
             self.goal_pose_visualizer.set_visibility(True)
+            self.current_pose_visualizer.set_visibility(True)
         else:
-            # 시각화가 꺼지면 마커를 숨김
             if hasattr(self, "goal_pose_visualizer"):
                 self.goal_pose_visualizer.set_visibility(False)
+                self.current_pose_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
         """매 시뮬레이션 스텝마다 호출되어 시각화를 업데이트합니다."""
-        # 목표 위치(translation) 설정
-        # x, y는 현재 로봇의 위치를 그대로 사용하고, z만 목표값으로 설정
+        # 로봇 초기화 확인
+        if not self.robot.is_initialized:
+            return
+        
+        # -- 목표 포즈 시각화
+        # 현재 로봇 x,y 위치에 목표 z 적용
         translations = self.robot.data.root_pos_w.clone()
         translations[:, 2] = self.z_command_w
-
-        # 목표 회전(orientation) 설정
-        # 목표 roll은 0, pitch와 yaw는 목표값으로 하여 쿼터니언 생성
+        
+        # 목표 회전 쿼터니언 생성
         orientations = quat_from_euler_xyz(
             torch.zeros(self.num_envs, device=self.device),
             self.pitch_command_w,
             self.yaw_command_w,
         )
-
-        # 마커를 해당 위치와 회전으로 업데이트
+        
+        # 목표 포즈 마커 업데이트
         self.goal_pose_visualizer.visualize(
             translations=translations,
             orientations=orientations,
         )
+        
+        # -- 현재 헤드 포즈 시각화
+        try:
+            # 헤드 인덱스 찾기
+            head_idx = self.robot.body_names.index("head")
+            # 헤드 위치와 방향 가져오기
+            head_pos = self.robot.data.body_pos_w[:, head_idx]
+            head_quat = self.robot.data.body_quat_w[:, head_idx]
+            # 헤드 프레임 마커 업데이트
+            self.current_pose_visualizer.visualize(
+                translations=head_pos,
+                orientations=head_quat,
+            )
+        except (ValueError, IndexError) as e:
+            # 헤드 바디를 찾을 수 없는 경우 처리
+            print(f"Warning: Could not visualize head frame: {e}")

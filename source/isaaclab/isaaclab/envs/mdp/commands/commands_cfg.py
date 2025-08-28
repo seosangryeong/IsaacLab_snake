@@ -329,6 +329,9 @@ class KanakeWorldCommandCfg(CommandTermCfg):
     goal_pose_visualizer_cfg: VisualizationMarkersCfg = FRAME_MARKER_CFG.replace(
         prim_path="/Visuals/Command/head_pose_goal"
     )
+    current_pose_visualizer_cfg: VisualizationMarkersCfg = FRAME_MARKER_CFG.replace(
+        prim_path="/Visuals/Robot/head_frame"
+    )
 
 
 @configclass
