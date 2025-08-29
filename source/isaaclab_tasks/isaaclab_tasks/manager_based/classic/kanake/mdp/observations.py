@@ -23,7 +23,7 @@ def base_up_proj_kanake(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneE
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
     # compute base up vector
-    base_up_vec = -asset.data.projected_gravity_b
+    base_up_vec = asset.data.projected_gravity_b
 
     return base_up_vec[:, 1].unsqueeze(-1)
 

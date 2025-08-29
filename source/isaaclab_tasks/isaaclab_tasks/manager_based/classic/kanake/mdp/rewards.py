@@ -943,7 +943,7 @@ def head_height_reward(
     env: ManagerBasedRLEnv,
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    sigma: float = 0.05,  
+    sigma: float = 0.1,  
 ) -> torch.Tensor:
     
     asset: Articulation = env.scene[asset_cfg.name]

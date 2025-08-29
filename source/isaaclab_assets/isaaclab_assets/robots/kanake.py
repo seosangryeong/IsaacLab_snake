@@ -26,8 +26,8 @@ KANAKE_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
 # /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0808_4.SLDASM/urdf/
 #/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/
-        # usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0818.usd",
-        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
+        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0818.usd",
+        # usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
 
         # /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0814/
         # usd_path="./kanake6_sim_523/kanake6_sim_0814/kanake6_0820.usd",
@@ -37,8 +37,8 @@ KANAKE_CFG = ArticulationCfg(
             # retain_accelerations=False,
             # linear_damping=0.0,
             # angular_damping=0.0,
-            max_linear_velocity=10.0,
-            max_angular_velocity=10.0,
+            max_linear_velocity=100.0,
+            max_angular_velocity=100.0,
             max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
