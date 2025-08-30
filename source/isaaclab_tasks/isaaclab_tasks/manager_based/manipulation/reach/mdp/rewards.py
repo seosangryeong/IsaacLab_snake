@@ -58,7 +58,6 @@ def orientation_command_error(env: ManagerBasedRLEnv, command_name: str, asset_c
 
     # 명령 불러오기 및 shape 확인
     command = env.command_manager.get_command(command_name)
-<<<<<<< HEAD
     if command.ndim == 3:
         command = command.squeeze(1)
     if command.shape[-1] != 7:
@@ -70,10 +69,4 @@ def orientation_command_error(env: ManagerBasedRLEnv, command_name: str, asset_c
 
     curr_quat_w = asset.data.body_state_w[:, asset_cfg.body_ids[0], 3:7]  # shape [N, 4]
 
-=======
-    # obtain the desired and current orientations
-    des_quat_b = command[:, 3:7]
-    des_quat_w = quat_mul(asset.data.root_quat_w, des_quat_b)
-    curr_quat_w = asset.data.body_quat_w[:, asset_cfg.body_ids[0]]  # type: ignore
->>>>>>> 91ad4944f2b7fad29d52c04a5264a082bcaad71d
     return quat_error_magnitude(curr_quat_w, des_quat_w)

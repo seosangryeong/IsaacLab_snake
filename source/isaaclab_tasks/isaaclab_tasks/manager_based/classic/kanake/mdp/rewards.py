@@ -1002,52 +1002,94 @@ def head_orientation_reward(
     # print("world_z_up_vec: ", world_z_up_vec)
     return torch.sum(world_up_axis * world_z_up_vec - 1.0, dim=1)
 
+# def camera_orientation_alignment_reward(
+#     env: ManagerBasedRLEnv,
+#     command_name: str,
+#     threshold_deg: float = 5.0,
+# ) -> torch.Tensor:
+
+#     robot: Articulation = env.scene["robot"]
+#     command = env.command_manager.get_command(command_name)
+#     target_yaw_w = command[:, 1]
+#     target_pitch_w = command[:, 2]
+
+#     try:
+#         head_link_idx = robot.body_names.index("cube")
+#     except ValueError:
+#         raise ValueError("The robot asset does not have a body named 'head'.")
+        
+#     head_pos_w = robot.data.body_pos_w[:, head_link_idx]
+#     head_quat_w = robot.data.body_quat_w[:, head_link_idx]
+
+#     offset_pos_single = torch.tensor([0.048, 0.0, 0.0], device=env.device)
+#     offset_quat_single = torch.tensor([1.0, 0.0, 0.0, 0.0], device=env.device)
+#     offset_pos = offset_pos_single.expand(env.num_envs, -1)
+#     offset_quat = offset_quat_single.expand(env.num_envs, -1)
+
+#     _ , camera_quat_w = math_utils.combine_frame_transforms(
+#         head_pos_w, head_quat_w, offset_pos, offset_quat
+#     )
+
+#     target_quat_w = math_utils.quat_from_euler_xyz(
+#         torch.zeros_like(target_pitch_w), target_pitch_w, target_yaw_w
+#     )
+
+#     roll_correction_rad = math.pi / 2.0
+#     correction_rolls = torch.full_like(target_pitch_w, roll_correction_rad)
+#     zeros = torch.zeros_like(target_pitch_w)
+#     frame_correction_quat = math_utils.quat_from_euler_xyz(correction_rolls, zeros, zeros)
+
+#     final_target_quat_w = math_utils.quat_mul(target_quat_w, frame_correction_quat)
+
+#     camera_quat_inv = math_utils.quat_inv(camera_quat_w)
+#     diff_quat = math_utils.quat_mul(final_target_quat_w, camera_quat_inv)
+
+#     angle_rad = 2.0 * torch.acos(torch.abs(diff_quat[:, 0]).clamp(-1.0, 1.0))
+#     angle_deg = torch.rad2deg(angle_rad)
+
+#     alignment = torch.cos(angle_rad)
+#     reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
+
+#     return reward
+
 def camera_orientation_alignment_reward(
     env: ManagerBasedRLEnv,
     command_name: str,
     threshold_deg: float = 5.0,
 ) -> torch.Tensor:
-
+    """큐브의 방향이 목표 방향(roll, yaw, pitch)과 정렬되도록 하는 리워드"""
+    
     robot: Articulation = env.scene["robot"]
     command = env.command_manager.get_command(command_name)
-    target_yaw_w = command[:, 1]
-    target_pitch_w = command[:, 2]
-
-    try:
-        head_link_idx = robot.body_names.index("head")
-    except ValueError:
-        raise ValueError("The robot asset does not have a body named 'head'.")
-        
-    head_pos_w = robot.data.body_pos_w[:, head_link_idx]
-    head_quat_w = robot.data.body_quat_w[:, head_link_idx]
-
-    offset_pos_single = torch.tensor([0.048, 0.0, 0.0], device=env.device)
-    offset_quat_single = torch.tensor([1.0, 0.0, 0.0, 0.0], device=env.device)
-    offset_pos = offset_pos_single.expand(env.num_envs, -1)
-    offset_quat = offset_quat_single.expand(env.num_envs, -1)
-
-    _ , camera_quat_w = math_utils.combine_frame_transforms(
-        head_pos_w, head_quat_w, offset_pos, offset_quat
-    )
-
+    
+    # 명령에서 roll, yaw, pitch 추출 (인덱스: 1=roll, 2=yaw, 3=pitch)
+    target_roll = command[:, 1]
+    target_yaw = command[:, 2]
+    target_pitch = command[:, 3]
+    
+    # 오일러 각에서 쿼터니언 생성
     target_quat_w = math_utils.quat_from_euler_xyz(
-        torch.zeros_like(target_pitch_w), target_pitch_w, target_yaw_w
+        target_roll, target_pitch, target_yaw
     )
-
-    roll_correction_rad = math.pi / 2.0
-    correction_rolls = torch.full_like(target_pitch_w, roll_correction_rad)
-    zeros = torch.zeros_like(target_pitch_w)
-    frame_correction_quat = math_utils.quat_from_euler_xyz(correction_rolls, zeros, zeros)
-
-    final_target_quat_w = math_utils.quat_mul(target_quat_w, frame_correction_quat)
-
-    camera_quat_inv = math_utils.quat_inv(camera_quat_w)
-    diff_quat = math_utils.quat_mul(final_target_quat_w, camera_quat_inv)
-
+    
+    try:
+        cube_idx = robot.body_names.index("cube")
+    except ValueError:
+        raise ValueError("The robot asset does not have a body named 'cube'.")
+        
+    # 큐브의 현재 쿼터니언
+    cube_quat_w = robot.data.body_quat_w[:, cube_idx]
+    
+    # 두 쿼터니언 사이의 차이 계산
+    cube_quat_inv = math_utils.quat_inv(cube_quat_w)
+    diff_quat = math_utils.quat_mul(target_quat_w, cube_quat_inv)
+    
+    # 각도 차이 계산
     angle_rad = 2.0 * torch.acos(torch.abs(diff_quat[:, 0]).clamp(-1.0, 1.0))
     angle_deg = torch.rad2deg(angle_rad)
-
+    
+    # 리워드 계산
     alignment = torch.cos(angle_rad)
     reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
-
+    
     return reward

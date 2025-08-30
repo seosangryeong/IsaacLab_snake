@@ -322,6 +322,8 @@ class KanakeWorldCommandCfg(CommandTermCfg):
         pitch: tuple[float, float] = MISSING
         # 목표 Yaw (heading)의 샘플링 범위 (라디안)
         yaw: tuple[float, float] = MISSING
+        # 목표 roll (heading)의 샘플링 범위 (라디안)
+        roll: tuple[float, float] = MISSING
 
     ranges: Ranges = MISSING
     """Distribution ranges for the commands."""
