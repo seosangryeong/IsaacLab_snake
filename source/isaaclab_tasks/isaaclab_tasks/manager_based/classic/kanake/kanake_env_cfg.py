@@ -122,7 +122,7 @@ class CommandsCfg:
         asset_name="robot",
         resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeWorldCommandCfg.Ranges(
-            pos_z=(0.1, 0.3),
+            pos_z=(0.2, 0.3),
             pitch=(-0.1, 0.1),
             yaw=(0.0, 0.0),
             roll=(0.0, 0.0)
@@ -337,12 +337,17 @@ class RewardsCfg:
     )
 
     # Task2 - head가 타겟을 보도록
-    camera_orientation_alignment_reward = RewTerm(
-        func=mdp.camera_orientation_alignment_reward,
-        weight=0.1,
-        params={"command_name": "head_command"},
+    # camera_orientation_alignment_reward = RewTerm(
+    #     func=mdp.camera_orientation_alignment_reward,
+    #     weight=0.1,
+    #     params={"command_name": "head_command"},
+    # )
+    cube_direction_alignment_reward = RewTerm(
+        func=mdp.cube_direction_alignment_reward,
+        weight=1.0,
+        params={"command_name": "kanake_command"},
     )
-
+    
     head_height_reward = RewTerm(
         func=mdp.head_height_reward, 
         weight=1.0, 
@@ -374,10 +379,12 @@ class TerminationsCfg:
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
     
-    camera_orientation_alignment_reward = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "camera_orientation_alignment_reward", "weight": 2.0, "num_steps": 10000}
+    # camera_orientation_alignment_reward = CurrTerm(
+    #     func=mdp.modify_reward_weight, params={"term_name": "camera_orientation_alignment_reward", "weight": 2.0, "num_steps": 10000}
+    # )
+    cube_direction_alignment_reward = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "cube_direction_alignment_reward", "weight": 2.0, "num_steps": 10000}
     )
-
     head_height_reward = CurrTerm(
         func=mdp.modify_reward_weight, params={"term_name": "head_height_reward", "weight": 3.0, "num_steps": 10000}
     )

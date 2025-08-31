@@ -850,6 +850,44 @@ def camera_x_direction_alignment_reward(
 
 #     return reward
 
+def cube_direction_alignment_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    threshold_deg: float = 10.0,
+) -> torch.Tensor:
+    """
+    큐브(헤드)의 x축 방향이 타겟을 향하도록 하는 리워드
+    """
+    # 로봇 객체 가져오기
+    robot: Articulation = env.scene["robot"]
+    
+    # 커맨드에서 타겟 위치 가져오기
+    command = env.command_manager.get_command(command_name)
+    target_pos_w = command[:, :3]  # 타겟 위치 (x, y, z)
+    
+    try:
+        cube_idx = robot.body_names.index("cube")
+    except ValueError:
+        raise ValueError("The robot asset does not have a body named 'cube'.")
+    
+    cube_pos_w = robot.data.body_pos_w[:, cube_idx]
+    cube_quat_w = robot.data.body_quat_w[:, cube_idx]
+    
+    local_x_axis = torch.tensor([1.0, 0.0, 0.0], device=env.device).repeat(env.num_envs, 1)
+    cube_x_dir_w = math_utils.quat_apply(cube_quat_w, local_x_axis)
+    
+    vec_to_target_w = target_pos_w - cube_pos_w
+    dir_to_target_w = F.normalize(vec_to_target_w, p=2, dim=-1)
+    
+    alignment = torch.sum(cube_x_dir_w * dir_to_target_w, dim=-1)
+    alignment = torch.clamp(alignment, -1.0, 1.0)  
+    
+    angle_rad = torch.acos(alignment)
+    angle_deg = torch.rad2deg(angle_rad)
+    
+    reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
+    
+    return reward
 
 
 def action_rate_l2_clipped(env: ManagerBasedRLEnv) -> torch.Tensor:

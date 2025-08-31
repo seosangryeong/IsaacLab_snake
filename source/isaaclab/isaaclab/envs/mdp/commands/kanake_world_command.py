@@ -26,10 +26,9 @@ if TYPE_CHECKING:
 
 class KanakeWorldCommand(CommandTerm):
     """
-    월드 좌표계 기준으로 Z 위치, Roll, Yaw, Pitch를 목표로 하는 커맨드 생성기.
+    월드 좌표계 기준으로 Z 위치, Roll, Yaw, Pitch를 목표로 하는 커맨드 
 
-    이 클래스는 (x, y)를 제외하고 로봇이 도달해야 할 목표 [z, roll, yaw, pitch]를
-    월드 좌표계에서 직접 샘플링하여 제공합니다.
+    [z, roll, yaw, pitch]를 월드 좌표계에서 직접 샘플링
     """
 
     cfg: KanakeWorldCommandCfg
@@ -38,33 +37,31 @@ class KanakeWorldCommand(CommandTerm):
         """초기화 함수."""
         super().__init__(cfg, env)
 
-        # 제어할 로봇 에셋 가져오기
         self.robot: Articulation = env.scene[cfg.asset_name]
 
-        # 커맨드 버퍼 생성 (월드 좌표계 기준)
-        # command_w의 _w는 world frame을 의미
+        # 월드 좌표계 기준
+
         self.z_command_w = torch.zeros(self.num_envs, device=self.device)
-        self.roll_command_w = torch.zeros(self.num_envs, device=self.device)  # Roll 추가
+        self.roll_command_w = torch.zeros(self.num_envs, device=self.device) 
         self.pitch_command_w = torch.zeros(self.num_envs, device=self.device)
         self.yaw_command_w = torch.zeros(self.num_envs, device=self.device)
 
         # 메트릭(오차) 버퍼 생성
         self.metrics["error_z"] = torch.zeros(self.num_envs, device=self.device)
-        self.metrics["error_roll"] = torch.zeros(self.num_envs, device=self.device)  # Roll 오차 추가
+        self.metrics["error_roll"] = torch.zeros(self.num_envs, device=self.device)  
         self.metrics["error_pitch"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["error_yaw"] = torch.zeros(self.num_envs, device=self.device)
 
     def __str__(self) -> str:
-        """클래스 정보를 문자열로 반환."""
         msg = "WorldPoseCommand:\n"
-        msg += f"\tCommand dimension: (4,) -> [z, roll, yaw, pitch]\n"  # 차원 업데이트
+        msg += f"\tCommand dimension: (4,) -> [z, roll, yaw, pitch]\n"  
         msg += f"\tResampling time range: {self.cfg.resampling_time_range}"
         return msg
 
     @property
     def command(self) -> torch.Tensor:
         """
-        목표 커맨드 [z, roll, yaw, pitch]를 반환합니다. (월드 좌표계 기준)
+        목표 커맨드 [z, roll, yaw, pitch]를 반환
         Shape: (num_envs, 4)
         """
         return torch.stack([self.z_command_w, self.roll_command_w, self.yaw_command_w, self.pitch_command_w], dim=1)
@@ -74,7 +71,6 @@ class KanakeWorldCommand(CommandTerm):
         새로운 커맨드를 월드 좌표계에서 샘플링합니다.
         """
         num_resamples = len(env_ids)
-        # 설정된 범위 내에서 z, roll, pitch, yaw 값을 균등하게 샘플링
         self.z_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_z)
         self.roll_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.roll)  # Roll 샘플링 추가
         self.pitch_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pitch)
@@ -116,7 +112,6 @@ class KanakeWorldCommand(CommandTerm):
 
     def _debug_vis_callback(self, event):
         """매 시뮬레이션 스텝마다 호출되어 시각화를 업데이트합니다."""
-        # 로봇 초기화 확인
         if not self.robot.is_initialized:
             return
         
@@ -126,7 +121,7 @@ class KanakeWorldCommand(CommandTerm):
         
         # 목표 회전 쿼터니언 생성 
         orientations = quat_from_euler_xyz(
-            self.roll_command_w,  # Roll 값 사용
+            self.roll_command_w, 
             self.pitch_command_w,
             self.yaw_command_w,
         )
