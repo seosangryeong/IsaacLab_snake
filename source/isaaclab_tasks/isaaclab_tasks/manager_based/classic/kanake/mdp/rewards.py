@@ -438,6 +438,7 @@ def kanake_position_command_error(env: ManagerBasedRLEnv, command_name: str, ass
     asset: RigidObject = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
     des_pos_b = command[:, :3]
+    # print("des_pos_b", des_pos_b)
     # 로봇 위치를 항상 (0,0,기본높이), 회전은 [1,0,0,0]로 가정
     batch = des_pos_b.shape[0]
     root_pos = torch.zeros(batch, 3, device=des_pos_b.device)
@@ -550,6 +551,10 @@ def kanake_position_command_error_tanh(
 ) -> torch.Tensor:
     
     distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
+    # command = env.command_manager.get_command(command_name)
+    # des_pos_b = command[:, :3]
+
+    # print("des_pos_b", des_pos_b)
 
     return 1 - torch.tanh(distance / std)
 
@@ -558,6 +563,7 @@ def kanake_position_command_error_base(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
+    # print("distance", distance)
 
 
     return env.command_manager.get_term(command_name).metrics["error_pos_2d"]
@@ -976,8 +982,8 @@ class BaseTargetAlignmentReward(ManagerTermBase):
 
 ### HEAD 리워드
 
-# head높이
-def head_height_reward(
+# cube높이
+def cube_height_reward(
     env: ManagerBasedRLEnv,
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -987,11 +993,11 @@ def head_height_reward(
     asset: Articulation = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
 
-    head_z = asset.data.head_pos_w[:, 2]  # [num_envs]
+    cube_z = asset.data.cube_pose_w[:, 2]  # [num_envs]
     target_height = command[:, 0]
 
     # print("head_z: ", head_z)
-    error = head_z - target_height
+    error = cube_z - target_height
     reward = torch.exp(-torch.square(error) / (sigma**2))
     return reward
 
@@ -1089,6 +1095,27 @@ def head_orientation_reward(
 #     reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
 
 #     return reward
+def cube_z_reward(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """
+    큐브의 로컬 z축이 월드 z축과 정렬되도록 하는 리워드
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    # cube의 쿼터니언 추출
+    cube_quat_w = asset.data.cube_pose_w[:, 3:7]
+
+    # 큐브의 로컬 z축 벡터
+    local_z_axis = torch.tensor([0.0, 0.0, 1.0], device=env.device).repeat(env.num_envs, 1)
+    world_z_axis = math_utils.quat_apply(cube_quat_w, local_z_axis)
+
+    # 월드 좌표계의 위쪽 방향 벡터
+    world_z_up_vec = torch.tensor([0.0, 0.0, 1.0], device=env.device).repeat(env.num_envs, 1)
+
+    # 내적 결과가 1에 가까울수록 정렬됨
+    return torch.sum(world_z_axis * world_z_up_vec - 1.0, dim=1)
 
 def camera_orientation_alignment_reward(
     env: ManagerBasedRLEnv,

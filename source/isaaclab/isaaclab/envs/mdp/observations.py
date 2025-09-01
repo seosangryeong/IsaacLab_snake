@@ -196,6 +196,24 @@ def joint_pos_limit_normalized(
     )
 
 
+def cube_pose_w(
+    env: ManagerBasedEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """
+    Returns the world pose (x, y, z, qw, qx, qy, qz) of the body named 'cube' in the asset.
+
+    Shape: (num_envs, 7)
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    try:
+        cube_idx = asset.body_names.index("cube")
+    except ValueError:
+        raise ValueError("The asset does not have a body named 'cube'.")
+    # world pose of 'cube'
+    return asset.data.body_state_w[:, cube_idx, :7]
+
+
 def joint_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")):
     """The joint velocities of the asset.
 

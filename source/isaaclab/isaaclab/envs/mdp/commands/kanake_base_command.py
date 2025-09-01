@@ -1,6 +1,5 @@
 # Copyright (c) 2022-2025, The Isaac Lab Project Developers.
-# All rights reserved.
-#
+# All rights reserved#
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Sub-module containing command generators for the 2D-pose for locomotion tasks."""
@@ -14,8 +13,8 @@ from typing import TYPE_CHECKING
 from isaaclab.assets import Articulation
 from isaaclab.managers import CommandTerm
 from isaaclab.markers import VisualizationMarkers
-from isaaclab.utils.math import quat_from_euler_xyz, wrap_to_pi
-from isaaclab.utils.math import combine_frame_transforms, quat_error_magnitude, quat_mul
+from isaaclab.utils.math import quat_from_euler_xyz, wrap_to_pi, yaw_quat
+from isaaclab.utils.math import quat_apply_inverse
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
@@ -24,124 +23,98 @@ if TYPE_CHECKING:
 
 class KanakeBaseCommand(CommandTerm):
     """
-    pose 커맨드. [x, y, z, heading]
-    base frame 기준으로 커맨드가 생성되며 아웃풋 값은 월드좌표
+    pose 커맨드. [x,y,z,heading]
+    커맨드는 로봇 위치에서 생성 (샘플링 시 로봇기준으로 (0,0,기본높이)에서 생성)
     """
 
     cfg: KanakeBaseCommandCfg
+    """Configuration for the command generator."""
 
     def __init__(self, cfg: KanakeBaseCommandCfg, env: ManagerBasedEnv):
+        """Initialize the command generator class."""
         super().__init__(cfg, env)
-        
         self.robot: Articulation = env.scene[cfg.asset_name]
 
-        # base frame 기준으로 저장할 커맨드 버퍼
-        self.pos_command_b = torch.zeros(self.num_envs, 3, device=self.device)
-        self.heading_command_b = torch.zeros(self.num_envs, device=self.device)
-
-        # metrics 초기화
+        # Buffers for world-frame targets (fixed between resampling)
+        self.pos_command_w = torch.zeros(self.num_envs, 3, device=self.device)
+        self.heading_command_w = torch.zeros(self.num_envs, device=self.device)
+        # Buffers for base-frame commands (updated every step)
+        self.pos_command_b = torch.zeros_like(self.pos_command_w)
+        self.heading_command_b = torch.zeros_like(self.heading_command_w)
+        
         self.metrics["error_pos_2d"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["error_heading"] = torch.zeros(self.num_envs, device=self.device)
 
     def __str__(self) -> str:
-        msg = "KanakeCommand:\n"
+        msg = "PositionCommand:\n"
         msg += f"\tCommand dimension: {tuple(self.command.shape[1:])}\n"
         msg += f"\tResampling time range: {self.cfg.resampling_time_range}"
         return msg
-    
-    # @property
-    # def command(self) -> torch.Tensor:
-    #     """
-    #     base frame 기준으로 생성된 커맨드를 월드좌표로 변환하여 반환.
-    #     Shape: (num_envs, 4) → [x, y, z, heading] (월드좌표)
-    #     """
-    #     # 현재 로봇의 월드 위치/쿼터니언
-    #     root_pos = self.robot.data.root_pos_w  # (B, 3)
-    #     root_quat = self.robot.data.root_quat_w  # (B, 4)
-    #     # base frame 커맨드 → 월드좌표로 변환
-    #     des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, self.pos_command_b)
-    #     # heading도 월드 기준으로 변환 (base heading + 현재 heading)
-    #     des_heading_w = wrap_to_pi(self.heading_command_b + self.robot.data.heading_w)
-    #     return torch.cat([des_pos_w, des_heading_w.unsqueeze(1)], dim=1)
 
     @property
     def command(self) -> torch.Tensor:
+        """The desired 2D-pose in base frame for the policy.
+        
+        Shape is (num_envs, 3), corresponding to [x_relative, y_relative, heading_relative].
         """
-        base frame 기준 pose 반환.
-        Shape: (num_envs, 4) → [x, y, z, heading]
-        """
-        return torch.cat([self.pos_command_b, self.heading_command_b.unsqueeze(1)], dim=1)
-
-    def _resample_command(self, env_ids: Sequence[int]):
-        """
-        리샘플링 시점에만 호출
-        1) 로봇 기준(0,0,기본높이)에서 x,y,z 오프셋을 uniform 샘플링
-        2) simple_heading 여부에 따라 heading 결정
-        """
-        # (1) position offset 샘플링
-        r = torch.zeros((len(env_ids), 3), device=self.device)
-        # x, y 범위에서 uniform 샘플링
-        r[:, 0] = torch.empty(len(env_ids), device=self.device).uniform_(
-            *self.cfg.ranges.pos_x
-        )
-        r[:, 1] = torch.empty(len(env_ids), device=self.device).uniform_(
-            *self.cfg.ranges.pos_y
-        )
-        # z는 초기 루트 높이 그대로
-        r[:, 2] = self.robot.data.default_root_state[env_ids, 2]
-        # base-frame 커맨드로 저장
-        self.pos_command_b[env_ids] = r
-
-        # (2) heading 샘플링
-        if self.cfg.simple_heading:
-            # 오프셋 벡터 방향을 heading으로
-            self.heading_command_b[env_ids] = wrap_to_pi(
-                torch.atan2(r[:, 1], r[:, 0])
-            )
-        else:
-            # 지정된 범위에서 랜덤
-            self.heading_command_b[env_ids] = torch.empty(
-                len(env_ids), device=self.device
-            ).uniform_(*self.cfg.ranges.heading)
-
-    def _update_command(self):
-        """
-        매 프레임 호출되지만, base-frame 커맨드는
-        리샘플링 시에만 갱신하도록 의도했으므로 아무 작업도 하지 않습니다.
-        """
-        pass
+        pos_command_b_2d = self.pos_command_b[:, :2]
+        return torch.cat([pos_command_b_2d, self.heading_command_b.unsqueeze(1)], dim=1)
 
     def _update_metrics(self):
-        """
-        base-frame 명령과 로봇 기준(0,0)의 차이를 오차로 기록
-        - error_pos_2d: 목표 위치까지 거리
-        - error_heading: 목표 heading까지 각도 차이
-        """
-        self.metrics["error_pos_2d"] = torch.norm(
-            self.pos_command_b[:, :2], dim=1
-        )
-        self.metrics["error_heading"] = torch.abs(self.heading_command_b)
+        """Computes the 2D error between the desired command and the current robot state."""
+        self.metrics["error_pos_2d"] = torch.norm(self.pos_command_w[:, :2] - self.robot.data.root_pos_w[:, :2], dim=1)
+        self.metrics["error_heading"] = torch.abs(wrap_to_pi(self.heading_command_w - self.robot.data.heading_w))
+
+    def _resample_command(self, env_ids: Sequence[int]):
+        """Resamples the command relative to the robot's current position."""
+        num_resamples = len(env_ids)
+        if num_resamples == 0:
+            return
+
+        current_robot_pos_w = self.robot.data.root_pos_w[env_ids]
+        
+        rand_pos_x = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_x)
+        rand_pos_y = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_y)
+
+        self.pos_command_w[env_ids, 0] = current_robot_pos_w[:, 0] + rand_pos_x
+        self.pos_command_w[env_ids, 1] = current_robot_pos_w[:, 1] + rand_pos_y
+        self.pos_command_w[env_ids, 2] = self.robot.data.default_root_state[env_ids, 2]
+
+        if self.cfg.simple_heading:
+            current_robot_heading_w = self.robot.data.heading_w[env_ids]
+            target_vec_w = self.pos_command_w[env_ids, :2] - current_robot_pos_w[:, :2]
+            target_direction = torch.atan2(target_vec_w[:, 1], target_vec_w[:, 0])
+            flipped_target_direction = wrap_to_pi(target_direction + torch.pi)
+            curr_to_target = wrap_to_pi(target_direction - current_robot_heading_w).abs()
+            curr_to_flipped_target = wrap_to_pi(flipped_target_direction - current_robot_heading_w).abs()
+            self.heading_command_w[env_ids] = torch.where(
+                curr_to_target < curr_to_flipped_target, target_direction, flipped_target_direction
+            )
+        else:
+            r_heading = torch.empty(num_resamples, device=self.device)
+            self.heading_command_w[env_ids] = r_heading.uniform_(*self.cfg.ranges.heading)
+
+    def _update_command(self):
+        """Re-target the position command to the current root state."""
+        target_vec_w = self.pos_command_w - self.robot.data.root_pos_w
+        self.pos_command_b[:] = quat_apply_inverse(yaw_quat(self.robot.data.root_quat_w), target_vec_w)
+        self.heading_command_b[:] = wrap_to_pi(self.heading_command_w - self.robot.data.heading_w)
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         if debug_vis:
             if not hasattr(self, "goal_pose_visualizer"):
-                self.goal_pose_visualizer = VisualizationMarkers(
-                    self.cfg.goal_pose_visualizer_cfg
-                )
+                self.goal_pose_visualizer = VisualizationMarkers(self.cfg.goal_pose_visualizer_cfg)
             self.goal_pose_visualizer.set_visibility(True)
         else:
             if hasattr(self, "goal_pose_visualizer"):
                 self.goal_pose_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
-        """
-        디버그 시각화: base-frame 목표 좌표를 표시
-        """
         self.goal_pose_visualizer.visualize(
-            translations=self.pos_command_b,
+            translations=self.pos_command_w,
             orientations=quat_from_euler_xyz(
-                torch.zeros_like(self.heading_command_b),
-                torch.zeros_like(self.heading_command_b),
-                self.heading_command_b,
+                torch.zeros_like(self.heading_command_w),
+                torch.zeros_like(self.heading_command_w),
+                self.heading_command_w,
             ),
         )

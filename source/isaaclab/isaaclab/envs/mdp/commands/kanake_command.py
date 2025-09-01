@@ -23,83 +23,54 @@ if TYPE_CHECKING:
 
 class KanakeCommand(CommandTerm):
     """
-    pose 커맨드. [x,y,z,heading]
-    커맨드는 로봇 위치에서 생성 (샘플링 시 로봇기준으로 (0,0,기본높이)에서 생성)
+    pose 커맨드. [x, y, z, heading]
+    커맨드는 월드 좌표계 기준으로 직접 샘플링 (로봇 위치와 무관하게 고정)
     """
 
     cfg: KanakeCommandCfg
-    """Configuration for the command generator."""
 
     def __init__(self, cfg: KanakeCommandCfg, env: ManagerBasedEnv):
-        """Initialize the command generator class."""
         super().__init__(cfg, env)
         self.robot: Articulation = env.scene[cfg.asset_name]
 
-        # Buffers for world-frame targets (fixed between resampling)
+        # 월드 좌표계 기준 목표
         self.pos_command_w = torch.zeros(self.num_envs, 3, device=self.device)
         self.heading_command_w = torch.zeros(self.num_envs, device=self.device)
-        # Buffers for base-frame commands (updated every step)
-        self.pos_command_b = torch.zeros_like(self.pos_command_w)
-        self.heading_command_b = torch.zeros_like(self.heading_command_w)
-        
-        # FIX: KeyError 방지를 위해 'error_pos_2d' 키를 정확하게 초기화
+
         self.metrics["error_pos_2d"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["error_heading"] = torch.zeros(self.num_envs, device=self.device)
 
     def __str__(self) -> str:
-        msg = "PositionCommand:\n"
-        msg += f"\tCommand dimension: {tuple(self.command.shape[1:])}\n"
+        msg = "KanakeCommand:\n"
+        msg += f"\tCommand dimension: (4,)\n"
         msg += f"\tResampling time range: {self.cfg.resampling_time_range}"
         return msg
 
     @property
     def command(self) -> torch.Tensor:
-        """The desired 2D-pose in base frame for the policy.
-        
-        Shape is (num_envs, 3), corresponding to [x_relative, y_relative, heading_relative].
         """
-        pos_command_b_2d = self.pos_command_b[:, :2]
-        return torch.cat([pos_command_b_2d, self.heading_command_b.unsqueeze(1)], dim=1)
+        월드 기준 목표 [x, y, z, heading]
+        Shape: (num_envs, 4)
+        """
+        return torch.cat([self.pos_command_w, self.heading_command_w.unsqueeze(1)], dim=1)
 
     def _update_metrics(self):
-        """Computes the 2D error between the desired command and the current robot state."""
         self.metrics["error_pos_2d"] = torch.norm(self.pos_command_w[:, :2] - self.robot.data.root_pos_w[:, :2], dim=1)
         self.metrics["error_heading"] = torch.abs(wrap_to_pi(self.heading_command_w - self.robot.data.heading_w))
 
     def _resample_command(self, env_ids: Sequence[int]):
-        """Resamples the command relative to the robot's current position."""
+
         num_resamples = len(env_ids)
         if num_resamples == 0:
             return
 
-        current_robot_pos_w = self.robot.data.root_pos_w[env_ids]
-        
-        rand_pos_x = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_x)
-        rand_pos_y = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_y)
-
-        self.pos_command_w[env_ids, 0] = current_robot_pos_w[:, 0] + rand_pos_x
-        self.pos_command_w[env_ids, 1] = current_robot_pos_w[:, 1] + rand_pos_y
-        self.pos_command_w[env_ids, 2] = self.robot.data.default_root_state[env_ids, 2]
-
-        if self.cfg.simple_heading:
-            current_robot_heading_w = self.robot.data.heading_w[env_ids]
-            target_vec_w = self.pos_command_w[env_ids, :2] - current_robot_pos_w[:, :2]
-            target_direction = torch.atan2(target_vec_w[:, 1], target_vec_w[:, 0])
-            flipped_target_direction = wrap_to_pi(target_direction + torch.pi)
-            curr_to_target = wrap_to_pi(target_direction - current_robot_heading_w).abs()
-            curr_to_flipped_target = wrap_to_pi(flipped_target_direction - current_robot_heading_w).abs()
-            self.heading_command_w[env_ids] = torch.where(
-                curr_to_target < curr_to_flipped_target, target_direction, flipped_target_direction
-            )
-        else:
-            r_heading = torch.empty(num_resamples, device=self.device)
-            self.heading_command_w[env_ids] = r_heading.uniform_(*self.cfg.ranges.heading)
+        self.pos_command_w[env_ids, 0] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_x)
+        self.pos_command_w[env_ids, 1] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_y)
+        self.pos_command_w[env_ids, 2] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_z)
+        self.heading_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.heading)
 
     def _update_command(self):
-        """Re-target the position command to the current root state."""
-        target_vec_w = self.pos_command_w - self.robot.data.root_pos_w
-        self.pos_command_b[:] = quat_apply_inverse(yaw_quat(self.robot.data.root_quat_w), target_vec_w)
-        self.heading_command_b[:] = wrap_to_pi(self.heading_command_w - self.robot.data.heading_w)
+        pass
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         if debug_vis:

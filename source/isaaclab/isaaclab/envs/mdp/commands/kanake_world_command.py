@@ -39,14 +39,17 @@ class KanakeWorldCommand(CommandTerm):
 
         self.robot: Articulation = env.scene[cfg.asset_name]
 
-        # 월드 좌표계 기준
 
         self.z_command_w = torch.zeros(self.num_envs, device=self.device)
         self.roll_command_w = torch.zeros(self.num_envs, device=self.device) 
         self.pitch_command_w = torch.zeros(self.num_envs, device=self.device)
         self.yaw_command_w = torch.zeros(self.num_envs, device=self.device)
 
-        # 메트릭(오차) 버퍼 생성
+        self.z_command_b = torch.zeros(self.num_envs, device=self.device)
+        self.roll_command_b = torch.zeros(self.num_envs, device=self.device)
+        self.pitch_command_b = torch.zeros(self.num_envs, device=self.device)
+        self.yaw_command_b = torch.zeros(self.num_envs, device=self.device)
+
         self.metrics["error_z"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["error_roll"] = torch.zeros(self.num_envs, device=self.device)  
         self.metrics["error_pitch"] = torch.zeros(self.num_envs, device=self.device)
@@ -64,12 +67,10 @@ class KanakeWorldCommand(CommandTerm):
         목표 커맨드 [z, roll, yaw, pitch]를 반환
         Shape: (num_envs, 4)
         """
-        return torch.stack([self.z_command_w, self.roll_command_w, self.yaw_command_w, self.pitch_command_w], dim=1)
+        return torch.stack([self.z_command_b, self.roll_command_b, self.yaw_command_b, self.pitch_command_b], dim=1)
 
     def _resample_command(self, env_ids: Sequence[int]):
-        """
-        새로운 커맨드를 월드 좌표계에서 샘플링합니다.
-        """
+
         num_resamples = len(env_ids)
         self.z_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.pos_z)
         self.roll_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.roll)  # Roll 샘플링 추가
@@ -77,12 +78,18 @@ class KanakeWorldCommand(CommandTerm):
         self.yaw_command_w[env_ids] = torch.empty(num_resamples, device=self.device).uniform_(*self.cfg.ranges.yaw)
 
     def _update_command(self):
-        pass
+        self.z_command_b[:] = self.z_command_w - self.robot.data.root_pos_w[:, 2]
+
+        # Roll, Pitch, Yaw 오차 계산
+        current_roll, current_pitch, current_yaw = euler_xyz_from_quat(self.robot.data.root_quat_w)
+
+        # wrap_to_pi를 사용해 최단 각도 오차 계산
+        self.roll_command_b[:] = wrap_to_pi(self.roll_command_w - current_roll)
+        self.pitch_command_b[:] = wrap_to_pi(self.pitch_command_w - current_pitch)
+        self.yaw_command_b[:] = wrap_to_pi(self.yaw_command_w - current_yaw)
 
     def _update_metrics(self):
-        """
-        목표 커맨드와 로봇의 현재 상태 사이의 오차를 계산합니다.
-        """
+
         # Z 위치 오차
         self.metrics["error_z"] = torch.abs(self.z_command_w - self.robot.data.root_pos_w[:, 2])
 
@@ -111,7 +118,6 @@ class KanakeWorldCommand(CommandTerm):
                 self.current_pose_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
-        """매 시뮬레이션 스텝마다 호출되어 시각화를 업데이트합니다."""
         if not self.robot.is_initialized:
             return
         

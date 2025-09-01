@@ -945,6 +945,22 @@ class ArticulationData:
             raise ValueError("body_names is not initialized.")
         head_idx = self.body_names.index("head")
         return self.body_quat_w[:, head_idx, :]
+     
+
+    @property
+    def cube_pose_w(self) -> torch.Tensor:
+
+        """
+        Returns the world pose (x, y, z, qw, qx, qy, qz) of the body named 'cube' in the asset.
+
+        Shape: (num_envs, 7)
+        """
+        
+        if self.body_names is None:
+            raise ValueError("body_names is not initialized.")
+        cube_idx = self.body_names.index("cube")
+
+        return self.body_state_w[:, cube_idx, :7]
     
     
 
