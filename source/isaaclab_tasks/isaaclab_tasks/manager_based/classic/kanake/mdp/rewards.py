@@ -253,6 +253,7 @@ class BodyOrderReward(ManagerTermBase):
         # 커맨드에서 타겟 위치 추출
         command = env.command_manager.get_command(command_name)
         target_pos = command[:, :2]  # shape: [envs, 2]
+        # print("target_pos:", target_pos)
 
         # 바디 순서: head, link1, ..., link15, tail (총 17개)
         order_names = ["head"] + [f"Link{i}" for i in range(1, 16)] + ["tail"]
@@ -266,8 +267,14 @@ class BodyOrderReward(ManagerTermBase):
         body_positions = torch.stack(body_positions, dim=1)  # [envs, 17, 2]
 
         # 각 바디와 타겟 사이의 유클리드 거리 계산
-        # target_pos shape: [envs, 2] → unsqueeze(1)로 브로드캐스트
         distances = torch.norm(body_positions - target_pos.unsqueeze(1), dim=-1)  # [envs, 17]
+
+        # 가까운 순서대로 인덱스 정렬
+        sorted_indices = torch.argsort(distances, dim=1)  # [envs, 17]
+        # 각 환경별로 가까운 순서의 바디 이름 리스트 생성
+        for env_idx in range(distances.shape[0]):
+            sorted_names = [order_names[i] for i in sorted_indices[env_idx].tolist()]
+            print(f"Env {env_idx} 가까운 순서: {sorted_names}")
 
         # 인접한 바디 쌍마다 올바른 순서인지 확인: d[i] < d[i+1]
         correct_order = distances[:, :-1] < distances[:, 1:]
@@ -987,19 +994,21 @@ def cube_height_reward(
     env: ManagerBasedRLEnv,
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    sigma: float = 0.1,  
+    # sigma: float = 0.1,  
 ) -> torch.Tensor:
     
     asset: Articulation = env.scene[asset_cfg.name]
-    command = env.command_manager.get_command(command_name)
+    # command = env.command_manager.get_command(command_name)
+    error_z = env.command_manager.get_term(command_name).metrics["error_z"]
 
-    cube_z = asset.data.cube_pose_w[:, 2]  # [num_envs]
-    target_height = command[:, 0]
+    # cube_z = asset.data.cube_pose_w[:, 2]  # [num_envs]
+    # target_height = command[:, 0]
 
     # print("head_z: ", head_z)
-    error = cube_z - target_height
-    reward = torch.exp(-torch.square(error) / (sigma**2))
-    return reward
+    # error = cube_z - target_height
+    # reward = torch.exp(-torch.square(error_z) / (sigma**2))
+    # return reward
+    return error_z**2
 
 # head 수직 속도 페널티
 def head_vertical_velocity_penalty(
@@ -1157,4 +1166,74 @@ def camera_orientation_alignment_reward(
     alignment = torch.cos(angle_rad)
     reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
     
+    return reward
+
+
+def orientation_command_error(
+    env: ManagerBasedRLEnv, 
+    command_name: str, 
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize tracking orientation error using shortest path."""
+
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    # 명령 불러오기 및 shape 확인
+    command = env.command_manager.get_command(command_name)
+    if command.ndim == 3:
+        command = command.squeeze(1)
+    if command.shape[-1] != 7:
+        raise RuntimeError(f"Expected command shape [N,7], but got {command.shape}")
+
+    des_quat_b = command[:, 3:7]  # shape [N, 4]
+    asset_quat = asset.data.root_state_w[:, 3:7]  # shape [N, 4]
+    des_quat_w = quat_mul(asset_quat, des_quat_b)  # shape [N, 4]
+
+    curr_quat_w = asset.data.cube_pose_w[:, 3:7]  # shape [N, 4]
+
+    return quat_error_magnitude(curr_quat_w, des_quat_w)
+
+
+def orientation_command_error(
+    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    
+    error_roll = env.command_manager.get_term(command_name).metrics["error_roll"]
+    error_yaw = env.command_manager.get_term(command_name).metrics["error_yaw"]
+    error_pitch = env.command_manager.get_term(command_name).metrics["error_pitch"]
+
+    return error_roll**2 + error_yaw**2 + error_pitch**2
+
+def cube_xy_plane_alignment_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    threshold_deg: float = 10.0,
+) -> torch.Tensor:
+    """
+    커맨드의 xy평면 방향과 큐브의 xy평면 방향이 평행하면 리워드 1, 아니면 alignment 값 반환
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+
+    # 커맨드의 xy평면 방향 벡터 (예: x축 방향)
+    command_dir = command[:, :2]  # shape: [num_envs, 2]
+    command_dir = F.normalize(command_dir, dim=-1)
+
+    # 큐브의 x축 방향 벡터 (월드 좌표계, xy평면)
+    cube_idx = asset.body_names.index("cube")
+    cube_quat_w = asset.data.body_quat_w[:, cube_idx]
+    local_x = torch.tensor([1.0, 0.0, 0.0], device=env.device).expand(env.num_envs, 3)
+    cube_x_dir_w = math_utils.quat_apply(cube_quat_w, local_x)[:, :2]
+    cube_x_dir_w = F.normalize(cube_x_dir_w, dim=-1)
+
+    # 두 벡터의 코사인 유사도 (alignment)
+    alignment = torch.sum(command_dir * cube_x_dir_w, dim=-1)
+    alignment = torch.clamp(alignment, -1.0, 1.0)
+
+    # 각도 계산
+    angle_rad = torch.acos(alignment)
+    angle_deg = torch.rad2deg(angle_rad)
+
+    # threshold_deg 이내면 1, 아니면 alignment 값
+    reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
     return reward
