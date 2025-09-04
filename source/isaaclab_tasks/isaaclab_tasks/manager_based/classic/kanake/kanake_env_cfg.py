@@ -124,7 +124,7 @@ class CommandsCfg:
         resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeWorldCommandCfg.Ranges(
 
-            pos_z=(0.15, 0.2),
+            pos_z=(0.15, 0.15),
 
             pitch=(-0.1, 0.1),
             yaw=(0.0, 0.0),
@@ -145,7 +145,7 @@ class ActionsCfg:
     #     )
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["j1", "j2", "j3"], scale=1.0)
+    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["j1", "j2", "j3"], scale=0.5)
     # joint_sine_hold = mdp.JointSineHoldActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
@@ -332,43 +332,51 @@ class RewardsCfg:
     # Task1 - 이동
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-1.0,
+        weight=-3.0,
         params={"command_name": "kanake_command"},
     )
     
     kanake_position_command_error_tanh = RewTerm(
         func=mdp.kanake_position_command_error_tanh,
-        weight=1.0,
+        weight=3.0,
         params={"std": 0.05, "command_name": "kanake_command"},
     )
-
+    velocity_target_alignment_reward = RewTerm(
+        func=mdp.velocity_target_alignment_reward,
+        weight=1.0,
+        params={"command_name": "kanake_command"},
+    )
+    ####################################
+    
     # Task2 - head가 타겟을 보도록
-    # orientation_command_error = RewTerm(
-    #     func=mdp.orientation_command_error,
-    #     weight=-0.5,
-    #     params={"command_name": "head_command"},
+
+    # cube_xy_plane_alignment_reward = RewTerm(
+    #     func=mdp.cube_xy_plane_alignment_reward, 
+    #     weight=0.5, 
+    #     params={"command_name": "head_command", "threshold_deg": 5.0}
     # )
-    cube_xy_plane_alignment_reward = RewTerm(
-        func=mdp.cube_xy_plane_alignment_reward, 
-        weight=0.5, 
-        params={"command_name": "head_command", "threshold_deg": 5.0}
-    )
-    cube_height_reward = RewTerm(
-        func=mdp.cube_height_reward,
-        weight=-0.1,
-        params={"command_name": "head_command"}
-    )
+    # cube_height_reward = RewTerm(
+    #     func=mdp.cube_height_reward,
+    #     weight=-1.0,
+    #     params={"command_name": "head_command"}
+    # )
 
     head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-0.01)
 
     cube_z_reward = RewTerm(func=mdp.cube_z_reward, weight=0.1)
 
+    cube_x_axis_target_alignment_reward = RewTerm(
+        func=mdp.cube_x_axis_target_alignment_reward,
+        weight=1.0,
+        params={"command_name": "kanake_command"},
+    )
 
+    ####################################
     # 자세 유지
     upright = RewTerm(func=mdp.upright_posture_shaped, weight=1.0, params={"threshold": 0.8})
     BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
-
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    forward_velocity_reward = RewTerm(func=mdp.forward_velocity_reward, weight=0.3)
 
 
 

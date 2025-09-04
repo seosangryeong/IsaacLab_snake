@@ -83,22 +83,19 @@ class KanakeWorldCommand(CommandTerm):
         # Roll, Pitch, Yaw 오차 계산
         current_roll, current_pitch, current_yaw = euler_xyz_from_quat(self.robot.data.root_quat_w)
 
-        # wrap_to_pi를 사용해 최단 각도 오차 계산
         self.roll_command_b[:] = wrap_to_pi(self.roll_command_w - current_roll)
         self.pitch_command_b[:] = wrap_to_pi(self.pitch_command_w - current_pitch)
         self.yaw_command_b[:] = wrap_to_pi(self.yaw_command_w - current_yaw)
 
     def _update_metrics(self):
 
-        # Z 위치 오차
-        self.metrics["error_z"] = torch.abs(self.z_command_w - self.robot.data.root_pos_w[:, 2])
+        cube_idx = self.robot.body_names.index("cube")
+        cube_z = self.robot.data.body_pos_w[:, cube_idx, 2]
+        self.metrics["error_z"] = torch.abs(self.z_command_w - cube_z)
 
-        # Roll, Pitch 및 Yaw 오차 계산
-        # 로봇의 현재 쿼터니언으로부터 오일러 각 (roll, pitch, yaw) 추출
+
         current_roll, current_pitch, current_yaw = euler_xyz_from_quat(self.robot.data.root_quat_w)
-        
-        # 각도 오차는 wrap_to_pi를 사용해 -pi ~ pi 범위에서 최단 거리를 계산
-        self.metrics["error_roll"] = torch.abs(wrap_to_pi(self.roll_command_w - current_roll))  # Roll 오차 추가
+        self.metrics["error_roll"] = torch.abs(wrap_to_pi(self.roll_command_w - current_roll))
         self.metrics["error_pitch"] = torch.abs(wrap_to_pi(self.pitch_command_w - current_pitch))
         self.metrics["error_yaw"] = torch.abs(wrap_to_pi(self.yaw_command_w - current_yaw))
 

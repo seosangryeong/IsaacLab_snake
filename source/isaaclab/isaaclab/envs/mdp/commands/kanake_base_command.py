@@ -59,6 +59,15 @@ class KanakeBaseCommand(CommandTerm):
         """
         pos_command_b_2d = self.pos_command_b[:, :2]
         return torch.cat([pos_command_b_2d, self.heading_command_b.unsqueeze(1)], dim=1)
+    
+    @property
+    def world_command_pos(self) -> torch.Tensor:
+        """The desired position goal in world frame.
+        
+        Shape is (num_envs, 3), corresponding to [x_w, y_w, z_w].
+        This value is stable between resampling periods and is suitable for reward calculations.
+        """
+        return self.pos_command_w
 
     def _update_metrics(self):
         """Computes the 2D error between the desired command and the current robot state."""

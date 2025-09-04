@@ -251,9 +251,12 @@ class BodyOrderReward(ManagerTermBase):
     ) -> torch.Tensor:
         asset: Articulation = env.scene[asset_cfg.name]
         # 커맨드에서 타겟 위치 추출
-        command = env.command_manager.get_command(command_name)
-        target_pos = command[:, :2]  # shape: [envs, 2]
+        # command = env.command_manager.get_command(command_name)
+        # target_pos = command[:, :2]  # shape: [envs, 2]
         # print("target_pos:", target_pos)
+        command_term = env.command_manager.get_term(command_name)
+        target_pos_w = command_term.world_command_pos[:,:2]
+        # print("target_pos:", target_pos_w)
 
         # 바디 순서: head, link1, ..., link15, tail (총 17개)
         order_names = ["head"] + [f"Link{i}" for i in range(1, 16)] + ["tail"]
@@ -267,14 +270,14 @@ class BodyOrderReward(ManagerTermBase):
         body_positions = torch.stack(body_positions, dim=1)  # [envs, 17, 2]
 
         # 각 바디와 타겟 사이의 유클리드 거리 계산
-        distances = torch.norm(body_positions - target_pos.unsqueeze(1), dim=-1)  # [envs, 17]
+        distances = torch.norm(body_positions - target_pos_w.unsqueeze(1), dim=-1)  # [envs, 17]
 
         # 가까운 순서대로 인덱스 정렬
         sorted_indices = torch.argsort(distances, dim=1)  # [envs, 17]
         # 각 환경별로 가까운 순서의 바디 이름 리스트 생성
-        for env_idx in range(distances.shape[0]):
-            sorted_names = [order_names[i] for i in sorted_indices[env_idx].tolist()]
-            print(f"Env {env_idx} 가까운 순서: {sorted_names}")
+        # for env_idx in range(distances.shape[0]):
+        #     sorted_names = [order_names[i] for i in sorted_indices[env_idx].tolist()]
+        #     print(f"Env {env_idx} order: {sorted_names}")
 
         # 인접한 바디 쌍마다 올바른 순서인지 확인: d[i] < d[i+1]
         correct_order = distances[:, :-1] < distances[:, 1:]
@@ -1008,7 +1011,7 @@ def cube_height_reward(
     # error = cube_z - target_height
     # reward = torch.exp(-torch.square(error_z) / (sigma**2))
     # return reward
-    return error_z**2
+    return (error_z+1)**2
 
 # head 수직 속도 페널티
 def head_vertical_velocity_penalty(
@@ -1237,3 +1240,108 @@ def cube_xy_plane_alignment_reward(
     # threshold_deg 이내면 1, 아니면 alignment 값
     reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
     return reward
+
+
+def forward_velocity_reward(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Reward for moving forward in the direction of the robot's base.
+
+    This reward is calculated by projecting the robot's linear velocity in the world frame
+    onto the robot's forward direction vector (local x-axis of the base link).
+    This version explicitly uses `root_link_pose_w` for orientation data.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    # vx, vy, vz
+    base_lin_vel_w = asset.data.root_state_w[:, 7:10]
+
+    # base 쿼터니안
+    base_quat_wxyz = asset.data.root_link_pose_w[:, 3:7]
+
+    # x방향 정의
+    forward_vec_b = torch.tensor([1.0, 0.0, 0.0], device=env.device).expand(env.num_envs, -1)
+
+    # 로봇의 x방향이 실제 월드 좌표계에서 어디를 향하는지
+    forward_vec_w = math_utils.quat_apply(base_quat_wxyz, forward_vec_b)
+
+    # 실제 이동 벡터와 로봇이 바라보는 방향 벡터 내적
+    forward_velocity = torch.sum(base_lin_vel_w * forward_vec_w, dim=1)
+
+    return forward_velocity 
+
+def velocity_target_alignment_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward for aligning the robot's velocity with the direction towards the command target.
+
+    This reward is calculated by the cosine similarity between the robot's 2D velocity vector
+    and the 2D vector from the robot's base to the commanded target position.
+    A reward of +1 means moving directly towards the target, while -1 means moving directly away.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    command_term = env.command_manager.get_term(command_name)
+    
+    # 커맨드로 주어진 목표 위치 (x, y)
+    target_pos_w = command_term.world_command_pos[:,:2]
+
+    # base위치(x,y)
+    base_pos_w = asset.data.root_state_w[:, 0:2]
+
+    # base 속도(x,y)
+    base_lin_vel_w = asset.data.root_state_w[:, 7:9]
+
+
+    # 방향 벡터 계산
+    vec_to_target = target_pos_w - base_pos_w
+    # 속도 방향 벡터
+    velocity_vec = base_lin_vel_w
+
+
+    dir_to_target = F.normalize(vec_to_target, p=2, dim=-1)
+    dir_of_velocity = F.normalize(velocity_vec, p=2, dim=-1)
+
+
+    cosine_similarity = torch.sum(dir_to_target * dir_of_velocity, dim=-1)
+
+    return cosine_similarity
+
+
+def cube_x_axis_target_alignment_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward for aligning the cube's local x-axis with the direction towards the command target.
+
+    This reward is calculated by the cosine similarity between the cube's local x-axis vector
+    (in the world frame) and the vector from the cube's position to the commanded target position.
+    A reward of +1 means the cube's x-axis is pointing directly at the target, while -1 means
+    it's pointing directly away.
+    """
+    # 에셋(로봇) 인스턴스 및 커맨드 가져오기
+    asset: Articulation = env.scene[asset_cfg.name]
+    command_term = env.command_manager.get_term(command_name)
+    target_pos_w = command_term.world_command_pos[:, :3]  
+
+    try:
+        cube_idx = asset.body_names.index("cube")
+    except ValueError:
+        raise ValueError(f"The asset '{asset_cfg.name}' does not have a body named 'cube'.")
+    
+    cube_pos_w = asset.data.body_pos_w[:, cube_idx]
+    cube_quat= asset.data.body_quat_w[:, cube_idx]
+
+    local_x_axis_b = torch.tensor([1.0, 0.0, 0.0], device=env.device).expand(env.num_envs, -1)
+    cube_x_dir_w = math_utils.quat_apply(cube_quat, local_x_axis_b)
+
+    vec_to_target_w = target_pos_w - cube_pos_w
+    dir_to_target_w = F.normalize(vec_to_target_w, p=2, dim=-1)
+    
+    cosine_similarity = torch.sum(cube_x_dir_w * dir_to_target_w, dim=-1)
+    # print("cosine_similarity: ", cosine_similarity)
+
+    return cosine_similarity
