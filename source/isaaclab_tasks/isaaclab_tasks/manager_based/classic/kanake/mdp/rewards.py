@@ -585,7 +585,7 @@ def kanake_position_command_error_base(
     # print("distance", distance)
 
 
-    return env.command_manager.get_term(command_name).metrics["error_pos_2d"]
+    return 2 / torch.square(distance+0.5)
 
 def kanake_position_command_threshold_reward(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg, threshold: float = 0.1) -> torch.Tensor:
@@ -1437,3 +1437,34 @@ class HeadTargetDistanceReward(ManagerTermBase):
         reward = clipped_distances.sum(dim=1)
 
         return reward
+    
+    
+def average_body_velocity_alignment_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """
+    모든 바디(링크)의 평균 속도 벡터(XY 평면)가 타겟 방향과 정렬되도록 하는 리워드.
+    코사인 유사도 기반, 1에 가까울수록 정렬.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    command_term = env.command_manager.get_term(command_name)
+    target_pos_w = command_term.world_command_pos[:, :2]  # [num_envs, 2]
+
+    # 베이스 위치 (월드 좌표계, XY)
+    base_pos_w = asset.data.root_state_w[:, :2]  # [num_envs, 2]
+
+    # 타겟 방향 벡터 (베이스 → 타겟)
+    vec_to_target = target_pos_w - base_pos_w
+    dir_to_target = torch.nn.functional.normalize(vec_to_target, p=2, dim=-1)
+
+    # 모든 바디의 월드 속도 (num_envs, num_bodies, 3)
+    body_velocities = asset.data.body_lin_vel_w  # [num_envs, num_bodies, 3]
+    # 평균 속도 (XY만)
+    avg_vel_xy = torch.mean(body_velocities[..., :2], dim=1)  # [num_envs, 2]
+    avg_vel_dir = torch.nn.functional.normalize(avg_vel_xy, p=2, dim=-1)
+
+    # 코사인 유사도 계산
+    reward = torch.sum(avg_vel_dir * dir_to_target, dim=-1)
+    return reward

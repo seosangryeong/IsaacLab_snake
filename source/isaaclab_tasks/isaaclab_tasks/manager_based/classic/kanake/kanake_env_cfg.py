@@ -332,7 +332,7 @@ class RewardsCfg:
     # Task1 - 이동
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-3.0,
+        weight=1.0,
         params={"command_name": "kanake_command"},
     )
     
@@ -344,6 +344,11 @@ class RewardsCfg:
     velocity_target_alignment_reward = RewTerm(
         func=mdp.velocity_target_alignment_reward,
         weight=1.0,
+        params={"command_name": "kanake_command"},
+    )
+    average_body_velocity_alignment_reward = RewTerm(
+        func=mdp.average_body_velocity_alignment_reward,
+        weight=0.5,
         params={"command_name": "kanake_command"},
     )
     ####################################
