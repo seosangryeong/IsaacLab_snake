@@ -355,11 +355,11 @@ class RewardsCfg:
     #     weight=0.5, 
     #     params={"command_name": "head_command", "threshold_deg": 5.0}
     # )
-    # cube_height_reward = RewTerm(
-    #     func=mdp.cube_height_reward,
-    #     weight=-1.0,
-    #     params={"command_name": "head_command"}
-    # )
+    cube_height_reward = RewTerm(
+        func=mdp.cube_height_reward,
+        weight=-1.0,
+        params={"command_name": "head_command"}
+    )
 
     head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-0.01)
 
@@ -373,10 +373,15 @@ class RewardsCfg:
 
     ####################################
     # 자세 유지
-    upright = RewTerm(func=mdp.upright_posture_shaped, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
     BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     forward_velocity_reward = RewTerm(func=mdp.forward_velocity_reward, weight=0.3)
+    HeadTargetDistanceReward = RewTerm(
+        func=mdp.HeadTargetDistanceReward, 
+        weight=-0.7, 
+        params={"command_name": "kanake_command", "threshold": 0.2}
+    )
 
 
 

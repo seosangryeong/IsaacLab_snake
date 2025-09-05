@@ -23,13 +23,22 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedEnv
 
 
-def upright_posture_bonus(
+def kanake_upright_posture_bonus(
     env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     """Reward for maintaining an upright posture.
     로봇의 로컬좌표계 z축과 월드좌표계 z축의 내적. -1에서 1 사이(1에 가까울수록 upright)"""
     up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)
     # print("up_proj", up_proj)
+    return (up_proj > threshold).float()
+
+def upright_posture_bonus(
+    env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Reward for maintaining an upright posture.
+    로봇의 로컬좌표계 z축과 월드좌표계 z축의 내적. -1에서 1 사이(1에 가까울수록 upright)"""
+    up_proj = obs.base_up_proj(env, asset_cfg).squeeze(-1)
+
     return (up_proj > threshold).float()
 
 def upright_posture_shaped(env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
@@ -1345,3 +1354,86 @@ def cube_x_axis_target_alignment_reward(
     # print("cosine_similarity: ", cosine_similarity)
 
     return cosine_similarity
+
+
+class HeadTargetDistanceReward(ManagerTermBase):
+    """
+    Calculate the dynamically updated line equation (Ax + By + C = 0) between 'head' and target position,
+    and the signed distances of all other bodies from the line. 
+    Reward is the sum of threshold-clipped distances (the smaller, the better).
+    """
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.threshold = cfg.params.get("threshold", 0.1)
+
+    def calculate_line(
+        self,
+        head_pos: torch.Tensor,
+        target_pos: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Ax + By + C = 0.
+        head를 x1, y1
+        target을 x2, y2
+        """
+        x1, y1 = head_pos[:, 0], head_pos[:, 1]
+        x2, y2 = target_pos[:, 0], target_pos[:, 1]
+
+        A = y2 - y1
+        B = x1 - x2
+        C = x2 * y1 - x1 * y2
+
+        return torch.stack([A, B, C], dim=-1)  # [envs, 3]
+
+    def calculate_signed_distances(
+        self,
+        body_positions: torch.Tensor,
+        line_coefficients: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        거리 = Ax + By + C / (A^2 + B^2)^(1/2)
+        """
+        A = line_coefficients[:, 0].unsqueeze(1)
+        B = line_coefficients[:, 1].unsqueeze(1)
+        C = line_coefficients[:, 2].unsqueeze(1)
+
+        x, y = body_positions[..., 0], body_positions[..., 1]
+        signed_distances = (A * x + B * y + C) / torch.sqrt(A**2 + B**2 + 1e-8)
+        return signed_distances
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+        threshold: float = 0.1,
+    ) -> torch.Tensor:
+        """
+        Calculates the reward based on signed distances of bodies from the head-target line.
+        """
+        asset: Articulation = env.scene[asset_cfg.name]
+
+        # head 위치
+        head_pos = asset.data.body_pos_w[:, asset.body_names.index("cube"), :2]  # [envs, 2]
+
+        # 타겟 위치 (월드 좌표계, xy만 사용)
+        command_term = env.command_manager.get_term(command_name)
+        
+        # 커맨드로 주어진 목표 위치 (x, y)
+        target_pos= command_term.world_command_pos[:, :2]
+
+        # 모든 body 위치
+        body_positions = asset.data.body_pos_w[..., :2]  # [envs, num_bodies, 2]
+
+        # head-target 직선 계산
+        line_coefficients = self.calculate_line(head_pos, target_pos)
+
+        # 각 body의 signed 거리 계산
+        signed_distances = self.calculate_signed_distances(body_positions, line_coefficients)
+
+        # threshold를 초과하는 거리에 대해서만 페널티 부여
+        clipped_distances = torch.clamp(torch.abs(signed_distances) - threshold, min=0.0)
+        reward = clipped_distances.sum(dim=1)
+
+        return reward
