@@ -238,14 +238,13 @@ class DistanceReward(ManagerTermBase):
 
         # 각 body의 signed 거리 계산
         signed_distances = self.calculate_signed_distances(current_body_positions, line_coefficients)
-
-        # threshold를 초과하는 거리에 대해서만 페널티 부여
-        clipped_distances = torch.clamp(torch.abs(signed_distances) - threshold, min=0.0)  # threshold 파라미터 사용
-        reward = clipped_distances.sum(dim=1)
-
+        sum_of_distances = signed_distances.sum(dim=1)
         
+        clipped_sum = torch.clamp(torch.abs(sum_of_distances) - threshold, min=0.0)
 
-        return reward
+        penalty = torch.square(clipped_sum)
+
+        return penalty
     
 
 class BodyOrderReward(ManagerTermBase):
@@ -1002,7 +1001,7 @@ class BaseTargetAlignmentReward(ManagerTermBase):
 ### HEAD 리워드
 
 # cube높이
-def cube_height_reward(
+def cube_height_penalty(
     env: ManagerBasedRLEnv,
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -1020,7 +1019,7 @@ def cube_height_reward(
     # error = cube_z - target_height
     # reward = torch.exp(-torch.square(error_z) / (sigma**2))
     # return reward
-    return (error_z+1)**2
+    return torch.square(error_z)
 
 # head 수직 속도 페널티
 def head_vertical_velocity_penalty(
@@ -1255,12 +1254,7 @@ def forward_velocity_reward(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    """Reward for moving forward in the direction of the robot's base.
 
-    This reward is calculated by projecting the robot's linear velocity in the world frame
-    onto the robot's forward direction vector (local x-axis of the base link).
-    This version explicitly uses `root_link_pose_w` for orientation data.
-    """
     asset: Articulation = env.scene[asset_cfg.name]
 
     # vx, vy, vz
@@ -1285,19 +1279,16 @@ def velocity_target_alignment_reward(
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
-    """Reward for aligning the robot's velocity with the direction towards the command target.
-
-    This reward is calculated by the cosine similarity between the robot's 2D velocity vector
-    and the 2D vector from the robot's base to the commanded target position.
-    A reward of +1 means moving directly towards the target, while -1 means moving directly away.
+    """
+    타겟-base 벡터와 base 속도벡터의 일치
     """
     asset: Articulation = env.scene[asset_cfg.name]
     command_term = env.command_manager.get_term(command_name)
     
-    # 커맨드로 주어진 목표 위치 (x, y)
+    # 커맨드 위치 (x, y)
     target_pos_w = command_term.world_command_pos[:,:2]
 
-    # base위치(x,y)
+    # base위치 (x, y)
     base_pos_w = asset.data.root_state_w[:, 0:2]
 
     # base 속도(x,y)
@@ -1434,9 +1425,10 @@ class HeadTargetDistanceReward(ManagerTermBase):
 
         # threshold를 초과하는 거리에 대해서만 페널티 부여
         clipped_distances = torch.clamp(torch.abs(signed_distances) - threshold, min=0.0)
-        reward = clipped_distances.sum(dim=1)
+        penalty = clipped_distances.sum(dim=1)
+        print(penalty)
 
-        return reward
+        return penalty
     
     
 def average_body_velocity_alignment_reward(
@@ -1455,7 +1447,7 @@ def average_body_velocity_alignment_reward(
     # 베이스 위치 (월드 좌표계, XY)
     base_pos_w = asset.data.root_state_w[:, :2]  # [num_envs, 2]
 
-    # 타겟 방향 벡터 (베이스 → 타겟)
+    # 타겟 방향 벡터 (베이스 to 타겟)
     vec_to_target = target_pos_w - base_pos_w
     dir_to_target = torch.nn.functional.normalize(vec_to_target, p=2, dim=-1)
 

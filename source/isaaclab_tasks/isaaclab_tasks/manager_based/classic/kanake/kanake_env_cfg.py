@@ -145,13 +145,13 @@ class ActionsCfg:
     #     )
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
     # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["j1", "j2", "j3"], scale=0.5)
+    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["j1", "j2", "j3"], scale=0.5)
     # joint_sine_hold = mdp.JointSineHoldActionCfg(
     #     asset_name="robot",
     #     joint_names=[".*"]
     # )
     joint_sine = mdp.JointSineActionCfg(asset_name="robot", 
-                                        joint_names=["j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
+                                        joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
                                         scale=1.0)
 
     # joint_cpg = mdp.JointCPGActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
@@ -329,63 +329,75 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    # Task1 - 이동
+    ### Task1 - 이동
+
+    # 타겟과의 거리 리워드
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=3.0,
+        weight=5.0,
         params={"command_name": "kanake_command"},
     )
-    
-    kanake_position_command_error_tanh = RewTerm(
-        func=mdp.kanake_position_command_error_tanh,
-        weight=3.0,
-        params={"std": 0.05, "command_name": "kanake_command"},
-    )
+
+    # 타겟과의 거리 리워드(타겟과 가까워질수록 리워드를 더 크게(tanh))
+    # kanake_position_command_error_tanh = RewTerm(
+    #     func=mdp.kanake_position_command_error_tanh,
+    #     weight=50.0,
+    #     params={"std": 0.05, "command_name": "kanake_command"},
+    # )
+
+    # 타겟까지의 벡터와 베이스 속도벡터의 유사도
     velocity_target_alignment_reward = RewTerm(
         func=mdp.velocity_target_alignment_reward,
         weight=1.0,
         params={"command_name": "kanake_command"},
     )
+
+    #몸체의 평균 xy벡터와 base to target 벡터의 유사도
     average_body_velocity_alignment_reward = RewTerm(
         func=mdp.average_body_velocity_alignment_reward,
-        weight=0.5,
-        params={"command_name": "kanake_command"},
-    )
-    ####################################
-    
-    # Task2 - head가 타겟을 보도록
-
-    # cube_xy_plane_alignment_reward = RewTerm(
-    #     func=mdp.cube_xy_plane_alignment_reward, 
-    #     weight=0.5, 
-    #     params={"command_name": "head_command", "threshold_deg": 5.0}
-    # )
-    cube_height_reward = RewTerm(
-        func=mdp.cube_height_reward,
-        weight=-1.0,
-        params={"command_name": "head_command"}
-    )
-
-    head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-0.01)
-
-    cube_z_reward = RewTerm(func=mdp.cube_z_reward, weight=0.1)
-
-    cube_x_axis_target_alignment_reward = RewTerm(
-        func=mdp.cube_x_axis_target_alignment_reward,
         weight=1.0,
         params={"command_name": "kanake_command"},
     )
 
     ####################################
-    # 자세 유지
+    
+    ### Task2 - head가 타겟을 보도록
+
+    # cube(head)의 z좌표와 kanake_world_command의 z좌표 커맨드 오차
+    cube_height_penalty = RewTerm(
+        func=mdp.cube_height_penalty,
+        weight=-50.0,
+        params={"command_name": "head_command"}
+    )
+
+    # head의 z방향 속도 페널티
+    head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-50.0)
+
+    # cube(head)의 로컬 x축 방향과 base-target 벡터의 유사도
+    cube_x_axis_target_alignment_reward = RewTerm(
+        func=mdp.cube_x_axis_target_alignment_reward,
+        weight=10.0,
+        params={"command_name": "kanake_command"},
+    )
+
+    ####################################
+
+    ### 자세 유지
+
+    # base의 수직 유지(cube)
     upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
+
+    # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
+
+    # action이 급변하지 않도록 페널티
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-    forward_velocity_reward = RewTerm(func=mdp.forward_velocity_reward, weight=0.3)
-    HeadTargetDistanceReward = RewTerm(
-        func=mdp.HeadTargetDistanceReward, 
+
+    # head와 target을 잇는 직선과 body들의 거리 합
+    DistanceReward = RewTerm(
+        func=mdp.DistanceReward, 
         weight=-1.0, 
-        params={"command_name": "kanake_command", "threshold": 0.1}
+        params={"threshold": 0.1}
     )
 
 
