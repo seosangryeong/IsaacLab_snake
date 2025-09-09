@@ -334,7 +334,7 @@ class RewardsCfg:
     # 타겟과의 거리 리워드
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=5.0,
+        weight=2.0,
         params={"command_name": "kanake_command"},
     )
 
