@@ -109,10 +109,10 @@ class CommandsCfg:
     kanake_command = mdp.KanakeBaseCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(10.0, 10.0), 
+        resampling_time_range=(20.0, 20.0), 
         ranges=mdp.KanakeBaseCommandCfg.Ranges(
-            pos_x=(-1.0, 1.0),
-            pos_y=(-1.0, 1.0),
+            pos_x=(-3.0, 3.0),
+            pos_y=(-3.0, 3.0),
             # pos_z = (0.05, 0.05),
             heading=(-math.pi, math.pi),
         ),

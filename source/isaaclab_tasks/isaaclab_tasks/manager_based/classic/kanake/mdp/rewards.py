@@ -569,10 +569,8 @@ def kanake_position_command_error_tanh(
 ) -> torch.Tensor:
     
     distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
-    # command = env.command_manager.get_command(command_name)
-    # des_pos_b = command[:, :3]
 
-    # print("des_pos_b", des_pos_b)
+    
 
     return 1 - torch.tanh(distance / std)
 
@@ -580,11 +578,29 @@ def kanake_position_command_error_tanh(
 def kanake_position_command_error_base(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
+    # distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
     # print("distance", distance)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :2]  # (B, 2) - XY만 사용
 
+    root_pos = asset.data.root_pos_w[:, :2]       # (B, 2) - XY만 사용
+    root_quat = asset.data.root_quat_w            # (B, 4)
 
-    return 2 / torch.square(distance+0.5)
+    # 목표 위치를 월드 프레임(XY)으로 변환
+    des_pos_w, _ = combine_frame_transforms(
+        torch.cat([root_pos, torch.zeros_like(root_pos[:, :1])], dim=1),  # (B, 3)
+        root_quat,
+        torch.cat([des_pos_b, torch.zeros_like(des_pos_b[:, :1])], dim=1) # (B, 3)
+    )
+    des_pos_w_xy = des_pos_w[:, :2]
+
+    # 현재 위치: 루트 위치(XY)
+    curr_pos_w_xy = root_pos
+
+    distance = torch.norm(curr_pos_w_xy - des_pos_w_xy, dim=1)
+
+    return 2.0 / torch.square(distance + 0.5)
 
 def kanake_position_command_threshold_reward(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg, threshold: float = 0.1) -> torch.Tensor:
