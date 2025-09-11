@@ -165,7 +165,86 @@ class power_consumption(ManagerTermBase):
         # return power = torque * velocity (here actions: joint torques)
         return torch.sum(torch.abs(env.action_manager.action * asset.data.joint_vel * self.gear_ratio_scaled), dim=-1)
 
+class BaseXAxisDistanceReward(ManagerTermBase):
+    """
+    Calculate the signed distances of all bodies from the base의 x축 방향 직선 (월드 좌표계) in XY plane.
+    Reward is the sum of threshold-clipped distances (the smaller, the better).
+    """
 
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.threshold = cfg.params.get("threshold", 0.1)
+
+    def calculate_line_from_base_x(
+        self,
+        base_pos: torch.Tensor,
+        base_quat: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        base 위치와 base의 x축 방향을 이용해 직선 방정식(Ax + By + C = 0) 생성 (XY 평면).
+        """
+        # base 위치 (월드 좌표계)
+        x0, y0 = base_pos[:, 0], base_pos[:, 1]
+        # base의 x축 방향 벡터 (월드 좌표계)
+        local_x = torch.tensor([1.0, 0.0, 0.0], device=base_quat.device).expand(base_quat.shape[0], 3)
+        base_x_dir_w = math_utils.quat_apply(base_quat, local_x)[:, :2]  # [envs, 2]
+        dx, dy = base_x_dir_w[:, 0], base_x_dir_w[:, 1]
+
+        # 직선의 방향벡터 (dx, dy)와 base 위치 (x0, y0)로 직선 방정식 생성
+        # 직선의 일반형: A(x - x0) + B(y - y0) = 0 → Ax + By + C = 0
+        # 여기서 A = -dy, B = dx, C = dy*x0 - dx*y0
+        A = -dy
+        B = dx
+        C = dy * x0 - dx * y0
+
+        return torch.stack([A, B, C], dim=-1)  # [envs, 3]
+
+    def calculate_signed_distances(
+        self,
+        body_positions: torch.Tensor,
+        line_coefficients: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        거리 = Ax + By + C / sqrt(A^2 + B^2)
+        """
+        A = line_coefficients[:, 0].unsqueeze(1)
+        B = line_coefficients[:, 1].unsqueeze(1)
+        C = line_coefficients[:, 2].unsqueeze(1)
+
+        x, y = body_positions[..., 0], body_positions[..., 1]
+        signed_distances = (A * x + B * y + C) / torch.sqrt(A**2 + B**2 + 1e-8)
+        return signed_distances
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+        threshold: float = 0.1,
+    ) -> torch.Tensor:
+        """
+        Calculates the reward based on signed distances of bodies from the base x축 직선 (XY 평면).
+        """
+        asset: Articulation = env.scene[asset_cfg.name]
+
+        # base 위치와 쿼터니언 (월드 좌표계)
+        base_pos = asset.data.root_pos_w[:, :3]  # [envs, 3]
+        base_quat = asset.data.root_quat_w       # [envs, 4]
+
+        # 모든 body 위치 (XY 평면)
+        body_positions = asset.data.body_pos_w[..., :2]  # [envs, num_bodies, 2]
+
+        # base x축 직선 방정식 계산
+        line_coefficients = self.calculate_line_from_base_x(base_pos, base_quat)
+
+        # 각 body의 signed 거리 계산
+        signed_distances = self.calculate_signed_distances(body_positions, line_coefficients)
+
+        # threshold를 초과하는 거리에 대해서만 페널티 부여
+        clipped_distances = torch.clamp(torch.abs(signed_distances) - threshold, min=0.0)
+        penalty = clipped_distances.sum(dim=1)
+
+        return penalty
+    
 class DistanceReward(ManagerTermBase):
     """
     Calculate the dynamically updated line equation (Ax + By + C = 0) between 'head' and 'tail' bodies and
@@ -578,29 +657,29 @@ def kanake_position_command_error_tanh(
 def kanake_position_command_error_base(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    # distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
+    distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
     # print("distance", distance)
-    asset: RigidObject = env.scene[asset_cfg.name]
-    command = env.command_manager.get_command(command_name)
-    des_pos_b = command[:, :2]  # (B, 2) - XY만 사용
+    # asset: RigidObject = env.scene[asset_cfg.name]
+    # command = env.command_manager.get_command(command_name)
+    # des_pos_b = command[:, :2]  # (B, 2) - XY만 사용
 
-    root_pos = asset.data.root_pos_w[:, :2]       # (B, 2) - XY만 사용
-    root_quat = asset.data.root_quat_w            # (B, 4)
+    # root_pos = asset.data.root_pos_w[:, :2]       # (B, 2) - XY만 사용
+    # root_quat = asset.data.root_quat_w            # (B, 4)
 
-    # 목표 위치를 월드 프레임(XY)으로 변환
-    des_pos_w, _ = combine_frame_transforms(
-        torch.cat([root_pos, torch.zeros_like(root_pos[:, :1])], dim=1),  # (B, 3)
-        root_quat,
-        torch.cat([des_pos_b, torch.zeros_like(des_pos_b[:, :1])], dim=1) # (B, 3)
-    )
-    des_pos_w_xy = des_pos_w[:, :2]
+    # # 목표 위치를 월드 프레임(XY)으로 변환
+    # des_pos_w, _ = combine_frame_transforms(
+    #     torch.cat([root_pos, torch.zeros_like(root_pos[:, :1])], dim=1),  # (B, 3)
+    #     root_quat,
+    #     torch.cat([des_pos_b, torch.zeros_like(des_pos_b[:, :1])], dim=1) # (B, 3)
+    # )
+    # des_pos_w_xy = des_pos_w[:, :2]
 
-    # 현재 위치: 루트 위치(XY)
-    curr_pos_w_xy = root_pos
+    # # 현재 위치: 루트 위치(XY)
+    # curr_pos_w_xy = root_pos
 
-    distance = torch.norm(curr_pos_w_xy - des_pos_w_xy, dim=1)
+    # distance = torch.norm(curr_pos_w_xy - des_pos_w_xy, dim=1)
 
-    return 2.0 / torch.square(distance + 0.5)
+    return 2.0 / torch.square(distance + 0.7)
 
 def kanake_position_command_threshold_reward(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg, threshold: float = 0.1) -> torch.Tensor:
@@ -1325,6 +1404,39 @@ def velocity_target_alignment_reward(
 
     return cosine_similarity
 
+def speed_towards_target_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    max_speed: float = 1.5,
+) -> torch.Tensor:
+
+    # 에셋(로봇) 및 커맨드 기간(term) 인스턴스 가져오기
+    asset: Articulation = env.scene[asset_cfg.name]
+    command_term = env.command_manager.get_term(command_name)
+
+    # 월드 좌표계 기준 타겟 위치와 현재 베이스 위치 (XY 평면)
+    target_pos_w = command_term.world_command_pos[:, :2]
+    base_pos_w = asset.data.root_pos_w[:, :2]
+
+    # 현재 베이스의 선형 속도 (월드 좌표계, XY 평면)
+    base_vel_w = asset.data.root_lin_vel_w[:, :2]
+
+    # 베이스에서 타겟을 향하는 방향 벡터 계산
+    vec_to_target = target_pos_w - base_pos_w
+    # 방향 벡터를 정규화하여 단위 벡터로 만듦
+    dir_to_target = F.normalize(vec_to_target, p=2, dim=-1)
+
+    # 속도 벡터를 타겟 방향 단위 벡터에 내적(dot product)하여 속도 성분을 계산
+    # 결과: 타겟 방향으로의 속도 크기
+    projected_velocity = torch.sum(base_vel_w * dir_to_target, dim=-1)
+
+    # 보상 shaping:
+    # 1. 타겟 반대 방향으로 움직이면 (projected_velocity < 0) 보상이 0이 되도록 clamp(min=0.0)
+    # 2. max_speed로 나누어 보상을 정규화하고, 최대 보상이 1을 넘지 않도록 clamp(max=1.0)
+    reward = torch.clamp(projected_velocity / max_speed, min=0.0, max=1.0)
+
+    return reward
 
 def cube_x_axis_target_alignment_reward(
     env: ManagerBasedRLEnv,

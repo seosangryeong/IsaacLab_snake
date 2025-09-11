@@ -109,12 +109,12 @@ class CommandsCfg:
     kanake_command = mdp.KanakeBaseCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(20.0, 20.0), 
+        resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeBaseCommandCfg.Ranges(
-            pos_x=(-3.0, 3.0),
-            pos_y=(-3.0, 3.0),
+            pos_x=(-1.0, 1.0),
+            pos_y=(-1.0, 1.0),
             # pos_z = (0.05, 0.05),
-            heading=(-math.pi, math.pi),
+            heading=(-0.0, 0.0),
         ),
         debug_vis=True,
     )
@@ -334,7 +334,7 @@ class RewardsCfg:
     # 타겟과의 거리 리워드
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=2.0,
+        weight=5.0,
         params={"command_name": "kanake_command"},
     )
 
@@ -358,6 +358,11 @@ class RewardsCfg:
         weight=1.0,
         params={"command_name": "kanake_command"},
     )
+    # speed_towards_target_reward = RewTerm(
+    #     func=mdp.speed_towards_target_reward,
+    #     weight=0.1,
+    #     params={"command_name": "kanake_command"}
+    # )
 
     ####################################
     
@@ -393,9 +398,9 @@ class RewardsCfg:
     # action이 급변하지 않도록 페널티
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
 
-    # head와 target을 잇는 직선과 body들의 거리 합
-    DistanceReward = RewTerm(
-        func=mdp.DistanceReward, 
+    # head 로컬 x직선과 body들의 거리 합
+    BaseXAxisDistanceReward = RewTerm(
+        func=mdp.BaseXAxisDistanceReward, 
         weight=-1.0, 
         params={"threshold": 0.1}
     )
@@ -433,6 +438,9 @@ class CurriculumCfg:
     # )
     # action_rate_l2 = CurrTerm(
     #     func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.001, "num_steps": 10000}
+    # )
+    # speed_towards_target_reward = CurrTerm(
+    #     func=mdp.modify_reward_weight, params={"term_name": "speed_towards_target_reward", "weight": 2.0, "num_steps": 10000}
     # )
 
 
