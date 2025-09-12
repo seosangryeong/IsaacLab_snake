@@ -334,7 +334,7 @@ class RewardsCfg:
     # 타겟과의 거리 리워드
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=5.0,
+        weight=-2.0,
         params={"command_name": "kanake_command"},
     )
 
@@ -346,18 +346,18 @@ class RewardsCfg:
     # )
 
     # 타겟까지의 벡터와 베이스 속도벡터의 유사도
-    velocity_target_alignment_reward = RewTerm(
-        func=mdp.velocity_target_alignment_reward,
-        weight=1.0,
-        params={"command_name": "kanake_command"},
-    )
+    # velocity_target_alignment_reward = RewTerm(
+    #     func=mdp.velocity_target_alignment_reward,
+    #     weight=1.0,
+    #     params={"command_name": "kanake_command"},
+    # )
 
     #몸체의 평균 xy벡터와 base to target 벡터의 유사도
-    average_body_velocity_alignment_reward = RewTerm(
-        func=mdp.average_body_velocity_alignment_reward,
-        weight=1.0,
-        params={"command_name": "kanake_command"},
-    )
+    # average_body_velocity_alignment_reward = RewTerm(
+    #     func=mdp.average_body_velocity_alignment_reward,
+    #     weight=1.0,
+    #     params={"command_name": "kanake_command"},
+    # )
     # speed_towards_target_reward = RewTerm(
     #     func=mdp.speed_towards_target_reward,
     #     weight=0.1,
@@ -369,41 +369,41 @@ class RewardsCfg:
     ### Task2 - head가 타겟을 보도록
 
     # cube(head)의 z좌표와 kanake_world_command의 z좌표 커맨드 오차
-    cube_height_penalty = RewTerm(
-        func=mdp.cube_height_penalty,
-        weight=-50.0,
-        params={"command_name": "head_command"}
-    )
+    # cube_height_penalty = RewTerm(
+    #     func=mdp.cube_height_penalty,
+    #     weight=-50.0,
+    #     params={"command_name": "head_command"}
+    # )
 
     # head의 z방향 속도 페널티
-    head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-50.0)
+    # head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-50.0)
 
     # cube(head)의 로컬 x축 방향과 base-target 벡터의 유사도
-    cube_x_axis_target_alignment_reward = RewTerm(
-        func=mdp.cube_x_axis_target_alignment_reward,
-        weight=10.0,
-        params={"command_name": "kanake_command"},
-    )
+    # cube_x_axis_target_alignment_reward = RewTerm(
+    #     func=mdp.cube_x_axis_target_alignment_reward,
+    #     weight=10.0,
+    #     params={"command_name": "kanake_command"},
+    # )
 
     ####################################
 
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.9})
 
     # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
-    BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
+    # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
 
     # action이 급변하지 않도록 페널티
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
 
     # head 로컬 x직선과 body들의 거리 합
-    BaseXAxisDistanceReward = RewTerm(
-        func=mdp.BaseXAxisDistanceReward, 
-        weight=-1.0, 
-        params={"threshold": 0.1}
-    )
+    # BaseXAxisDistanceReward = RewTerm(
+    #     func=mdp.BaseXAxisDistanceReward, 
+    #     weight=-1.0, 
+    #     params={"threshold": 0.1}
+    # )
 
 
 

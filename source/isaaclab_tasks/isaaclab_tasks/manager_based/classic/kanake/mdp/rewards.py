@@ -679,7 +679,8 @@ def kanake_position_command_error_base(
 
     # distance = torch.norm(curr_pos_w_xy - des_pos_w_xy, dim=1)
 
-    return 2.0 / torch.square(distance + 0.7)
+    # return 2.0 / torch.square(distance + 0.7)
+    return distance
 
 def kanake_position_command_threshold_reward(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg, threshold: float = 0.1) -> torch.Tensor:
