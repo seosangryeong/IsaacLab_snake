@@ -111,8 +111,8 @@ class CommandsCfg:
         simple_heading=True,
         resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeBaseCommandCfg.Ranges(
-            pos_x=(-1.0, 1.0),
-            pos_y=(-1.0, 1.0),
+            pos_x=(-3.0, 3.0),
+            pos_y=(-3.0, 3.0),
             # pos_z = (0.05, 0.05),
             heading=(-0.0, 0.0),
         ),
@@ -332,11 +332,11 @@ class RewardsCfg:
     ### Task1 - 이동
 
     # 타겟과의 거리 리워드
-    kanake_position_command_error_base = RewTerm(
-        func=mdp.kanake_position_command_error_base,
-        weight=-2.0,
-        params={"command_name": "kanake_command"},
-    )
+    # kanake_position_command_error_base = RewTerm(
+    #     func=mdp.kanake_position_command_error_base,
+    #     weight=-2.0,
+    #     params={"command_name": "kanake_command"},
+    # )
 
     # 타겟과의 거리 리워드(타겟과 가까워질수록 리워드를 더 크게(tanh))
     # kanake_position_command_error_tanh = RewTerm(
@@ -353,16 +353,16 @@ class RewardsCfg:
     # )
 
     #몸체의 평균 xy벡터와 base to target 벡터의 유사도
-    # average_body_velocity_alignment_reward = RewTerm(
-    #     func=mdp.average_body_velocity_alignment_reward,
-    #     weight=1.0,
-    #     params={"command_name": "kanake_command"},
-    # )
-    # speed_towards_target_reward = RewTerm(
-    #     func=mdp.speed_towards_target_reward,
-    #     weight=0.1,
-    #     params={"command_name": "kanake_command"}
-    # )
+    average_body_velocity_alignment_reward = RewTerm(
+        func=mdp.average_body_velocity_alignment_reward,
+        weight=1.0,
+        params={"command_name": "kanake_command"},
+    )
+    speed_towards_target_reward = RewTerm(
+        func=mdp.speed_towards_target_reward,
+        weight=10.0,
+        params={"command_name": "kanake_command"}
+    )
 
     ####################################
     
@@ -379,11 +379,11 @@ class RewardsCfg:
     # head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-50.0)
 
     # cube(head)의 로컬 x축 방향과 base-target 벡터의 유사도
-    # cube_x_axis_target_alignment_reward = RewTerm(
-    #     func=mdp.cube_x_axis_target_alignment_reward,
-    #     weight=10.0,
-    #     params={"command_name": "kanake_command"},
-    # )
+    cube_x_axis_target_alignment_reward = RewTerm(
+        func=mdp.cube_x_axis_target_alignment_reward,
+        weight=10.0,
+        params={"command_name": "kanake_command"},
+    )
 
     ####################################
 

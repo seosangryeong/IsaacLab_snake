@@ -574,27 +574,12 @@ def kanake_position_command_error_tanh(
 
 
 class kanake_progress_to_command(ManagerTermBase):
-    """Reward for making progress towards the commanded position compared to initial distance."""
-
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
         super().__init__(cfg, env)
-        # 각 환경의 초기 거리를 저장할 버퍼
-        self.initial_distances = torch.zeros(env.num_envs, device=env.device)
-
-    def reset(self, env_ids: torch.Tensor):
-        """환경 리셋 시 호출되어 초기 거리를 저장"""
-        asset: RigidObject = self._env.scene[self.cfg.params.get("asset_cfg", SceneEntityCfg("robot")).name]
-        command = self._env.command_manager.get_command(self.cfg.params["command_name"])
-        des_pos_b = command[env_ids, :3]
-        
-        root_pos = asset.data.root_pos_w[env_ids]
-        root_quat = asset.data.root_quat_w[env_ids]
-
-        des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
-        curr_pos_w = root_pos
-        
-        # 초기 거리 계산 및 저장
-        self.initial_distances[env_ids] = torch.norm(curr_pos_w - des_pos_w, dim=1)
+        self.potentials = torch.zeros(env.num_envs, device=env.device)
+        self.prev_potentials = torch.zeros_like(self.potentials)
+        if not hasattr(env, "episode_length_buf"):
+            raise AttributeError("The environment does not have the 'episode_length_buf' attribute.")
 
     def __call__(
         self,
@@ -602,46 +587,31 @@ class kanake_progress_to_command(ManagerTermBase):
         command_name: str,
         asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     ) -> torch.Tensor:
-        """커맨드 위치까지의 진전 상황에 따른 보상 계산"""
-        asset: RigidObject = env.scene[asset_cfg.name]
-        command = env.command_manager.get_command(command_name)
-        des_pos_b = command[:, :3]
+        asset: Articulation = env.scene["robot"]
+        command_term = env.command_manager.get_term(command_name)
         
-        root_pos = asset.data.root_pos_w
-        root_quat = asset.data.root_quat_w
+        target_pos_w = command_term.world_command_pos[:, :2]
+        current_pos_w = asset.data.root_pos_w[:, :2]
+        current_distance = torch.norm(target_pos_w - current_pos_w, dim=1)
 
-        des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
-        curr_pos_w = root_pos
-        
-        # 현재 거리 계산
-        current_distances = torch.norm(curr_pos_w - des_pos_w, dim=1)
-        
-        # 거리 감소 비율 계산 (초기 거리에서 얼마나 줄어들었는지)
-        distance_reduction = (self.initial_distances - current_distances) / (self.initial_distances + 1e-6)
-        
-        # 감소 비율에 기반한 보상 (0에서 1 사이로 클램핑)
-        reward = torch.clamp(distance_reduction, 0.0, 1.0)
-        
+        self.prev_potentials[:] = self.potentials[:]
+        self.potentials[:] = -current_distance
+        reward = self.potentials - self.prev_potentials
+        reward[env.episode_length_buf == 0] = 0.0
+
         return reward
 
-# def kanake_position_command_error_tanh_base(
-#     env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-# ) -> torch.Tensor:
-#     asset: RigidObject = env.scene[asset_cfg.name]
-#     command = env.command_manager.get_command(command_name)
-#     des_pos_b = command[:, :3]
+    def reset(self, env_ids: torch.Tensor):
+        asset: Articulation = self._env.scene["robot"]
+        command_term = self._env.command_manager.get_term(self.cfg.params["command_name"])
+        
+        target_pos_w = command_term.world_command_pos[env_ids, :2]
+        current_pos_w = asset.data.root_pos_w[env_ids, :2]
+        distance = torch.norm(target_pos_w - current_pos_w, dim=1)
 
-#     root_pos = asset.data.root_pos_w       # (B, 3)
-#     root_quat = asset.data.root_quat_w     # (B, 4)
+        self.potentials[env_ids] = -distance
+        self.prev_potentials[env_ids] = self.potentials[env_ids]
 
-#     # 목표 위치를 월드 프레임으로 변환
-#     des_pos_w, _ = combine_frame_transforms(root_pos, root_quat, des_pos_b)
-
-#     # 현재 위치: 루트 위치
-#     curr_pos_w = asset.data.root_pos_w     # 루트 위치 사용
-
-#     distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
-#     return 1 - torch.tanh(distance / std)
 
 def kanake_position_command_error_tanh(
     env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
@@ -1423,7 +1393,7 @@ def speed_towards_target_reward(
     # 현재 베이스의 선형 속도 (월드 좌표계, XY 평면)
     base_vel_w = asset.data.root_lin_vel_w[:, :2]
 
-    # 베이스에서 타겟을 향하는 방향 벡터 계산
+    # 베이스에서 타겟을 향하는 방향 벡터 계산ㅁ
     vec_to_target = target_pos_w - base_pos_w
     # 방향 벡터를 정규화하여 단위 벡터로 만듦
     dir_to_target = F.normalize(vec_to_target, p=2, dim=-1)
