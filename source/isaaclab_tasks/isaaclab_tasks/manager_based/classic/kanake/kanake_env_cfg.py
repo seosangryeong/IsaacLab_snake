@@ -137,44 +137,12 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
     
-    # joint_effort = mdp.JointEffortActionCfg(
-    #     asset_name="robot", 
-    #     joint_names=[".*"], 
-    #     scale=0.2,
-    #     clip={".*": (-5.0, 5.0)}
-    #     )
-    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
-    # joint_vel = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
-    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["j1", "j2", "j3"], scale=0.5)
-    # joint_sine_hold = mdp.JointSineHoldActionCfg(
-    #     asset_name="robot",
-    #     joint_names=[".*"]
-    # )
+
     joint_sine = mdp.JointSineActionCfg(asset_name="robot", 
                                         joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
                                         scale=1.0)
 
-    # joint_cpg = mdp.JointCPGActionCfg(asset_name="robot", joint_names=[".*"],scale=1.0)
 
-    # joint_sine_amp = mdp.JointSineAmpActionCfg(
-    #     asset_name="robot",
-    #     joint_names=[".*"]
-    # )
-    # joint_sine_h = mdp.JointSineHorizonActionCfg(
-    #     asset_name="robot", 
-    #     joint_names=["j2", "j4", "j6",  "j8",  "j10", "j12", "j14", "j16"], 
-    #     scale=1.0)
-    
-    # joint_pos = mdp.JointPositionActionCfg(
-    #     asset_name="robot", 
-    #     joint_names=["j2", "j4", "j6",  "j8",  "j10", "j12", "j14", "j16"], 
-    #     scale= 1.0, 
-    #    )
-    # joint_pos_v = mdp.JointSineVerticalActionCfg(
-    #     asset_name="robot",
-    #     joint_names=["j1", "j3", "j5", "j7", "j9", "j11", "j13", "j15"],
-    #     scale=1.0,
-    # )
     
 
 @configclass
