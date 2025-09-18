@@ -114,9 +114,9 @@ class JointSineAction(ActionTerm):
         freq_v = 1.0 + 0.3 * torch.tanh(actions[:, 1])     # [0.7, 1.3]
         phase_v = 2.0 + 0.3 * torch.tanh(actions[:, 2])    # [1.7, 2.3]
         # horizontal
-        amp_h = 2.0 + 0.4 * torch.tanh(actions[:, 3])      # [2.2, 2.8]
-        freq_h = 0.5 + 0.4 * torch.tanh(actions[:, 4])     # [0.2, 0.8]
-        phase_h = 0.8 + 0.4 * torch.tanh(actions[:, 5])    # [0.7, 1.3]
+        amp_h = 1.4 + 0.4 * torch.tanh(actions[:, 3])     
+        freq_h = 0.5 + 0.4 * torch.tanh(actions[:, 4])     
+        phase_h = 0.6 + 0.2 * torch.tanh(actions[:, 5])    
 
         amplitude_vertical = amp_v
         frequency_vertical = freq_v

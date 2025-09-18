@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 def kanake_upright_posture_bonus(
     env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    """Reward for maintaining an upright posture.
+    """Reward for maintaining an upright posture. - 뱀로봇용(head부분이 좌표축 돌아가있어서)
     로봇의 로컬좌표계 z축과 월드좌표계 z축의 내적. -1에서 1 사이(1에 가까울수록 upright)"""
     up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)
     # print("up_proj", up_proj)
@@ -376,10 +376,7 @@ class BodyOrderReward(ManagerTermBase):
 
 
 class LineAlignmentReward(ManagerTermBase):
-    """
-    Reward for aligning the line formed by head and tail with the target direction in 2D (x, y),
-    with a flat reward range for alignment within a configurable angle threshold.
-    """
+
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
         super().__init__(cfg, env)
 
@@ -391,14 +388,10 @@ class LineAlignmentReward(ManagerTermBase):
         self,
         env: ManagerBasedRLEnv,
         target_pos: tuple[float, float, float],
-        threshold: float = 5.0,  # Threshold in degrees
+        threshold: float = 5.0,  # degree
         asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     ) -> torch.Tensor:
-        """
-        Calculate the reward based on the alignment of the head-tail line with the target direction (2D: x, y),
-        with a flat reward range for the specified alignment threshold in degrees.
-        """
-        # Extract target_pos
+
         asset: Articulation = env.scene[asset_cfg.name]
         target_pos = torch.tensor(target_pos, device=env.device)
 
@@ -421,7 +414,7 @@ class LineAlignmentReward(ManagerTermBase):
         alignment = torch.clamp(alignment, -1.0, 1.0)  # Ensure valid range
 
         # Convert alignment_threshold (degrees) to cosine similarity
-        cos_threshold = torch.cos(torch.tensor(threshold * 3.14159265 / 180.0, device=env.device))
+        cos_threshold = torch.cos(torch.tensor(threshold * torch.pi / 180.0, device=env.device))
 
         # Reward logic
         reward = torch.where(
@@ -492,6 +485,7 @@ class VelocityAlignmentReward(ManagerTermBase):
 
 class HeadTailDistancePenalty(ManagerTermBase):
     """
+    머리와 꼬리의 거리가 너무 가까우면 페널티
     Calculate penalty based on the distance between head and tail.
     The closer they are (below the threshold), the higher the penalty.
     """
@@ -505,12 +499,7 @@ class HeadTailDistancePenalty(ManagerTermBase):
         asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
         min_distance: float = 0.2,  # 최소 허용 거리
     ) -> torch.Tensor:
-        """
-        Args:
-            env: 환경
-            asset_cfg: 로봇 설정
-            min_distance: head와 tail 사이의 최소 허용 거리 (미터)
-        """
+
         asset: Articulation = env.scene[asset_cfg.name]
 
         # head와 tail의 위치
@@ -556,19 +545,6 @@ def kanake_position_command_error_tanh(
     
     distance = torch.norm(curr_pos_w - des_pos_w, dim=1)
     return 1 - torch.tanh(distance / std)
-
-# def kanake_position_command_error_base(
-#     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-# ) -> torch.Tensor:
-#     asset: RigidObject = env.scene[asset_cfg.name]
-#     des_pos_w = env.command_manager.get_command(command_name)[:, :2]
-#     # print("des_pos_w", des_pos_w)
-
-#     curr_pos_w = asset.data.root_pos_w[:, :2]  
-#     # print("curr_pos_w", curr_pos_w)
-#     # dis = torch.norm(curr_pos_w - des_pos_w, dim=1)
-#     return torch.norm(curr_pos_w - des_pos_w, dim=1)
-
 
 
 
@@ -902,43 +878,6 @@ def camera_x_direction_alignment_reward(
 
     return reward
 
-# def camera_x_direction_alignment_reward(
-#     env: ManagerBasedRLEnv,
-#     command_name: str,
-#     sensor_cfg: SceneEntityCfg = SceneEntityCfg("camera"),
-#     threshold_deg: float = 10.0,
-# ) -> torch.Tensor:
-
-
-#     sensor: TiledCamera | Camera | RayCasterCamera = env.scene.sensors[sensor_cfg.name]
-
-
-#     command = env.command_manager.get_command(command_name)
-#     target_pos_w = command[:, :3]
-
-#     camera_pos_w = sensor.data.pos_w
-#     camera_quat_w = sensor.data.quat_w_world
-
-
-#     local_x_axis = torch.tensor([1.0, 0.0, 0.0], device=env.device).repeat(env.num_envs, 1)
-#     camera_x_dir_w = math_utils.quat_apply(camera_quat_w, local_x_axis)
-
-#     vec_to_target_w = target_pos_w - camera_pos_w
-#     dir_to_target_w = F.normalize(vec_to_target_w, p=2, dim=-1)
-
-#     alignment = torch.sum(camera_x_dir_w * dir_to_target_w, dim=-1)
-
-#     angle_rad = torch.acos(alignment.clamp(-1.0, 1.0)) 
-#     angle_deg = torch.rad2deg(angle_rad)
-#     print(env.scene.sensors.keys())
-#     print("camera_x_dir_w: ", camera_x_dir_w)
-#     print("dir_to_target_w: ", dir_to_target_w)
-#     print("alignment: ", alignment)
-
-
-#     reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
-
-#     return reward
 
 def cube_direction_alignment_reward(
     env: ManagerBasedRLEnv,
@@ -1132,55 +1071,7 @@ def head_orientation_reward(
     # print("world_z_up_vec: ", world_z_up_vec)
     return torch.sum(world_up_axis * world_z_up_vec - 1.0, dim=1)
 
-# def camera_orientation_alignment_reward(
-#     env: ManagerBasedRLEnv,
-#     command_name: str,
-#     threshold_deg: float = 5.0,
-# ) -> torch.Tensor:
 
-#     robot: Articulation = env.scene["robot"]
-#     command = env.command_manager.get_command(command_name)
-#     target_yaw_w = command[:, 1]
-#     target_pitch_w = command[:, 2]
-
-#     try:
-#         head_link_idx = robot.body_names.index("cube")
-#     except ValueError:
-#         raise ValueError("The robot asset does not have a body named 'head'.")
-        
-#     head_pos_w = robot.data.body_pos_w[:, head_link_idx]
-#     head_quat_w = robot.data.body_quat_w[:, head_link_idx]
-
-#     offset_pos_single = torch.tensor([0.048, 0.0, 0.0], device=env.device)
-#     offset_quat_single = torch.tensor([1.0, 0.0, 0.0, 0.0], device=env.device)
-#     offset_pos = offset_pos_single.expand(env.num_envs, -1)
-#     offset_quat = offset_quat_single.expand(env.num_envs, -1)
-
-#     _ , camera_quat_w = math_utils.combine_frame_transforms(
-#         head_pos_w, head_quat_w, offset_pos, offset_quat
-#     )
-
-#     target_quat_w = math_utils.quat_from_euler_xyz(
-#         torch.zeros_like(target_pitch_w), target_pitch_w, target_yaw_w
-#     )
-
-#     roll_correction_rad = math.pi / 2.0
-#     correction_rolls = torch.full_like(target_pitch_w, roll_correction_rad)
-#     zeros = torch.zeros_like(target_pitch_w)
-#     frame_correction_quat = math_utils.quat_from_euler_xyz(correction_rolls, zeros, zeros)
-
-#     final_target_quat_w = math_utils.quat_mul(target_quat_w, frame_correction_quat)
-
-#     camera_quat_inv = math_utils.quat_inv(camera_quat_w)
-#     diff_quat = math_utils.quat_mul(final_target_quat_w, camera_quat_inv)
-
-#     angle_rad = 2.0 * torch.acos(torch.abs(diff_quat[:, 0]).clamp(-1.0, 1.0))
-#     angle_deg = torch.rad2deg(angle_rad)
-
-#     alignment = torch.cos(angle_rad)
-#     reward = torch.where(angle_deg <= threshold_deg, 1.0, alignment)
-
-#     return reward
 def cube_z_reward(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -1414,12 +1305,8 @@ def cube_x_axis_target_alignment_reward(
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
-    """Reward for aligning the cube's local x-axis with the direction towards the command target.
-
-    This reward is calculated by the cosine similarity between the cube's local x-axis vector
-    (in the world frame) and the vector from the cube's position to the commanded target position.
-    A reward of +1 means the cube's x-axis is pointing directly at the target, while -1 means
-    it's pointing directly away.
+    """
+    cube의 로컬x가 타겟을 향하도록 하는 리워드
     """
     # 에셋(로봇) 인스턴스 및 커맨드 가져오기
     asset: Articulation = env.scene[asset_cfg.name]
