@@ -109,7 +109,7 @@ class CommandsCfg:
     kanake_command = mdp.KanakeBaseCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(10.0, 10.0), 
+        resampling_time_range=(20.0, 20.0), 
         ranges=mdp.KanakeBaseCommandCfg.Ranges(
             pos_x=(-3.0, 3.0),
             pos_y=(-3.0, 3.0),
@@ -119,19 +119,19 @@ class CommandsCfg:
         debug_vis=True,
     )
 
-    head_command = mdp.KanakeWorldCommandCfg(
-        asset_name="robot",
-        resampling_time_range=(10.0, 10.0), 
-        ranges=mdp.KanakeWorldCommandCfg.Ranges(
+    # head_command = mdp.KanakeWorldCommandCfg(
+    #     asset_name="robot",
+    #     resampling_time_range=(10.0, 10.0), 
+    #     ranges=mdp.KanakeWorldCommandCfg.Ranges(
 
-            pos_z=(0.15, 0.15),
+    #         pos_z=(0.15, 0.15),
 
-            pitch=(-0.1, 0.1),
-            yaw=(0.0, 0.0),
-            roll=(0.0, 0.0)
-        ),
-        debug_vis=True,
-    )
+    #         pitch=(-0.1, 0.1),
+    #         yaw=(0.0, 0.0),
+    #         roll=(0.0, 0.0)
+    #     ),
+    #     debug_vis=True,
+    # )
 
 @configclass
 class ActionsCfg:
@@ -170,7 +170,7 @@ class ObservationsCfg:
         # # joint_pos = ObsTerm(func=mdp.joint_pos)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        head_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "head_command"})
+        # head_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "head_command"})
         # image_features = ObsTerm(
         #     func=mdp.image_features,
         #     params={
@@ -216,7 +216,7 @@ class ObservationsCfg:
         # # joint_pos = ObsTerm(func=mdp.joint_pos)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        head_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "head_command"})
+        # head_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "head_command"})
         # cube_pose_w = ObsTerm(func=mdp.cube_pose_w)
         joint_vel = ObsTerm(func=mdp.joint_vel)
         # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
@@ -318,6 +318,7 @@ class RewardsCfg:
     #     params={"std": 0.05, "command_name": "kanake_command"},
     # )
 
+
     # 타겟까지의 벡터와 베이스 속도벡터의 유사도
     # velocity_target_alignment_reward = RewTerm(
     #     func=mdp.velocity_target_alignment_reward,
@@ -326,16 +327,16 @@ class RewardsCfg:
     # )
 
     #몸체의 평균 xy벡터와 base to target 벡터의 유사도
-    average_body_velocity_alignment_reward = RewTerm(
-        func=mdp.average_body_velocity_alignment_reward,
-        weight=1.0,
-        params={"command_name": "kanake_command"},
-    )
-    speed_towards_target_reward = RewTerm(
-        func=mdp.speed_towards_target_reward,
-        weight=10.0,
-        params={"command_name": "kanake_command"}
-    )
+    # average_body_velocity_alignment_reward = RewTerm(
+    #     func=mdp.average_body_velocity_alignment_reward,
+    #     weight=1.0,
+    #     params={"command_name": "kanake_command"},
+    # )
+    # speed_towards_target_reward = RewTerm(
+    #     func=mdp.speed_towards_target_reward,
+    #     weight=10.0,
+    #     params={"command_name": "kanake_command"}
+    # )
 
     ####################################
     
@@ -366,7 +367,7 @@ class RewardsCfg:
     upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.9})
 
     # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
-    BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
+    # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
 
     # action이 급변하지 않도록 페널티
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.1)
@@ -436,7 +437,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 20.0
+        self.episode_length_s = 40.0
         # simulation settings
         self.sim.dt = 1 / 80.0
         self.sim.render_interval = self.decimation

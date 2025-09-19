@@ -258,7 +258,6 @@ class TerrainBasedPose2dCommandCfg(UniformPose2dCommandCfg):
 
 @configclass
 class KanakeCommandCfg(CommandTermCfg):
-    """Configuration for the uniform 2D-pose command generator."""
 
     class_type: type = KanakeCommand
 

@@ -548,12 +548,15 @@ def kanake_position_command_error_tanh(
 
 
 
-
 class kanake_progress_to_command(ManagerTermBase):
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
         super().__init__(cfg, env)
         self.potentials = torch.zeros(env.num_envs, device=env.device)
         self.prev_potentials = torch.zeros_like(self.potentials)
+        self.window_size = 40  # 평균 낼 스텝 수
+        self.potential_history = torch.zeros(env.num_envs, self.window_size, device=env.device)
+        self.ptr = torch.zeros(env.num_envs, dtype=torch.long, device=env.device)  # 현재 위치 포인터
+
         if not hasattr(env, "episode_length_buf"):
             raise AttributeError("The environment does not have the 'episode_length_buf' attribute.")
 
@@ -572,7 +575,14 @@ class kanake_progress_to_command(ManagerTermBase):
 
         self.prev_potentials[:] = self.potentials[:]
         self.potentials[:] = -current_distance
-        reward = self.potentials - self.prev_potentials
+
+        # 버퍼에 potential 저장 (순환)
+        self.potential_history[torch.arange(env.num_envs), self.ptr] = self.potentials
+        self.ptr = (self.ptr + 1) % self.window_size
+
+        # 평균 리워드 계산: 최근 window_size 스텝의 potential 변화량
+        avg_potential = self.potential_history.mean(dim=1)
+        reward = avg_potential - self.prev_potentials
         reward[env.episode_length_buf == 0] = 0.0
 
         return reward
@@ -587,6 +597,47 @@ class kanake_progress_to_command(ManagerTermBase):
 
         self.potentials[env_ids] = -distance
         self.prev_potentials[env_ids] = self.potentials[env_ids]
+        # 버퍼 초기화
+        self.potential_history[env_ids, :] = self.potentials[env_ids].unsqueeze(1)
+        self.ptr[env_ids] = 0
+# class kanake_progress_to_command(ManagerTermBase):
+#     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+#         super().__init__(cfg, env)
+#         self.potentials = torch.zeros(env.num_envs, device=env.device)
+#         self.prev_potentials = torch.zeros_like(self.potentials)
+#         if not hasattr(env, "episode_length_buf"):
+#             raise AttributeError("The environment does not have the 'episode_length_buf' attribute.")
+
+#     def __call__(
+#         self,
+#         env: ManagerBasedRLEnv,
+#         command_name: str,
+#         asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+#     ) -> torch.Tensor:
+#         asset: Articulation = env.scene["robot"]
+#         command_term = env.command_manager.get_term(command_name)
+        
+#         target_pos_w = command_term.world_command_pos[:, :2]
+#         current_pos_w = asset.data.root_pos_w[:, :2]
+#         current_distance = torch.norm(target_pos_w - current_pos_w, dim=1)
+
+#         self.prev_potentials[:] = self.potentials[:]
+#         self.potentials[:] = -current_distance
+#         reward = self.potentials - self.prev_potentials
+#         reward[env.episode_length_buf == 0] = 0.0
+
+#         return reward
+
+#     def reset(self, env_ids: torch.Tensor):
+#         asset: Articulation = self._env.scene["robot"]
+#         command_term = self._env.command_manager.get_term(self.cfg.params["command_name"])
+        
+#         target_pos_w = command_term.world_command_pos[env_ids, :2]
+#         current_pos_w = asset.data.root_pos_w[env_ids, :2]
+#         distance = torch.norm(target_pos_w - current_pos_w, dim=1)
+
+#         self.potentials[env_ids] = -distance
+#         self.prev_potentials[env_ids] = self.potentials[env_ids]
 
 
 def kanake_position_command_error_tanh(
