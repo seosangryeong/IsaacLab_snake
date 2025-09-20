@@ -300,16 +300,16 @@ class RewardsCfg:
     ### Task1 - 이동
 
     # 타겟과의 거리 리워드
-    # kanake_position_command_error_base = RewTerm(
-    #     func=mdp.kanake_position_command_error_base,
-    #     weight=-2.0,
-    #     params={"command_name": "kanake_command"},
-    # )
-    kanake_progress_to_command = RewTerm(
-        func=mdp.kanake_progress_to_command,
-        weight=100.0,
-        params={"command_name": "kanake_command"}
+    kanake_position_command_error_base = RewTerm(
+        func=mdp.kanake_position_command_error_base,
+        weight=1.0,
+        params={"command_name": "kanake_command"},
     )
+    # kanake_progress_to_command = RewTerm(
+    #     func=mdp.kanake_progress_to_command,
+    #     weight=100.0,
+    #     params={"command_name": "kanake_command"}
+    # )
 
     # 타겟과의 거리 리워드(타겟과 가까워질수록 리워드를 더 크게(tanh))
     # kanake_position_command_error_tanh = RewTerm(
@@ -370,7 +370,7 @@ class RewardsCfg:
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
 
     # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.1)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
 
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(

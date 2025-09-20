@@ -654,9 +654,9 @@ def kanake_position_command_error_tanh(
 def kanake_position_command_error_base(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
+    # distance = env.command_manager.get_term(command_name).metrics["error_pos_2d"]
     # print("distance", distance)
-    # asset: RigidObject = env.scene[asset_cfg.name]
+    asset: RigidObject = env.scene[asset_cfg.name]
     # command = env.command_manager.get_command(command_name)
     # des_pos_b = command[:, :2]  # (B, 2) - XY만 사용
 
@@ -675,9 +675,20 @@ def kanake_position_command_error_base(
     # curr_pos_w_xy = root_pos
 
     # distance = torch.norm(curr_pos_w_xy - des_pos_w_xy, dim=1)
+    command_term = env.command_manager.get_term(command_name)
+    target_pos_w = command_term.world_command_pos[:, :2]
 
-    # return 2.0 / torch.square(distance + 0.7)
-    return distance
+    curr_pos_w = asset.data.root_pos_w[:, :2]  
+    distance = torch.norm(curr_pos_w - target_pos_w, dim=1)
+    # print("target_pos_w", target_pos_w)
+    # print("curr_pos_w", curr_pos_w)
+    # print("distance", distance)
+
+        
+    
+
+    return 2.0 / torch.square(distance + 0.7)
+    # return distance
 
 def kanake_position_command_threshold_reward(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg, threshold: float = 0.1) -> torch.Tensor:
