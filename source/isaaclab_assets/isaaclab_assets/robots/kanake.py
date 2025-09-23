@@ -24,35 +24,18 @@ import os
 KANAKE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-# /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0808_4.SLDASM/urdf/
-#/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/
         usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_0818.usd",
-        # usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120.usd",
-
-        # /home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim_0814/
-        # usd_path="./kanake6_sim_523/kanake6_sim_0814/kanake6_0820.usd",
-        # usd_path="./kanake6_sim_523/kanake6_sim_0814/kanake6_0814_flat.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
-            # retain_accelerations=False,
-            # linear_damping=0.0,
-            # angular_damping=0.0,
             max_linear_velocity=100.0,
             max_angular_velocity=100.0,
             max_depenetration_velocity=10.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=False,
+            enabled_self_collisions=True,
             solver_position_iteration_count=16,
             solver_velocity_iteration_count=16,
-            # sleep_threshold=0.005,
-            # stabilization_threshold=0.001,
-        ),
-        # collision_props=sim_utils.CollisionPropertiesCfg(
-        #     collision_enabled = True
-        # ),
-    
-            
+        ),       
         copy_from_source=False,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
@@ -72,17 +55,6 @@ KANAKE_CFG = ArticulationCfg(
                 # velocity_limit = 5.7, #rad/s
 
             ),
-        #     "body": ImplicitActuatorCfg(
-        #         joint_names_expr=["j1", "j2", "j3"],
-        #         stiffness =2.0,
-        #         damping =1.0,
-        #         # stiffness = 10.0,
-        #         # damping =5.0,
-        #         # effort_limit = 5.0, #Nm
-        #         # effort_limit_sim = 5.0, #Nm
-        #         # velocity_limit = 5.7, #rad/s
-
-        #     ),
         },
 )
 

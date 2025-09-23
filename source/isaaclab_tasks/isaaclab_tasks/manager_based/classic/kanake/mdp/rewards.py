@@ -55,6 +55,16 @@ def upright_posture_shaped(env: ManagerBasedRLEnv, threshold: float, asset_cfg: 
     )
     return reward
 
+
+def joint_vel_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize joint velocities on the articulation using L2 squared kernel.
+
+    NOTE: Only the joints configured in :attr:`asset_cfg.joint_ids` will have their joint velocities contribute to the term.
+    """
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    return torch.sum(torch.square(asset.data.joint_vel[:, asset_cfg.joint_ids]), dim=1)
+
 def move_to_target_bonus(
     env: ManagerBasedRLEnv,
     threshold: float,
@@ -105,6 +115,94 @@ class progress_reward(ManagerTermBase):
 
         return self.potentials - self.prev_potentials
 
+
+# class kanake_progress_to_command(ManagerTermBase):
+#     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+#         super().__init__(cfg, env)
+#         self.window_size = 5
+#         self.potential_history = torch.zeros(env.num_envs, self.window_size, device=env.device)
+#         self.ptr = torch.zeros(env.num_envs, dtype=torch.long, device=env.device)
+#         # 이전 스텝의 '평균' 포텐셜을 저장할 버퍼
+#         self.prev_avg_potentials = torch.zeros(env.num_envs, device=env.device)
+
+#         if not hasattr(env, "episode_length_buf"):
+#             raise AttributeError("The environment does not have the 'episode_length_buf' attribute.")
+
+#     def __call__(
+#         self,
+#         env: ManagerBasedRLEnv,
+#         command_name: str,
+#         asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+#     ) -> torch.Tensor:
+#         asset: Articulation = env.scene["robot"]
+#         command_term = self._env.command_manager.get_term(self.cfg.params["command_name"])
+        
+#         target_pos_w = command_term.world_command_pos[:, :2]
+#         current_pos_w = asset.data.root_pos_w[:, :2]
+#         current_distance = torch.norm(target_pos_w - current_pos_w, dim=1)
+
+#         # 현재 포텐셜 계산
+#         current_potentials = -current_distance
+
+#         # 이전 스텝의 평균 포텐셜을 저장
+#         self.prev_avg_potentials[:] = self.potential_history.mean(dim=1)
+
+#         # 히스토리 버퍼에 현재 포텐셜 저장
+#         self.potential_history[torch.arange(env.num_envs), self.ptr] = current_potentials
+#         self.ptr = (self.ptr + 1) % self.window_size
+
+#         # 현재 스텝의 평균 포텐셜 계산
+#         current_avg_potential = self.potential_history.mean(dim=1)
+        
+#         # '평균 포텐셜의 변화량'을 보상으로 사용
+#         reward = current_avg_potential - self.prev_avg_potentials
+        
+#         reward[env.episode_length_buf == 0] = 0.0
+
+#         return reward
+
+class kanake_progress_to_command(ManagerTermBase):
+    """Reward for making progress towards the commanded target position."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        # Base class 초기화
+        super().__init__(cfg, env)
+        # 현재와 이전 스텝의 포텐셜을 저장할 버퍼 생성
+        self.potentials = torch.zeros(env.num_envs, device=env.device)
+        self.prev_potentials = torch.zeros_like(self.potentials)
+
+        # 환경에 episode_length_buf 속성이 있는지 확인
+        if not hasattr(env, "episode_length_buf"):
+            raise AttributeError("The environment does not have the 'episode_length_buf' attribute.")
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        # 필요한 요소들 추출
+        asset: Articulation = env.scene[asset_cfg.name]
+        command_term = env.command_manager.get_term(self.cfg.params["command_name"])
+
+        # 목표 지점까지의 벡터 계산 (xy 평면)
+        target_pos_w = command_term.world_command_pos[:, :2]
+        current_pos_w = asset.data.root_pos_w[:, :2]
+        current_distance = torch.norm(target_pos_w - current_pos_w, dim=1)
+
+        # 이전 스텝의 포텐셜을 저장
+        self.prev_potentials[:] = self.potentials[:]
+        # 현재 스텝의 새로운 포텐셜 계산 (거리가 가까울수록 값이 커짐)
+        # dt로 나누어 시간 단계(timestep) 길이에 독립적인 보상을 만듭니다.
+        self.potentials[:] = -current_distance / env.step_dt
+
+        # 포텐셜의 변화량을 보상으로 계산
+        reward = self.potentials - self.prev_potentials
+
+        # 에피소드가 막 시작된 경우 (첫 스텝) 보상을 0으로 설정
+        reward[env.episode_length_buf == 0] = 0.0
+
+        return reward
 
 class joint_limits_penalty_ratio(ManagerTermBase):
     """Penalty for violating joint limits weighted by the gear ratio."""
@@ -548,58 +646,8 @@ def kanake_position_command_error_tanh(
 
 
 
-class kanake_progress_to_command(ManagerTermBase):
-    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
-        super().__init__(cfg, env)
-        self.potentials = torch.zeros(env.num_envs, device=env.device)
-        self.prev_potentials = torch.zeros_like(self.potentials)
-        self.window_size = 40  # 평균 낼 스텝 수
-        self.potential_history = torch.zeros(env.num_envs, self.window_size, device=env.device)
-        self.ptr = torch.zeros(env.num_envs, dtype=torch.long, device=env.device)  # 현재 위치 포인터
 
-        if not hasattr(env, "episode_length_buf"):
-            raise AttributeError("The environment does not have the 'episode_length_buf' attribute.")
 
-    def __call__(
-        self,
-        env: ManagerBasedRLEnv,
-        command_name: str,
-        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    ) -> torch.Tensor:
-        asset: Articulation = env.scene["robot"]
-        command_term = env.command_manager.get_term(command_name)
-        
-        target_pos_w = command_term.world_command_pos[:, :2]
-        current_pos_w = asset.data.root_pos_w[:, :2]
-        current_distance = torch.norm(target_pos_w - current_pos_w, dim=1)
-
-        self.prev_potentials[:] = self.potentials[:]
-        self.potentials[:] = -current_distance
-
-        # 버퍼에 potential 저장 (순환)
-        self.potential_history[torch.arange(env.num_envs), self.ptr] = self.potentials
-        self.ptr = (self.ptr + 1) % self.window_size
-
-        # 평균 리워드 계산: 최근 window_size 스텝의 potential 변화량
-        avg_potential = self.potential_history.mean(dim=1)
-        reward = avg_potential - self.prev_potentials
-        reward[env.episode_length_buf == 0] = 0.0
-
-        return reward
-
-    def reset(self, env_ids: torch.Tensor):
-        asset: Articulation = self._env.scene["robot"]
-        command_term = self._env.command_manager.get_term(self.cfg.params["command_name"])
-        
-        target_pos_w = command_term.world_command_pos[env_ids, :2]
-        current_pos_w = asset.data.root_pos_w[env_ids, :2]
-        distance = torch.norm(target_pos_w - current_pos_w, dim=1)
-
-        self.potentials[env_ids] = -distance
-        self.prev_potentials[env_ids] = self.potentials[env_ids]
-        # 버퍼 초기화
-        self.potential_history[env_ids, :] = self.potentials[env_ids].unsqueeze(1)
-        self.ptr[env_ids] = 0
 # class kanake_progress_to_command(ManagerTermBase):
 #     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
 #         super().__init__(cfg, env)

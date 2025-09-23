@@ -300,11 +300,18 @@ class RewardsCfg:
     ### Task1 - 이동
 
     # 타겟과의 거리 리워드
-    kanake_position_command_error_base = RewTerm(
-        func=mdp.kanake_position_command_error_base,
-        weight=1.0,
-        params={"command_name": "kanake_command"},
+    # kanake_position_command_error_base = RewTerm(
+    #     func=mdp.kanake_position_command_error_base,
+    #     weight=1.0,
+    #     params={"command_name": "kanake_command"},
+    # )
+    kanake_progress_to_command = RewTerm(
+        func=mdp.kanake_progress_to_command,
+        weight=1000.0,
+        params={"command_name": "kanake_command"}
     )
+
+    # joint_vel_l2 = RewTerm(func=mdp.joint_vel_l2, weight=-0.0001)
     # kanake_progress_to_command = RewTerm(
     #     func=mdp.kanake_progress_to_command,
     #     weight=100.0,
@@ -364,13 +371,13 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.7})
+    # upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.65})
 
     # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
-    BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
+    # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
 
     # action이 급변하지 않도록 페널티
-    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
 
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(
@@ -386,7 +393,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    # max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.5})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.5})
 
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
