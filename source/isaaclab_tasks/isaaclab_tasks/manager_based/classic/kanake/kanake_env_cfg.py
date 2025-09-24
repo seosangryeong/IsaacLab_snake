@@ -66,33 +66,13 @@ class MySceneCfg(InteractiveSceneCfg):
             static_friction=0.6,
             dynamic_friction=0.6,
         ),
-        # visual_material=sim_utils.PreviewSurfaceCfg(
-        #     # diffuse_color=(0.065, 0.0725, 0.080),#회색
-        #     diffuse_color=(1.0, 1.0, 1.0),
-        #     emissive_color=(0.0, 0.0, 0.0),
-        #     roughness= 0.5,
-        #     metallic = 0.3,
-        #     opacity = 1.0
-        # ),
         debug_vis=False,
     )
 
     # robot
     robot = KANAKE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
-    # camera = CameraCfg(
-    #     prim_path="{ENV_REGEX_NS}/Robot/head/Camera",
-    #     update_period=0.1,
-    #     height=480,
-    #     width=640,
-    #     data_types=["rgb", "distance_to_image_plane"],
-    #     spawn= None,
-    #     offset=CameraCfg.OffsetCfg(pos=(0.510, 0.0, 0.015), rot=(0.5, -0.5, 0.5, -0.5), convention="ros"),
-    # )
-    # camera = FrameTransformerCfg(
-    #     prim_path="{ENV_REGEX_NS}/Robot/head/Camera",  
-    #     target_frames=[],  
-    # )
+
     sky_light = AssetBaseCfg(
         prim_path="/World/skyLight",
         spawn=sim_utils.DomeLightCfg(
@@ -138,9 +118,10 @@ class ActionsCfg:
     """Action specifications for the MDP."""
     
 
-    joint_sine = mdp.JointSineActionCfg(asset_name="robot", 
-                                        joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-                                        scale=1.0)
+    joint_sine = mdp.JointSineActionCfg(
+        asset_name="robot",               
+        joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
+        scale=1.0)
 
 
     
@@ -152,50 +133,12 @@ class ObservationsCfg:
     @configclass
     class PolicyCfg(ObsGroup):
         """Observations for the policy."""
-        # joint_pos = ObsTerm(func=mdp.joint_pos)
-        # joint_vel = ObsTerm(func=mdp.joint_vel)
-        # joint_effort = ObsTerm(func=mdp.joint_effort)
-        # pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
 
-        # actions = ObsTerm(func=mdp.last_action)
-        # base_height = ObsTerm(func=mdp.base_pos_z)
-        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
-        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        # base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
-        # base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)
-
-        # base_angle_to_target_command = ObsTerm(func=mdp.base_angle_to_target_command, params={"command_name": "kanake_command"})
-        # base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (5.0, 0.0, 0.0)})
-        # # joint_pos = ObsTerm(func=mdp.joint_pos)
-        # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        # head_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "head_command"})
-        # image_features = ObsTerm(
-        #     func=mdp.image_features,
-        #     params={
-        #         "sensor_cfg": SceneEntityCfg("Camera"),  
-        #         "data_type": "rgb",
-        #         "model_name": "resnet18",  
-        #         "model_device": "cuda",   
-        #     }
-        # )
-        # cube_pose_w = ObsTerm(func=mdp.cube_pose_w)
-
         joint_vel = ObsTerm(func=mdp.joint_vel)
-        # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
-
         joint_pos = ObsTerm(func=mdp.joint_pos)
-        # joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
-
-        # joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         actions = ObsTerm(func=mdp.last_action)
-
-
-
-
-
-        
 
         def __post_init__(self):
             self.enable_corruption = False
@@ -205,33 +148,23 @@ class ObservationsCfg:
     class CriticCfg(ObsGroup):
 
         base_height = ObsTerm(func=mdp.base_pos_z)
-        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
-        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
         base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
         base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)
-
-        # base_angle_to_target_command = ObsTerm(func=mdp.base_angle_to_target_command, params={"command_name": "kanake_command"})
-        # base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (5.0, 0.0, 0.0)})
-        # # joint_pos = ObsTerm(func=mdp.joint_pos)
-        # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        # head_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "head_command"})
-        # cube_pose_w = ObsTerm(func=mdp.cube_pose_w)
         joint_vel = ObsTerm(func=mdp.joint_vel)
-        # joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
         joint_pos = ObsTerm(func=mdp.joint_pos)
-        # joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         actions = ObsTerm(func=mdp.last_action)
+
         def __post_init__(self):
             self.enable_corruption = False
             self.concatenate_terms = True
 
-
-
     # observation groups
     policy: PolicyCfg = PolicyCfg()
     critic: CriticCfg = CriticCfg()
+
+
 
 @configclass
 class EventCfg:
@@ -241,7 +174,6 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (-1.57,1.57)},
             "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.25, 0.25), "yaw": (-np.pi,np.pi)},
             "velocity_range": {
                 "x": (0.0, 0.0),
@@ -253,7 +185,6 @@ class EventCfg:
             },
         },
     )
-
 
     reset_robot_joints = EventTerm(
         func=mdp.reset_joints_by_offset,
@@ -277,6 +208,8 @@ class EventCfg:
             "num_buckets": 64,
         },
     )
+
+
 
 #     add_base_mass = EventTerm(
 #         func=mdp.randomize_rigid_body_mass,
@@ -307,7 +240,7 @@ class RewardsCfg:
     # )
     kanake_progress_to_command = RewTerm(
         func=mdp.kanake_progress_to_command,
-        weight=1000.0,
+        weight=100.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -371,10 +304,10 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    # upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.65})
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.9})
 
     # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
-    # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
+    BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
 
     # action이 급변하지 않도록 페널티
     # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
@@ -400,8 +333,8 @@ class TerminationsCfg:
 
 @configclass
 class CurriculumCfg:
-    """Curriculum terms for the MDP."""
-    
+     """Curriculum terms for the MDP."""
+
     # camera_orientation_alignment_reward = CurrTerm(
     #     func=mdp.modify_reward_weight, params={"term_name": "camera_orientation_alignment_reward", "weight": 2.0, "num_steps": 10000}
     # )

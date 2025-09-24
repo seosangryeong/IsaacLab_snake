@@ -5,8 +5,13 @@
 
 """This sub-module contains the functions that are specific to the humanoid environment."""
 
-from isaaclab.envs.mdp import *  # noqa: F401, F403
+# from isaaclab.envs.mdp import *  # noqa: F401, F403
 
-from .observations import *
-from .rewards import *
-from .target_path import *
+from .actions import *  
+from .commands import *  
+from .curriculums import *  
+from .events import * 
+from .observations import *  
+from .recorders import * 
+from .rewards import *  
+from .terminations import *  
