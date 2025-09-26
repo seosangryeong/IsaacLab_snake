@@ -240,7 +240,7 @@ class RewardsCfg:
     # )
     kanake_progress_to_command = RewTerm(
         func=mdp.kanake_progress_to_command,
-        weight=100.0,
+        weight=40.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -293,18 +293,18 @@ class RewardsCfg:
     # head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-50.0)
 
     # cube(head)의 로컬 x축 방향과 base-target 벡터의 유사도
-    # cube_x_axis_target_alignment_reward = RewTerm(
-    #     func=mdp.cube_x_axis_target_alignment_reward,
-    #     weight=10.0,
-    #     params={"command_name": "kanake_command"},
-    # )
+    cube_x_axis_target_alignment_reward = RewTerm(
+        func=mdp.cube_x_axis_target_alignment_reward,
+        weight=1.0,
+        params={"command_name": "kanake_command"},
+    )
 
     ####################################
 
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.9})
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
 
     # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
@@ -313,11 +313,16 @@ class RewardsCfg:
     # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
 
     # head 로컬 x직선과 body들의 거리 합
-    # BaseXAxisDistanceReward = RewTerm(
-    #     func=mdp.BaseXAxisDistanceReward, 
-    #     weight=-1.0, 
-    #     params={"threshold": 0.1}
-    # )
+    BaseXAxisDistanceReward = RewTerm(
+        func=mdp.BaseXAxisDistanceReward, 
+        weight=-1.0, 
+        params={"threshold": 0.1}
+    )
+    DistanceReward = RewTerm(
+        func=mdp.DistanceReward, 
+        weight=-1.0, 
+        params={"threshold": 0.1}
+    )
 
 
 
@@ -379,7 +384,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         self.decimation = 2
         self.episode_length_s = 40.0
         # simulation settings
-        self.sim.dt = 1 / 80.0
+        self.sim.dt = 1 / 100.0
         self.sim.render_interval = self.decimation
         # self.sim.render_interval = 2
         self.sim.physx.bounce_threshold_velocity = 0.2

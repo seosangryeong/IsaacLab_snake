@@ -95,17 +95,27 @@ class JointSineAction(ActionTerm):
         phase_h_action = actions[:, self._num_joints + 3]
 
 
+        # # 진폭 (Amplitude)
+        # amplitudes = 1.5 + 1.0 *torch.tanh(amp_actions)
+
+        # # 주파수 (Frequency)
+        # freq_v = 1.0 + 0.5 * (torch.tanh(freq_v_action) + 1.0) / 2.0
+        # freq_h = 0.5 + 0.5 * (torch.tanh(freq_h_action) + 1.0) / 2.0
+
+        # # 위상 (Phase)
+        # phase_v = 2.0 + 1.0 * torch.tanh(phase_v_action) 
+        # phase_h = 1.5 + 1.0 * torch.tanh(phase_h_action)
+
         # 진폭 (Amplitude)
-        amplitudes = 1.5 + 1.0 *torch.tanh(amp_actions)
+        amplitudes = 1.0 *torch.tanh(amp_actions)
 
         # 주파수 (Frequency)
-        freq_v = 1.0 + 0.5 * (torch.tanh(freq_v_action) + 1.0) / 2.0
-        freq_h = 0.5 + 0.5 * (torch.tanh(freq_h_action) + 1.0) / 2.0
+        freq_v = 0.5 * (torch.tanh(freq_v_action) + 1.0) / 2.0
+        freq_h = 0.5 * (torch.tanh(freq_h_action) + 1.0) / 2.0
 
         # 위상 (Phase)
-        phase_v = 2.0 + 1.0 * torch.tanh(phase_v_action) 
-        phase_h = 1.5 + 1.0 * torch.tanh(phase_h_action)
-
+        phase_v = torch.tanh(phase_v_action+ 1.0) 
+        phase_h = torch.tanh(phase_h_action+ 1.0)
         
         t = torch.full((self.num_envs, 1), self._current_time, device=self.device)
 
