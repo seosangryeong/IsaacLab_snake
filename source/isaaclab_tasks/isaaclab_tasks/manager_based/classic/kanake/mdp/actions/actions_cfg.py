@@ -384,45 +384,25 @@ class JointSineVerticalActionCfg(JointActionCfg):
 
 @configclass
 class JointCPGActionCfg(JointActionCfg):
-    """
-    Matsuoka CPG 기반 Joint Action 설정
-    - 각 관절마다 하나의 oscillator (extensor–flexor 쌍)
-    - 액션으로는 토닉 입력 u와 CPG 파라미터(진폭, 억제, 시간상수 등)를 제어
-    """
+
     # 사용할 ActionTerm 클래스 지정
     class_type: type[ActionTerm] = cpg_actions.JointCPGAction
 
-    # 적용할 조인트 이름 (USD 상의 prim 이름 와일드카드)
-    joint_names: list[str] = ["j*"]
-    preserve_order: bool = True
+    joint_names_horz: list[str] = MISSING 
+    joint_names_vert: list[str] = MISSING
 
-    # ────────── CPG 파라미터 ──────────
-    # mutual inhibition 강도 (a)
-    inhibition: float = 2.5
-    # 자기억제 계수 (b)
-    self_inhib: float = 2.5
-    # free-response bias (c)
-    tone_bias: float = 2.5
-    # 회로 응답 시간상수 (τ_r)
-    tau_r: float = 0.3
-    # 적응 시간상수 (τ_a)
-    tau_a: float = 0.6
-    # 출력 스케일 (ψ = scale * (z_e - z_f))
+    # 3. CPG 하이퍼파라미터
+    a: float = 5.0      # 진폭 수렴 속도
+    mu: float = 1.0     # 관절 간 커플링(동기화) 계수
+
+    # 4. 출력 스케일
     output_scale: float = 1.0
 
-    # ────────── Action 클리핑 ──────────
-    # 토닉 입력 u_i 최소/최대
-    u_min: float = -1.0
-    u_max: float =  1.0
-
-    # 추가 joint 값 스케일 (optional)
-    additional_joint_scale: float = 1.5
-
-    # ────────── Oscillator 간 결합 ──────────
-    # num_joints x num_joints 크기의 coupling matrix
-    # (인접만 mu 값으로 설정하려면 __post_init__에서 자동 생성 가능)
-    coupling_matrix: list[list[float]] = field(default_factory=lambda: [])
-    coupling_matrix: list[list[float]] = field(default_factory=list)
+    # 5. RL 액션(7차원) 범위 설정
+    # 순서: [R_horz, R_vert, omega, theta_horz, theta_vert, delta_horz, delta_vert]
+    action_scale: list[float] = [1.5, 1.5, np.pi, np.pi, np.pi, 0.5, 0.5]
+    action_min: list[float] = [0.0, 0.0, -np.pi, -np.pi, -np.pi, -0.5, -0.5]
+    action_max: list[float] = [1.5, 1.5, np.pi/4, np.pi/4, np.pi/4, 0.5, 0.5]
 
 
 @configclass

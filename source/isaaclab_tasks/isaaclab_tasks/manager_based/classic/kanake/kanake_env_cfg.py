@@ -118,10 +118,18 @@ class ActionsCfg:
     """Action specifications for the MDP."""
     
 
-    joint_sine = mdp.JointSineActionCfg(
-        asset_name="robot",               
+    # joint_sine = mdp.JointSineActionCfg(
+    #     asset_name="robot",               
+    #     joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
+    #     scale=1.0)
+    
+    joint_cpg = mdp.JointCPGActionCfg(
+        asset_name="robot",
         joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-        scale=1.0)
+        joint_names_horz=["j2", "j4", "j6", "j8", "j10", "j12", "j14", "j16"],
+        joint_names_vert=["j1", "j3", "j5", "j7", "j9", "j11", "j13", "j15"],
+
+    )
 
 
     
@@ -381,11 +389,11 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
     def __post_init__(self):
         """Post initialization."""
         # general settings
-        self.decimation = 2
+        self.decimation = 20
         self.episode_length_s = 40.0
         # simulation settings
         self.sim.dt = 1 / 100.0
-        self.sim.render_interval = self.decimation
+        self.sim.render_interval = 2
         # self.sim.render_interval = 2
         self.sim.physx.bounce_threshold_velocity = 0.2
         self.sim.physics_material.static_friction = 0.5

@@ -1,10 +1,9 @@
-from __future__ import annotations
+# your_action_file.py
 
+from __future__ import annotations
 import torch
 import numpy as np
 from collections.abc import Sequence
-import omni.log
-from isaaclab.sim.utils import find_matching_prims
 
 from isaaclab.assets.articulation import Articulation
 from isaaclab.managers.action_manager import ActionTerm
@@ -15,66 +14,56 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
 
 class JointCPGAction(ActionTerm):
-    """
-    Matsuoka CPG 기반 액션 term.
-    - 각 관절마다 하나의 oscillator (extensor–flexor 쌍)
-    - RL 액션 u: 각 oscillator에 대한 토닉 입력 (num_joints)
-    """
     cfg: actions_cfg.JointCPGActionCfg
     _asset: Articulation
-    _current_time: float
 
     def __init__(self, cfg: actions_cfg.JointCPGActionCfg, env: ManagerBasedEnv) -> None:
         super().__init__(cfg, env)
-        # 1) 관절 해상
-        self._joint_ids, self._joint_names = self._asset.find_joints(
-            cfg.joint_names, preserve_order=cfg.preserve_order
-        )
-        self._num_joints = len(self._joint_ids)
 
-        # 2) coupling_matrix 설정
-        # if not cfg.coupling_matrix:
-        #     # num_joints × num_joints zero matrix
-        #     W = torch.zeros((self._num_joints, self._num_joints), device=self.device)
-        #     for i in range(self._num_joints - 1):
-        #         W[i, i+1] = W[i+1, i] = cfg.inhibition
-        #     self.W = W
-        # else:
-        #     self.W = torch.tensor(cfg.coupling_matrix, dtype=torch.float32, device=self.device)
+        self._joint_ids_horz, _ = self._asset.find_joints(cfg.joint_names_horz)
+        self._joint_ids_vert, _ = self._asset.find_joints(cfg.joint_names_vert)
+        self._num_horz_joints = len(self._joint_ids_horz)
+        self._num_vert_joints = len(self._joint_ids_vert)
 
+        self._joint_ids = self._joint_ids_horz + self._joint_ids_vert
+        self.total_joints = self._num_horz_joints + self._num_vert_joints
 
-        self.W = torch.zeros(
-            (self._num_joints, self._num_joints),
-            dtype=torch.float32,
-            device=self.device
-        )
+        self.r_horz = torch.zeros(self.num_envs, self._num_horz_joints, device=self.device)
+        self.phi_horz = torch.zeros(self.num_envs, self._num_horz_joints, device=self.device)
+        self.r_vert = torch.zeros(self.num_envs, self._num_vert_joints, device=self.device)
+        self.phi_vert = torch.zeros(self.num_envs, self._num_vert_joints, device=self.device)
 
-        # 3) CPG 파라미터 읽기
-        self.a       = cfg.inhibition    # mutual inhibition 강도
-        self.b       = cfg.self_inhib    # 자기억제 계수
-        self.c       = cfg.tone_bias     # free-response bias
-        self.tau_r   = cfg.tau_r         # 회로 응답 시간상수
-        self.tau_a   = cfg.tau_a         # 적응 시간상수
-        self.scale   = cfg.output_scale  # 출력 스케일
+        self.A_horz = self._create_matrix_A(self._num_horz_joints, cfg.mu)
+        self.B_horz = self._create_matrix_B(self._num_horz_joints)
+        self.A_vert = self._create_matrix_A(self._num_vert_joints, cfg.mu)
+        self.B_vert = self._create_matrix_B(self._num_vert_joints)
 
-        # 4) raw / processed action 텐서
-        shape = (self.num_envs, self._num_joints)
-        self._raw_actions       = torch.zeros(shape, device=self.device)
-        self._processed_actions = torch.zeros(shape, device=self.device)
+        self._raw_actions = torch.zeros(self.num_envs, self.action_dim, device=self.device)
+        self._processed_actions = torch.zeros(self.num_envs, self.total_joints, device=self.device)
 
-        # 5) Matsuoka 상태 변수 초기화
-        self.x_e = torch.zeros(shape, device=self.device)
-        self.y_e = torch.zeros(shape, device=self.device)
-        self.x_f = torch.zeros(shape, device=self.device)
-        self.y_f = torch.zeros(shape, device=self.device)
+        # 이제 max 값만 스케일링에 사용됩니다.
+        self.action_max = torch.tensor(self.cfg.action_max, device=self.device)
 
-        # 6) 내부 시간
-        self._current_time = 0.0
+    def _create_matrix_A(self, num_joints, mu):
+        A = torch.zeros((num_joints, num_joints), device=self.device)
+        for i in range(num_joints):
+            if i > 0: A[i, i - 1] = mu
+            if i < num_joints - 1: A[i, i + 1] = mu
+            diag_val = -mu if i == 0 or i == num_joints - 1 else -2 * mu
+            A[i, i] = diag_val
+        return A
 
+    def _create_matrix_B(self, num_joints):
+        B = torch.zeros((num_joints, num_joints - 1), device=self.device)
+        if num_joints > 1:
+            for i in range(num_joints - 1):
+                B[i, i] = 1.0
+                B[i + 1, i] = -1.0
+        return B
 
     @property
     def action_dim(self) -> int:
-        return self._num_joints
+        return 7
 
     @property
     def raw_actions(self) -> torch.Tensor:
@@ -85,88 +74,76 @@ class JointCPGAction(ActionTerm):
         return self._processed_actions
 
     def reset(self, env_ids: Sequence[int] | None = None) -> None:
-        shape = (self.num_envs, self._num_joints)
-        eps = 1e-2
         if env_ids is None:
-            self.x_e = torch.randn(shape, device=self.device) * eps
-            self.x_f = torch.randn(shape, device=self.device) * eps
-            self.y_e.zero_(); self.y_f.zero_()
-            self._raw_actions.zero_()
-        else:
-            # 선택적 env_ids 처리
-            noise = torch.randn((len(env_ids), self._num_joints), device=self.device) * eps
-            self.x_e[env_ids] = noise
-            self.x_f[env_ids] = -noise
-            self.y_e[env_ids].zero_(); self.y_f[env_ids].zero_()
-            self._raw_actions[env_ids].zero_()
+            env_ids = slice(None)
+        
+        self.r_horz[env_ids].zero_()
+        self.phi_horz[env_ids].zero_()
+        self.r_vert[env_ids].zero_()
+        self.phi_vert[env_ids].zero_()
+        self._raw_actions[env_ids].zero_()
+
+    def process_actions(self, actions: torch.Tensor):
+        dt = self._env.step_dt
+        self._raw_actions[:] = actions
+
+        # Tanh를 사용하여 모든 액션 요소를 (-1, 1) 사이로 정규화
+        tanh_actions = torch.tanh(actions)
+
+        # 정규화된 7차원 벡터를 각 파라미터로 분해
+        (
+            tanh_R_h, tanh_R_v, tanh_omega,
+            tanh_theta_h, tanh_theta_v,
+            tanh_delta_h, tanh_delta_v
+        ) = torch.chunk(tanh_actions, chunks=7, dim=1)
+
+        # 각 파라미터의 최대값(절대값 기준)을 cfg에서 가져옴
+        max_vals = self.action_max
+        
+        # <<<<<<<<<<<<<<<<<<<<<<<< 요청하신 스케일링 로직 적용 >>>>>>>>>>>>>>>>>>>>>
+        # 진폭 (범위: [0, max])
+        R_horz      = (tanh_R_h + 1.0) / 2.0 * max_vals[0]
+        R_vert      = (tanh_R_v + 1.0) / 2.0 * max_vals[1]
+        
+        # 주파수, 위상, 오프셋 (범위: [-max, max])
+        omega       = tanh_omega * max_vals[2]
+        theta_horz  = tanh_theta_h * max_vals[3]
+        theta_vert  = tanh_theta_v * max_vals[4]
+        delta_horz  = tanh_delta_h * max_vals[5]
+        delta_vert  = tanh_delta_v * max_vals[6]
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+        # --- 수평(Horizontal) CPG 계산 ---
+        R_h_b = R_horz.expand(-1, self._num_horz_joints)
+        omega_h_b = omega.expand(-1, self._num_horz_joints)
+        delta_h_b = delta_horz.expand(-1, self._num_horz_joints)
+        theta_h_b = theta_horz.expand(-1, self._num_horz_joints - 1) if self._num_horz_joints > 1 else torch.zeros((actions.shape[0], 0), device=self.device)
+
+        r_dot_h = (self.cfg.a**2 / (4 * (1 + self.cfg.a))) * (R_h_b - self.r_horz)
+        phi_dot_h = omega_h_b + self.phi_horz @ self.A_horz.T + theta_h_b @ self.B_horz.T
+        
+        self.r_horz += r_dot_h * dt
+        self.phi_horz += phi_dot_h * dt
+        x_horz = self.r_horz * torch.sin(self.phi_horz) + delta_h_b
+
+        # --- 수직(Vertical) CPG 계산 ---
+        R_v_b = R_vert.expand(-1, self._num_vert_joints)
+        omega_v_b = omega.expand(-1, self._num_vert_joints)
+        delta_v_b = delta_vert.expand(-1, self._num_vert_joints)
+        theta_v_b = theta_vert.expand(-1, self._num_vert_joints - 1) if self._num_vert_joints > 1 else torch.zeros((actions.shape[0], 0), device=self.device)
+
+        r_dot_v = (self.cfg.a**2 / (4 * (1 + self.cfg.a))) * (R_v_b - self.r_vert)
+        phi_dot_v = omega_v_b + self.phi_vert @ self.A_vert.T + theta_v_b @ self.B_vert.T
+
+        self.r_vert += r_dot_v * dt
+        self.phi_vert += phi_dot_v * dt
+        x_vert = self.r_vert * torch.sin(self.phi_vert) + delta_v_b
+
+        # --- 결과 결합 ---
+        combined_psi = torch.cat([x_horz, x_vert], dim=1)
+        self._processed_actions.copy_(combined_psi * self.cfg.output_scale)
 
     def apply_actions(self):
-        # 계산된 ψ를 관절 목표 위치로 설정
         self._asset.set_joint_position_target(
             self._processed_actions, joint_ids=self._joint_ids
         )
-
-    def process_actions(self, actions: torch.Tensor, additional_joint_values=None):
-        """
-        actions: (num_envs, num_joints) 형태의 토닉 입력 u_i
-        """
-        # 1) 시간 업데이트
-        dt = self._env.step_dt
-        # print("dt:", dt)
-        self._current_time += dt
-        # print(f"[CPG DEBUG] W.shape = {self.W.shape}")
-        # print(f"[CPG DEBUG] W =\n{self.W.cpu().numpy()}")
-        # 2) 토닉 입력 클리핑
-        u = torch.clamp(actions, self.cfg.u_min, self.cfg.u_max)
-        # print("u:", u)
-        self._raw_actions[:] = u
-
-        # 3) 활성화값
-        ze = torch.relu(self.x_e)
-        zf = torch.relu(self.x_f)
-
-        # 4) Matsuoka 미분방정식 (Euler)
-        # extensor
-        dx_e = (
-            - self.x_e
-            - self.a * zf
-            - self.b * self.y_e
-            - torch.matmul(zf, self.W.T)
-            + u
-            + self.c
-        ) / self.tau_r
-        dy_e = (ze - self.y_e) / self.tau_a
-
-        # flexor
-        dx_f = (
-            - self.x_f
-            - self.a * ze
-            - self.b * self.y_f
-            - torch.matmul(ze, self.W.T)
-            + u
-            + self.c
-        ) / self.tau_r
-
-        # print(f"[CPG DEBUG] u[0]={u[0].cpu().numpy()}")
-        # print(f"[CPG DEBUG] c={self.c}, a={self.a}, b={self.b}, tau_r={self.tau_r}")
-        # print(f"[CPG DEBUG] dx_e[0]={dx_e[0].detach().cpu().numpy()}")
-        # print(f"[CPG DEBUG] dx_f[0]={dx_f[0].detach().cpu().numpy()}")
-        dy_f = (zf - self.y_f) / self.tau_a
-
-        # 적분
-        self.x_e = self.x_e + dt * dx_e
-        self.y_e = self.y_e + dt * dy_e
-        self.x_f = self.x_f + dt * dx_f
-        self.y_f = self.y_f + dt * dy_f
-        # print(f"[CPG DEBUG] x_e[0]={self.x_e[0].detach().cpu().numpy()}")
-
-        # 5) 출력 계산: ψ = scale * (z_e − z_f)
-        psi = self.scale * (torch.relu(self.x_e) - torch.relu(self.x_f))
-        # print("psi:", psi)
-
-        # 6) 추가 Joint 값 더하기 (optional)
-        if additional_joint_values is not None:
-            psi = psi + self.cfg.additional_joint_scale * additional_joint_values
-
-        # 7) 결과 복사
-        self._processed_actions.copy_(psi)
