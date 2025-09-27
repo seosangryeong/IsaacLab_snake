@@ -399,10 +399,10 @@ class JointCPGActionCfg(JointActionCfg):
     output_scale: float = 1.0
 
     # 5. RL 액션(7차원) 범위 설정
-    # 순서: [R_horz, R_vert, omega, theta_horz, theta_vert, delta_horz, delta_vert]
+    # 순서: [R_horz, R_vert, omega(주파수), theta_horz, theta_vert, delta_horz, delta_vert]
     action_scale: list[float] = [1.5, 1.5, np.pi, np.pi, np.pi, 0.5, 0.5]
     action_min: list[float] = [0.0, 0.0, -np.pi, -np.pi, -np.pi, -0.5, -0.5]
-    action_max: list[float] = [1.5, 1.5, np.pi/4, np.pi/4, np.pi/4, 0.5, 0.5]
+    action_max: list[float] = [1.5, 1.5, np.pi*2, np.pi/4, np.pi/4, 0.5, 0.5]
 
 
 @configclass
