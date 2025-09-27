@@ -463,11 +463,9 @@ class kanake_progress_to_command(ManagerTermBase):
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
         # Base class 초기화
         super().__init__(cfg, env)
-        # 현재와 이전 스텝의 포텐셜을 저장할 버퍼 생성
         self.potentials = torch.zeros(env.num_envs, device=env.device)
         self.prev_potentials = torch.zeros_like(self.potentials)
 
-        # 환경에 episode_length_buf 속성이 있는지 확인
         if not hasattr(env, "episode_length_buf"):
             raise AttributeError("The environment does not have the 'episode_length_buf' attribute.")
 
@@ -489,7 +487,6 @@ class kanake_progress_to_command(ManagerTermBase):
         # 이전 스텝의 포텐셜을 저장
         self.prev_potentials[:] = self.potentials[:]
         # 현재 스텝의 새로운 포텐셜 계산 (거리가 가까울수록 값이 커짐)
-        # dt로 나누어 시간 단계(timestep) 길이에 독립적인 보상을 만듭니다.
         self.potentials[:] = -current_distance / env.step_dt
 
         # 포텐셜의 변화량을 보상으로 계산

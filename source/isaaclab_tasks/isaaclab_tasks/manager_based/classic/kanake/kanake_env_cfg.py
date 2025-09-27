@@ -307,7 +307,7 @@ class RewardsCfg:
     upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
 
     # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
-    BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
+    # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
 
     # action이 급변하지 않도록 페널티
     # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
