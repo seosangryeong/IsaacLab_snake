@@ -248,7 +248,7 @@ class RewardsCfg:
     # )
     kanake_progress_to_command = RewTerm(
         func=mdp.kanake_progress_to_command,
-        weight=40.0,
+        weight=80.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -301,11 +301,11 @@ class RewardsCfg:
     # head_vertical_velocity_penalty = RewTerm(func=mdp.head_vertical_velocity_penalty, weight=-50.0)
 
     # cube(head)의 로컬 x축 방향과 base-target 벡터의 유사도
-    cube_x_axis_target_alignment_reward = RewTerm(
-        func=mdp.cube_x_axis_target_alignment_reward,
-        weight=1.0,
-        params={"command_name": "kanake_command"},
-    )
+    # cube_x_axis_target_alignment_reward = RewTerm(
+    #     func=mdp.cube_x_axis_target_alignment_reward,
+    #     weight=1.0,
+    #     params={"command_name": "kanake_command"},
+    # )
 
     ####################################
 
@@ -321,16 +321,16 @@ class RewardsCfg:
     # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
 
     # head 로컬 x직선과 body들의 거리 합
-    BaseXAxisDistanceReward = RewTerm(
-        func=mdp.BaseXAxisDistanceReward, 
-        weight=-1.0, 
-        params={"threshold": 0.1}
-    )
-    DistanceReward = RewTerm(
-        func=mdp.DistanceReward, 
-        weight=-1.0, 
-        params={"threshold": 0.1}
-    )
+    # BaseXAxisDistanceReward = RewTerm(
+    #     func=mdp.BaseXAxisDistanceReward, 
+    #     weight=-1.0, 
+    #     params={"threshold": 0.1}
+    # )
+    # DistanceReward = RewTerm(
+    #     func=mdp.DistanceReward, 
+    #     weight=-1.0, 
+    #     params={"threshold": 0.1}
+    # )
 
 
 
