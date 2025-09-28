@@ -241,14 +241,14 @@ class RewardsCfg:
     ### Task1 - 이동
 
     # 타겟과의 거리 리워드
-    # kanake_position_command_error_base = RewTerm(
-    #     func=mdp.kanake_position_command_error_base,
-    #     weight=1.0,
-    #     params={"command_name": "kanake_command"},
-    # )
+    kanake_position_command_error_base = RewTerm(
+        func=mdp.kanake_position_command_error_base,
+        weight=1.0,
+        params={"command_name": "kanake_command"},
+    )
     kanake_progress_to_command = RewTerm(
         func=mdp.kanake_progress_to_command,
-        weight=80.0,
+        weight=10.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -389,7 +389,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
     def __post_init__(self):
         """Post initialization."""
         # general settings
-        self.decimation = 20
+        self.decimation = 10
         self.episode_length_s = 40.0
         # simulation settings
         self.sim.dt = 1 / 100.0
