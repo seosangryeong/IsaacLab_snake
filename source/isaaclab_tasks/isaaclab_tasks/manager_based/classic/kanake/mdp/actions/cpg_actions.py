@@ -14,12 +14,18 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
 
 class JointCPGAction(ActionTerm):
+    """
+    계층적 업데이트 주기를 사용하는 사인파 기반 2-CPG 액션 term.
+    - CPG 상태는 고주파(decimation)로 계속 업데이트되어 부드러운 움직임을 보장.
+    - RL 정책(목표 파라미터)은 저주파(rl_policy_update_period_s)로 업데이트.
+    """
     cfg: actions_cfg.JointCPGActionCfg
     _asset: Articulation
 
     def __init__(self, cfg: actions_cfg.JointCPGActionCfg, env: ManagerBasedEnv) -> None:
         super().__init__(cfg, env)
 
+        # 관절 해상 (수평/수직 분리)
         self._joint_ids_horz, _ = self._asset.find_joints(cfg.joint_names_horz)
         self._joint_ids_vert, _ = self._asset.find_joints(cfg.joint_names_vert)
         self._num_horz_joints = len(self._joint_ids_horz)
@@ -28,21 +34,38 @@ class JointCPGAction(ActionTerm):
         self._joint_ids = self._joint_ids_horz + self._joint_ids_vert
         self.total_joints = self._num_horz_joints + self._num_vert_joints
 
+        # CPG 내부 상태 변수
         self.r_horz = torch.zeros(self.num_envs, self._num_horz_joints, device=self.device)
         self.phi_horz = torch.zeros(self.num_envs, self._num_horz_joints, device=self.device)
         self.r_vert = torch.zeros(self.num_envs, self._num_vert_joints, device=self.device)
         self.phi_vert = torch.zeros(self.num_envs, self._num_vert_joints, device=self.device)
 
+        # CPG 커플링 행렬
         self.A_horz = self._create_matrix_A(self._num_horz_joints, cfg.mu)
         self.B_horz = self._create_matrix_B(self._num_horz_joints)
         self.A_vert = self._create_matrix_A(self._num_vert_joints, cfg.mu)
         self.B_vert = self._create_matrix_B(self._num_vert_joints)
+        
+        # 베이스라인 및 스케일 설정
+        baseline_params = [
+            0.87,       # R_horz
+            0.17,       # R_vert
+            np.pi,      # omega
+            0.9,        # theta_horz
+            1.8,        # theta_vert
+            0.0,        # delta_horz
+            0.0         # delta_vert
+        ]
+        self.baseline_params = torch.tensor(baseline_params, device=self.device)
+        self.action_scale = torch.tensor(self.cfg.action_scale, device=self.device)
 
+        # 계층적 주기를 위한 변수
+        self._active_params = self.baseline_params.unsqueeze(0).expand(self.num_envs, -1).clone()
+        self._policy_update_timer = torch.zeros(self.num_envs, device=self.device)
+
+        # 기본 액션 텐서
         self._raw_actions = torch.zeros(self.num_envs, self.action_dim, device=self.device)
         self._processed_actions = torch.zeros(self.num_envs, self.total_joints, device=self.device)
-
-        # 이제 max 값만 스케일링에 사용됩니다.
-        self.action_max = torch.tensor(self.cfg.action_max, device=self.device)
 
     def _create_matrix_A(self, num_joints, mu):
         A = torch.zeros((num_joints, num_joints), device=self.device)
@@ -82,36 +105,43 @@ class JointCPGAction(ActionTerm):
         self.r_vert[env_ids].zero_()
         self.phi_vert[env_ids].zero_()
         self._raw_actions[env_ids].zero_()
+        self._policy_update_timer[env_ids] = 0.0
+        self._active_params[env_ids] = self.baseline_params
 
     def process_actions(self, actions: torch.Tensor):
+        # <<<<<<<<<<<<<<<<<<<<<<<< 프린트문 1: CPG 업데이트 주기 확인 >>>>>>>>>>>>>>>>>>>>>>>>>
+        # 이 함수는 CPG 업데이트 주기(고주파)마다 호출됩니다.
+        # 출력되는 시간 간격(예: 0.02초)을 통해 CPG 업데이트 주기를 확인할 수 있습니다.
+        # print(f"[CPG Update] Sim Time: {self._env.sim.current_time:.4f} s | Policy Timer: {self._policy_update_timer[0]:.4f} s")
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        
         dt = self._env.step_dt
         self._raw_actions[:] = actions
+        
+        self._policy_update_timer += dt
+        update_env_ids = torch.where(self._policy_update_timer >= self.cfg.rl_policy_update_period_s)[0]
+        
+        if len(update_env_ids) > 0:
+            # <<<<<<<<<<<<<<<<<<<< 프린트문 2: RL 정책 업데이트 확인 >>>>>>>>>>>>>>>>>>>>>
+            # # 이 블록은 RL 정책 업데이트 주기(저주파, 예: 2초)마다 한 번씩만 실행됩니다.
+            # print(f"===========================================================")
+            # print(f"[RL Policy Update] TRIGGERED at Sim Time: {self._env.sim.current_time:.4f} s")
+            # print(f"===========================================================")
+            # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            
+            new_actions = actions[update_env_ids]
+            tanh_actions = torch.tanh(new_actions)
+            
+            new_final_params = self.baseline_params + tanh_actions * self.action_scale
+            self._active_params[update_env_ids] = new_final_params
+            
+            self._policy_update_timer[update_env_ids] = 0.0
 
-        # Tanh를 사용하여 모든 액션 요소를 (-1, 1) 사이로 정규화
-        tanh_actions = torch.tanh(actions)
-
-        # 정규화된 7차원 벡터를 각 파라미터로 분해
         (
-            tanh_R_h, tanh_R_v, tanh_omega,
-            tanh_theta_h, tanh_theta_v,
-            tanh_delta_h, tanh_delta_v
-        ) = torch.chunk(tanh_actions, chunks=7, dim=1)
-
-        # 각 파라미터의 최대값(절대값 기준)을 cfg에서 가져옴
-        max_vals = self.action_max
-        
-        # <<<<<<<<<<<<<<<<<<<<<<<< 요청하신 스케일링 로직 적용 >>>>>>>>>>>>>>>>>>>>>
-        # 진폭 (범위: [0, max])
-        R_horz      = (tanh_R_h + 1.0) / 2.0 * max_vals[0]
-        R_vert      = (tanh_R_v + 1.0) / 2.0 * max_vals[1]
-        
-        # 주파수, 위상, 오프셋 (범위: [-max, max])
-        omega       = tanh_omega * max_vals[2]
-        theta_horz  = tanh_theta_h * max_vals[3]
-        theta_vert  = tanh_theta_v * max_vals[4]
-        delta_horz  = tanh_delta_h * max_vals[5]
-        delta_vert  = tanh_delta_v * max_vals[6]
-        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            R_horz, R_vert, omega,
+            theta_horz, theta_vert,
+            delta_horz, delta_vert
+        ) = torch.chunk(self._active_params, chunks=7, dim=1)
 
         # --- 수평(Horizontal) CPG 계산 ---
         R_h_b = R_horz.expand(-1, self._num_horz_joints)

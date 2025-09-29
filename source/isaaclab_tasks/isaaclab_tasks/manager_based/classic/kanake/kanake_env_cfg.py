@@ -389,7 +389,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
     def __post_init__(self):
         """Post initialization."""
         # general settings
-        self.decimation = 10
+        self.decimation = 4
         self.episode_length_s = 40.0
         # simulation settings
         self.sim.dt = 1 / 100.0

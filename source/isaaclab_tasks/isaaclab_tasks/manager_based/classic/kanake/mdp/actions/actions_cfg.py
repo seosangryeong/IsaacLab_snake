@@ -394,15 +394,25 @@ class JointCPGActionCfg(JointActionCfg):
     # 3. CPG 하이퍼파라미터
     a: float = 5.0      # 진폭 수렴 속도
     mu: float = 1.0     # 관절 간 커플링(동기화) 계수
+    rl_policy_update_period_s: float = 1.0
 
     # 4. 출력 스케일
     output_scale: float = 1.0
 
     # 5. RL 액션(7차원) 범위 설정
     # 순서: [R_horz, R_vert, omega(주파수), theta_horz, theta_vert, delta_horz, delta_vert]
-    action_scale: list[float] = [1.5, 1.5, np.pi, np.pi, np.pi, 0.5, 0.5]
-    action_min: list[float] = [0.0, 0.0, -np.pi, -np.pi, -np.pi, -0.5, -0.5]
-    action_max: list[float] = [1.5, 1.5, np.pi*2, np.pi/4, np.pi/4, 0.5, 0.5]
+    action_scale: list[float] = [
+            0.2,    # R_horz:   기본값 0.87에서 +/- 0.2 (범위: 0.67 ~ 1.07)
+            0.1,    # R_vert:   기본값 0.17에서 +/- 0.1
+            1.5,    # omega:    기본값 3.14에서 +/- 1.5
+            0.5,    # theta_h:  기본값 0.90에서 +/- 0.5
+            0.5,    # theta_v:  기본값 1.80에서 +/- 0.5
+            0.3,    # delta_h:  기본값 0.0에서 +/- 0.3 (회전)
+            0.1     # delta_v:  기본값 0.0에서 +/- 0.1
+        ]    
+    # action_min: list[float] = [0.0, 0.0, -np.pi, -np.pi, -np.pi, -0.5, -0.5]
+    # # action_max: list[float] = [1.0, 1.0, np.pi*2, np.pi/4, np.pi/4, 0.0, 0.0]
+    # action_max: list[float] = [0.87, 0.17, np.pi, 0.9, 1.8, 0.0, 0.0]
 
 
 @configclass
