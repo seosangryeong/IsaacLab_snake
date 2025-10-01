@@ -221,6 +221,21 @@ class JointEffortAction(JointAction):
     def __init__(self, cfg: actions_cfg.JointEffortActionCfg, env: ManagerBasedEnv):
         super().__init__(cfg, env)
 
+    def process_actions(self, actions: torch.Tensor):
+        """
+        에이전트로부터 받은 액션을 처리합니다.
+        tanh 함수를 통해 [-5, 5] 범위로 정규화합니다.
+        """
+        # 1. 원본 액션을 저장합니다.
+        self._raw_actions[:] = actions
+        
+        # 2. tanh 함수를 적용하여 액션 값을 [-1, 1] 범위로 압축합니다.
+        normalized_actions = torch.tanh(actions)
+        
+        # 3. 압축된 값을 5.0 곱하여 최종 범위를 [-5, 5]로 스케일링합니다.
+        self._processed_actions = 0.08 * normalized_actions
+        
+
     def apply_actions(self):
         # set joint effort targets
         self._asset.set_joint_effort_target(self.processed_actions, joint_ids=self._joint_ids)

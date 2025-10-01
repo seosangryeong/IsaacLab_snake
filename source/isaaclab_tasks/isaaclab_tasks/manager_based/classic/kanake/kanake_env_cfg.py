@@ -117,19 +117,23 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
     
-
-    # joint_sine = mdp.JointSineActionCfg(
-    #     asset_name="robot",               
+    # joint_effort = mdp.JointEffortActionCfg(        
+    #     asset_name="robot",
     #     joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-    #     scale=1.0)
+    #     scale=1.0)  
     
-    joint_cpg = mdp.JointCPGActionCfg(
-        asset_name="robot",
+    joint_sine = mdp.JointSineActionCfg(
+        asset_name="robot",               
         joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-        joint_names_horz=["j2", "j4", "j6", "j8", "j10", "j12", "j14", "j16"],
-        joint_names_vert=["j1", "j3", "j5", "j7", "j9", "j11", "j13", "j15"],
+        scale=1.0)
+    
+    # joint_cpg = mdp.JointCPGActionCfg(
+    #     asset_name="robot",
+    #     joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
+    #     joint_names_horz=["j2", "j4", "j6", "j8", "j10", "j12", "j14", "j16"],
+    #     joint_names_vert=["j1", "j3", "j5", "j7", "j9", "j11", "j13", "j15"],
 
-    )
+    # )
 
 
     
@@ -243,12 +247,12 @@ class RewardsCfg:
     # 타겟과의 거리 리워드
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=1.0,
+        weight=-2.0,
         params={"command_name": "kanake_command"},
     )
     kanake_progress_to_command = RewTerm(
         func=mdp.kanake_progress_to_command,
-        weight=10.0,
+        weight=50.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -315,10 +319,10 @@ class RewardsCfg:
     upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
 
     # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
-    # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
+    BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
 
     # action이 급변하지 않도록 페널티
-    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
 
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(
@@ -390,9 +394,9 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 4
-        self.episode_length_s = 40.0
+        self.episode_length_s = 20.0
         # simulation settings
-        self.sim.dt = 1 / 100.0
+        self.sim.dt = 1 / 80.0
         self.sim.render_interval = 2
         # self.sim.render_interval = 2
         self.sim.physx.bounce_threshold_velocity = 0.2

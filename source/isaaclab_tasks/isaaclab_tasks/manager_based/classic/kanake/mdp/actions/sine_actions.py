@@ -1,3 +1,148 @@
+# from __future__ import annotations
+
+# import numpy as np
+# import torch
+# from collections.abc import Sequence
+# import omni.log
+# import math
+
+# from isaaclab.assets.articulation import Articulation
+# from isaaclab.managers.action_manager import ActionTerm
+# from . import actions_cfg
+
+# from typing import TYPE_CHECKING
+
+# if TYPE_CHECKING:
+#     from isaaclab.envs import ManagerBasedEnv
+
+# class JointSineAction(ActionTerm):
+#     """
+#     [수정] ROS 2 컨트롤러의 'Gait 5' 파라미터와 계산 방식을 그대로 적용하여
+#     주기적인 사인파 움직임을 생성합니다.
+#     """
+#     cfg: actions_cfg.JointSineActionCfg
+#     _asset: Articulation
+
+#     def __init__(self, cfg: actions_cfg.JointSineActionCfg, env: ManagerBasedEnv) -> None:
+#         self._action_dim = 6
+#         super().__init__(cfg, env)
+
+#         # -- 조인트 정보 확인 (기존과 동일)
+#         self._joint_ids, self._joint_names = self._asset.find_joints(
+#             self.cfg.joint_names, preserve_order=self.cfg.preserve_order
+#         )
+#         self._num_joints = len(self._joint_ids)
+#         # ... (나머지 조인트 분류 로직은 기존과 동일)
+#         self._vertical_joint_names = []
+#         self._horizontal_joint_names = []
+#         for name in self._joint_names:
+#             number = int(name[1:])
+#             if number % 2 == 1: self._vertical_joint_names.append(name)
+#             else: self._horizontal_joint_names.append(name)
+#         self._num_vertical = len(self._vertical_joint_names)
+#         self._num_horizontal = len(self._horizontal_joint_names)
+
+#         self.base_AmpH_deg = 50.0
+#         self.base_AmpV_deg = 10.0
+#         self.base_WaveFqH = 0.5
+#         self.base_WaveFqV = 1.0
+#         self.base_ShapeFqH = 1.0
+#         self.base_ShapeFqV = 2.0
+
+#         # -- 텐서 초기화
+#         self._processed_actions = torch.zeros(self.num_envs, self._num_joints, device=self.device)
+#         self._raw_actions = torch.zeros(self.num_envs, self.action_dim, device=self.device)
+#         self._seq = torch.zeros(self.num_envs, device=self.device, dtype=torch.float32)
+
+#     @property
+#     def action_dim(self) -> int:
+#         return self._action_dim
+
+#     @property
+#     def raw_actions(self) -> torch.Tensor:
+#         return self._raw_actions
+
+#     @property
+#     def processed_actions(self) -> torch.Tensor:
+#         return self._processed_actions
+
+#     def process_actions(self, actions: torch.Tensor, additional_joint_values: torch.Tensor = None):
+#         # raw_actions에 에이전트의 액션 저장
+#         self._raw_actions.copy_(actions)
+
+#         # [수정] 1. 에이전트 액션을 스케일링하여 '변화량(delta)' 계산
+#         # actions.shape = (num_envs, 6)
+#         delta_amph = actions[:, 0] * self.cfg.action_scale_amph
+#         delta_ampv = actions[:, 1] * self.cfg.action_scale_ampv
+#         delta_wavefqh = actions[:, 2] * self.cfg.action_scale_wavefqh
+#         delta_wavefqv = actions[:, 3] * self.cfg.action_scale_wavefqv
+#         delta_shapefqh = actions[:, 4] * self.cfg.action_scale_shapefqh
+#         delta_shapefqv = actions[:, 5] * self.cfg.action_scale_shapefqv
+
+#         # [수정] 2. 기본 파라미터에 변화량을 더해 '최종 파라미터' 계산
+#         # 각 파라미터는 이제 (num_envs,) shape을 가진 텐서가 됨
+#         final_AmpH_deg = self.base_AmpH_deg + delta_amph
+#         final_AmpV_deg = self.base_AmpV_deg + delta_ampv
+#         final_WaveFqH = self.base_WaveFqH + delta_wavefqh
+#         final_WaveFqV = self.base_WaveFqV + delta_wavefqv
+#         final_ShapeFqH = self.base_ShapeFqH + delta_shapefqh
+#         final_ShapeFqV = self.base_ShapeFqV + delta_shapefqv
+
+#         # --- 아래는 이전 코드의 계산 로직을 '텐서 연산'에 맞게 수정한 부분 ---
+        
+#         self._seq += 1
+#         CmdTimeStep = self._env.step_dt * 1000.0
+
+#         # 주기적인 시간 계산 (final_WaveFq가 텐서이므로 unsqueeze로 차원 맞춰줌)
+#         period_steps_v = 1000.0 / (CmdTimeStep * final_WaveFqV.unsqueeze(1))
+#         time_steps_v = self._seq.unsqueeze(1) % period_steps_v
+#         time_v = time_steps_v * (CmdTimeStep / 1000.0)
+
+#         period_steps_h = 1000.0 / (CmdTimeStep * final_WaveFqH.unsqueeze(1))
+#         time_steps_h = self._seq.unsqueeze(1) % period_steps_h
+#         time_h = time_steps_h * (CmdTimeStep / 1000.0)
+        
+#         # 위상차 계산
+#         phase_v = final_ShapeFqV.unsqueeze(1) * 2.0 * np.pi / (self._num_vertical - 1)
+#         phase_h = final_ShapeFqH.unsqueeze(1) * 2.0 * np.pi / (self._num_horizontal - 1)
+
+#         # 조인트 인덱스 및 순서
+#         vertical_indices, horizontal_indices, vertical_numbers, horizontal_numbers = self._get_joint_indices_and_numbers()
+
+#         # 진폭(degree -> radian)
+#         amp_v_rad = torch.deg2rad(final_AmpV_deg).unsqueeze(1)
+#         amp_h_rad = torch.deg2rad(final_AmpH_deg).unsqueeze(1)
+
+#         # 최종 조인트 위치 계산
+#         vertical_pos = amp_v_rad * torch.sin(2 * np.pi * final_WaveFqV.unsqueeze(1) * time_v + phase_v * vertical_numbers)
+#         horizontal_pos = amp_h_rad * torch.sin(2 * np.pi * final_WaveFqH.unsqueeze(1) * time_h + phase_h * horizontal_numbers)
+
+#         processed = torch.zeros(self.num_envs, self._num_joints, device=self.device)
+#         processed[:, vertical_indices] = vertical_pos
+#         processed[:, horizontal_indices] = horizontal_pos
+
+#         self._processed_actions.copy_(processed)
+
+#     def apply_actions(self):
+#         self._asset.set_joint_position_target(self._processed_actions, joint_ids=self._joint_ids)
+
+#     def reset(self, env_ids: Sequence[int] | None = None) -> None:
+#         if env_ids is None:
+#             self._seq.zero_()
+#         else:
+#             self._seq[env_ids] = 0.0
+
+#     # (Helper method) 코드를 깔끔하게 하기 위해 분리
+#     def _get_joint_indices_and_numbers(self):
+#         vertical_joint_sorted = sorted(self._vertical_joint_names, key=lambda name: int(name[1:]))
+#         vertical_indices = [self._joint_names.index(name) for name in vertical_joint_sorted]
+#         vertical_numbers = torch.arange(len(vertical_joint_sorted), device=self.device, dtype=torch.float32).unsqueeze(0)
+
+#         horizontal_joint_sorted = sorted(self._horizontal_joint_names, key=lambda name: int(name[1:]))
+#         horizontal_indices = [self._joint_names.index(name) for name in horizontal_joint_sorted]
+#         horizontal_numbers = torch.arange(len(horizontal_joint_sorted), device=self.device, dtype=torch.float32).unsqueeze(0)
+#         return vertical_indices, horizontal_indices, vertical_numbers, horizontal_numbers
+
 from __future__ import annotations
 
 import numpy as np
@@ -95,17 +240,25 @@ class JointSineAction(ActionTerm):
         phase_h_action = actions[:, self._num_joints + 3]
 
 
-        # 진폭 (Amplitude)
-        amplitudes = 1.0 *(torch.tanh(amp_actions)+ 1.0)
+        # # 진폭 (Amplitude)
+        # amplitudes = 1.0 *(torch.tanh(amp_actions)+ 1.0)
+
+        # # 주파수 (Frequency)
+        # freq_v = 1.0 * (torch.tanh(freq_v_action) + 1.0) 
+        # freq_h = 1.0 * (torch.tanh(freq_h_action) + 1.0) 
+
+        # # 위상 (Phase)
+        # phase_v = np.pi * torch.tanh(phase_v_action) 
+        # phase_h = np.pi * torch.tanh(phase_h_action)
+        amplitudes = 0.5 +(torch.tanh(amp_actions)+ 1.0)
 
         # 주파수 (Frequency)
-        freq_v = 1.0 * (torch.tanh(freq_v_action) + 1.0) 
-        freq_h = 1.0 * (torch.tanh(freq_h_action) + 1.0) 
+        freq_v = 0.5 + 0.5 * (torch.tanh(freq_v_action) + 1.0) / 2.0
+        freq_h = 0.5 + 0.5 * (torch.tanh(freq_h_action) + 1.0) / 2.0
 
         # 위상 (Phase)
-        phase_v = np.pi * torch.tanh(phase_v_action) 
-        phase_h = np.pi * torch.tanh(phase_h_action)
-
+        phase_v = np.pi/2 * torch.tanh(phase_v_action) 
+        phase_h = np.pi/2 * torch.tanh(phase_h_action)
         # # 진폭 (Amplitude)
         # amplitudes = 1.0 *torch.tanh(amp_actions)
 

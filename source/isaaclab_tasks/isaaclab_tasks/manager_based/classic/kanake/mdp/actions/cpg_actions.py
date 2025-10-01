@@ -48,13 +48,13 @@ class JointCPGAction(ActionTerm):
         
         # 베이스라인 및 스케일 설정
         baseline_params = [
-            0.87,       # R_horz
-            0.17,       # R_vert
-            np.pi,      # omega
-            0.9,        # theta_horz
-            1.8,        # theta_vert
-            0.0,        # delta_horz
-            0.0         # delta_vert
+            0.75,   # R_horz:   수평 진폭 중심 [0, 1.5] -> 0.75
+            0.75,   # R_vert:   수직 진폭 중심 [0, 1.5] -> 0.75
+            6.28,   # omega:    주파수는 기준(1.0Hz)을 유지하고 변화량만 제어
+            0.0,    # theta_h:  수평 위상차 중심 [-pi, pi] -> 0
+            0.0,    # theta_v:  수직 위상차 중심 [-pi, pi] -> 0
+            0.0,    # delta_h:  좌우 회전 오프셋 (논문 미언급, 0으로 설정)
+            0.0     # delta_v:  상하 자세 오프셋 [-0.1, 0.1] -> 0
         ]
         self.baseline_params = torch.tensor(baseline_params, device=self.device)
         self.action_scale = torch.tensor(self.cfg.action_scale, device=self.device)

@@ -319,6 +319,12 @@ class JointSineActionCfg(JointActionCfg):
     class_type: type[ActionTerm] = sine_actions.JointSineAction
     preserve_order: bool = True
 
+    # action_scale_amph: float = 15.0      # 수평 진폭(deg) 조절 범위: ±15도
+    # action_scale_ampv: float = 5.0       # 수직 진폭(deg) 조절 범위: ±5도
+    # action_scale_wavefqh: float = 0.2    # 수평 주파수(Hz) 조절 범위: ±0.2Hz
+    # action_scale_wavefqv: float = 0.4    # 수직 주파수(Hz) 조절 범위: ±0.4Hz
+    # action_scale_shapefqh: float = 0.5   # 수평 위상 계수 조절 범위: ±0.5
+    # action_scale_shapefqv: float = 0.5   # 수직 위상 계수 조절 범위: ±0.5
     additional_joint_scale: float = 1.0
 
 
@@ -392,7 +398,7 @@ class JointCPGActionCfg(JointActionCfg):
     joint_names_vert: list[str] = MISSING
 
     # 3. CPG 하이퍼파라미터
-    a: float = 5.0      # 진폭 수렴 속도
+    a: float = 3.0      # 진폭 수렴 속도
     mu: float = 1.0     # 관절 간 커플링(동기화) 계수
     rl_policy_update_period_s: float = 1.0
 
@@ -402,13 +408,13 @@ class JointCPGActionCfg(JointActionCfg):
     # 5. RL 액션(7차원) 범위 설정
     # 순서: [R_horz, R_vert, omega(주파수), theta_horz, theta_vert, delta_horz, delta_vert]
     action_scale: list[float] = [
-            0.2,    # R_horz:   기본값 0.87에서 +/- 0.2 (범위: 0.67 ~ 1.07)
-            0.1,    # R_vert:   기본값 0.17에서 +/- 0.1
-            1.5,    # omega:    기본값 3.14에서 +/- 1.5
-            0.5,    # theta_h:  기본값 0.90에서 +/- 0.5
-            0.5,    # theta_v:  기본값 1.80에서 +/- 0.5
-            0.3,    # delta_h:  기본값 0.0에서 +/- 0.3 (회전)
-            0.1     # delta_v:  기본값 0.0에서 +/- 0.1
+            0.75,   # R_horz:   변화폭 0.75 -> 최종 범위 [0.0, 1.5]
+            0.75,   # R_vert:   변화폭 0.75 -> 최종 범위 [0.0, 1.5]
+            0.1,    # omega:    변화폭 [-0.1, 0.1]
+            3.14,   # theta_h:  변화폭 pi -> 최종 범위 [-pi, pi]
+            3.14,   # theta_v:  변화폭 pi -> 최종 범위 [-pi, pi]
+            0.3,    # delta_h:  (유지) 이전 설정인 0.3rad(약 17도)는 회전에 적합
+            0.1     # delta_v:  변화폭 0.1 -> 최종 범위 [-0.1, 0.1]
         ]    
     # action_min: list[float] = [0.0, 0.0, -np.pi, -np.pi, -np.pi, -0.5, -0.5]
     # # action_max: list[float] = [1.0, 1.0, np.pi*2, np.pi/4, np.pi/4, 0.0, 0.0]
