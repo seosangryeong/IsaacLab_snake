@@ -89,10 +89,10 @@ class CommandsCfg:
     kanake_command = mdp.KanakeBaseCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(20.0, 20.0), 
+        resampling_time_range=(5.0, 5.0), 
         ranges=mdp.KanakeBaseCommandCfg.Ranges(
-            pos_x=(-3.0, 3.0),
-            pos_y=(-3.0, 3.0),
+            pos_x=(-2.0, 2.0),
+            pos_y=(-2.0, 2.0),
             # pos_z = (0.05, 0.05),
             heading=(-0.0, 0.0),
         ),
@@ -223,17 +223,17 @@ class EventCfg:
 
 
 
-#     add_base_mass = EventTerm(
-#         func=mdp.randomize_rigid_body_mass,
-#         mode="startup",
-#         params={
-#             "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
-#             "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
-# ),
-#             "mass_distribution_params": (-0.005, 0.005),
-#             "operation": "add",
-#         },
-#     )
+    add_base_mass = EventTerm(
+        func=mdp.randomize_rigid_body_mass,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
+            "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
+),
+            "mass_distribution_params": (-0.005, 0.005),
+            "operation": "add",
+        },
+    )
     
     
 
@@ -343,7 +343,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.5})
+    # max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.5})
 
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
@@ -379,7 +379,7 @@ class CurriculumCfg:
 class kanakeEnvCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=0.0)
+    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=1.5)
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
