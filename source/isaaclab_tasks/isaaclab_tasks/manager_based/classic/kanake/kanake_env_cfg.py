@@ -89,7 +89,7 @@ class CommandsCfg:
     kanake_command = mdp.KanakeBaseCommandCfg(
         asset_name="robot",
         simple_heading=True,
-        resampling_time_range=(5.0, 5.0), 
+        resampling_time_range=(10.0, 10.0), 
         ranges=mdp.KanakeBaseCommandCfg.Ranges(
             pos_x=(-2.0, 2.0),
             pos_y=(-2.0, 2.0),
@@ -456,7 +456,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
     def __post_init__(self):
         """Post initialization."""
         # general settings
-        self.decimation = 4
+        self.decimation = 2
         self.episode_length_s = 20.0
         # simulation settings
         self.sim.dt = 1 / 80.0
