@@ -10,7 +10,7 @@ from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.utils import configclass
 from dataclasses import field
 
-from . import binary_joint_actions, joint_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions, sine_amp_actions,sine_actions_hold 
+from . import binary_joint_actions, joint_actions, modular_actions, joint_actions_to_limits, non_holonomic_actions, task_space_actions, sine_actions, sine_h_actions, sine_v_actions, cpg_actions, sine_amp_actions,sine_actions_hold 
 import numpy as np
 ##
 # Joint actions.
@@ -440,3 +440,24 @@ class JointSineHoldActionCfg(JointActionCfg):
         ]    
     enable_additional_joint_values: bool = False
     additional_joint_scale: float = 1.0
+
+
+@configclass
+class ModularJointEffortActionCfg(ActionTermCfg):
+    """
+    모듈러 관절 토크 제어를 위한 설정(Configuration) 클래스입니다.
+
+    COMPOSER 논문과 같이 각 에이전트가 자신의 관절 토크를 직접 제어하는
+    다개체 RL 방식을 지원합니다.
+    """
+
+    # 이 설정을 사용할 때 인스턴스화할 실제 구현 클래스를 지정합니다.
+    class_type: type[ActionTerm] = modular_actions.ModularJointEffortAction
+
+    # -- 액션에 필요한 파라미터들 --
+
+    asset_name: str = "robot"
+    joint_names: list[str] = MISSING
+    num_agents: int = MISSING
+    action_dim_per_agent: int = MISSING
+    scale: float = 1.0

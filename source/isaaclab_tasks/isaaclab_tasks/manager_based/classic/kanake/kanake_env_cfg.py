@@ -122,10 +122,10 @@ class ActionsCfg:
     #     joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
     #     scale=1.0)  
     
-    joint_sine = mdp.JointSineActionCfg(
-        asset_name="robot",               
-        joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-        scale=1.0)
+    # joint_sine = mdp.JointSineActionCfg(
+    #     asset_name="robot",               
+    #     joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
+    #     scale=1.0)
     
     # joint_cpg = mdp.JointCPGActionCfg(
     #     asset_name="robot",
@@ -135,48 +135,73 @@ class ActionsCfg:
 
     # )
 
+    modular_joint_effort = mdp.ModularJointEffortActionCfg(
+        # asset_name은 기본값이 "robot"이므로 생략 가능
+        joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", 
+                     "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
+        num_agents=16,
+        action_dim_per_agent=1,
+        # 로봇의 물리적 특성에 맞는 적절한 토크 스케일을 설정합니다. (예: 5.0 Nm)
+        scale=1.0
+    )
+
 
     
 
+# @configclass
+# class ObservationsCfg:
+#     """Observation specifications for the MDP."""
+
+#     @configclass
+#     class PolicyCfg(ObsGroup):
+#         """Observations for the policy."""
+
+#         joint_effort = ObsTerm(func=mdp.joint_effort)
+#         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
+#         joint_vel = ObsTerm(func=mdp.joint_vel)
+#         joint_pos = ObsTerm(func=mdp.joint_pos)
+#         actions = ObsTerm(func=mdp.last_action)
+
+#         def __post_init__(self):
+#             self.enable_corruption = False
+#             self.concatenate_terms = True
+
+#     @configclass
+#     class CriticCfg(ObsGroup):
+
+#         base_height = ObsTerm(func=mdp.base_pos_z)
+#         base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+#         base_pos = ObsTerm(func=mdp.base_pos)
+#         joint_effort = ObsTerm(func=mdp.joint_effort)
+#         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
+#         joint_vel = ObsTerm(func=mdp.joint_vel)
+#         joint_pos = ObsTerm(func=mdp.joint_pos)
+#         actions = ObsTerm(func=mdp.last_action)
+
+#         def __post_init__(self):
+#             self.enable_corruption = False
+#             self.concatenate_terms = True
+
+#     # observation groups
+#     policy: PolicyCfg = PolicyCfg()
+#     critic: CriticCfg = CriticCfg()
+
 @configclass
 class ObservationsCfg:
-    """Observation specifications for the MDP."""
-
     @configclass
     class PolicyCfg(ObsGroup):
-        """Observations for the policy."""
-
-        joint_effort = ObsTerm(func=mdp.joint_effort)
-        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        joint_vel = ObsTerm(func=mdp.joint_vel)
-        joint_pos = ObsTerm(func=mdp.joint_pos)
-        actions = ObsTerm(func=mdp.last_action)
-
+        # 이제 이 하나의 텀이 전체 모듈러 관측 공간을 생성합니다.
+        modular_state = ObsTerm(
+            func=mdp.modular_local_observations,             
+            params={"asset_cfg": SceneEntityCfg("robot")}
+)
+        
         def __post_init__(self):
             self.enable_corruption = False
             self.concatenate_terms = True
 
-    @configclass
-    class CriticCfg(ObsGroup):
-
-        base_height = ObsTerm(func=mdp.base_pos_z)
-        base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
-        base_pos = ObsTerm(func=mdp.base_pos)
-        joint_effort = ObsTerm(func=mdp.joint_effort)
-        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        joint_vel = ObsTerm(func=mdp.joint_vel)
-        joint_pos = ObsTerm(func=mdp.joint_pos)
-        actions = ObsTerm(func=mdp.last_action)
-
-        def __post_init__(self):
-            self.enable_corruption = False
-            self.concatenate_terms = True
-
-    # observation groups
     policy: PolicyCfg = PolicyCfg()
-    critic: CriticCfg = CriticCfg()
-
-
+    # critic: CriticCfg = CriticCfg()
 
 @configclass
 class EventCfg:
@@ -247,12 +272,12 @@ class RewardsCfg:
     # 타겟과의 거리 리워드
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-2.0,
+        weight=-0.5,
         params={"command_name": "kanake_command"},
     )
     kanake_progress_to_command = RewTerm(
         func=mdp.kanake_progress_to_command,
-        weight=50.0,
+        weight=3.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -316,23 +341,23 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=0.1, params={"threshold": 0.8})
 
     # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
-    BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.0)
+    BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=0.3)
 
     # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
 
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(
     #     func=mdp.BaseXAxisDistanceReward, 
-    #     weight=-1.0, 
+    #     weight=-0.1, 
     #     params={"threshold": 0.1}
     # )
     # DistanceReward = RewTerm(
     #     func=mdp.DistanceReward, 
-    #     weight=-1.0, 
+    #     weight=-0.1, 
     #     params={"threshold": 0.1}
     # )
 
@@ -343,7 +368,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    # max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.5})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.5})
 
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 

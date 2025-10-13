@@ -18,6 +18,65 @@ from isaaclab.sensors import Camera, Imu, RayCaster, RayCasterCamera, TiledCamer
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv
 
+
+def modular_local_observations(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    """16개의 뱀 로봇 에이전트 각각에 대한 로컬 관측 값을 반환합니다."""
+    # 1. 로봇 에셋과 데이터 가져오기
+    robot: Articulation = env.scene[asset_cfg.name]
+    
+    num_agents = 16  # 에이전트의 총 개수
+
+    # 2. 시뮬레이션에서 필요한 모든 데이터를 한 번에 가져오기 (배치 처리)
+    # 형태: (num_envs, num_bodies, 13) - 로봇의 모든 바디(링크) 상태
+    all_body_states = robot.data.body_state_w
+    # 형태: (num_envs, num_joints)
+    joint_pos = robot.data.joint_pos
+    joint_vel = robot.data.joint_vel
+    # 형태: (num_envs, 3)
+    target_pos = env.command_manager.get_command("kanake_command")[:, :3]
+
+    # 중요: 로봇의 바디/조인트 개수가 16개 이상인지 확인
+    # URDF 구조에 따라 슬라이싱 인덱스를 조정해야 할 수 있습니다. 
+    # 예를 들어, 'head'가 첫 번째 바디라면 인덱스 1부터 16개를 사용해야 합니다.
+    # 여기서는 편의상 앞의 16개 바디/조인트가 각 에이전트에 해당한다고 가정합니다.
+    if all_body_states.shape[1] < num_agents or joint_pos.shape[1] < num_agents:
+        raise ValueError(f"로봇이 {num_agents}개의 에이전트를 위한 충분한 바디/조인트를 가지고 있지 않습니다.")
+
+    agent_body_states = all_body_states[:, :num_agents, :]
+    agent_body_pos_w = agent_body_states[:, :, :3]  # 목표 계산을 위해 위치 정보만 추출
+
+    # 3. 모든 에이전트에 대한 관측 요소들을 벡터화 방식으로 한 번에 준비
+    
+    # 각 에이전트 기준의 목표 방향 벡터
+    # target_pos를 (num_envs, 1, 3)으로 차원을 늘려 브로드캐스팅 연산이 가능하게 함
+    target_dir_w = target_pos.unsqueeze(1) - agent_body_pos_w
+
+    # 에이전트 타입 식별자 (수직/수평)
+    # 홀수 번째(i=0, 2,...)는 수직(1.0), 짝수 번째(i=1, 3,...)는 수평(-1.0)
+    type_pattern = torch.tensor([1.0, -1.0] * (num_agents // 2), device=env.device)
+    agent_type_tensor = type_pattern.expand(env.num_envs, -1).unsqueeze(-1) # (num_envs, 16, 1) 형태로 확장
+    
+    # 각 에이전트의 마지막 행동 정보
+    # action_dim_per_agent가 1이라고 가정. 아닐 경우 -1 부분을 수정해야 함
+    last_actions = env.action_manager.action.view(env.num_envs, num_agents, -1)
+
+    # 조인트 위치, 속도 정보 결합
+    agent_joint_states = torch.stack([joint_pos[:, :num_agents], joint_vel[:, :num_agents]], dim=-1) # (num_envs, 16, 2)
+
+    # 4. 모든 관측 요소들을 하나의 텐서로 결합
+    # 각 에이전트의 최종 관측: [바디 상태(13), 조인트 상태(2), 목표 방향(3), 에이전트 타입(1), 마지막 행동(1)] -> 총 20차원
+    all_agents_obs = torch.cat([
+        agent_body_states,
+        agent_joint_states,
+        target_dir_w,
+        agent_type_tensor,
+        last_actions
+    ], dim=-1) # 특징(feature) 차원을 따라 결합
+
+    # 5. RL 프레임워크는 (num_envs, num_agents * obs_dim_per_agent) 형태를 기대하므로 flatten
+    return all_agents_obs.flatten(start_dim=1)
+
+
 def base_up_proj_kanake(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Projection of the base up vector onto the world up vector."""
     # extract the used quantities (to enable type-hinting)

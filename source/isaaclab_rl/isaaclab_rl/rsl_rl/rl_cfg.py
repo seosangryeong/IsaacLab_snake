@@ -18,6 +18,31 @@ from .symmetry_cfg import RslRlSymmetryCfg
 # Policy configurations #
 #########################
 
+@configclass
+class RslRlSelfAttentionCfg:
+    """Configuration for the SelfAttention network."""
+
+    class_name: str = "SelfAttention"
+    """The policy class name. Default is SelfAttention."""
+
+    num_agents: int = MISSING
+    """The number of agents."""
+
+    latent_dim: int = MISSING
+    """The dimension of the latent space."""
+
+    num_attention_heads: int = MISSING
+    """The number of attention heads."""
+
+    num_encoder_layers: int = MISSING
+    """The number of encoder layers."""
+
+    activation: str = MISSING
+    """The activation function for the networks."""
+
+    init_noise_std: float = MISSING
+    """The initial noise standard deviation for the policy."""
+
 
 @configclass
 class RslRlPpoActorCriticCfg:
@@ -147,10 +172,10 @@ class RslRlOnPolicyRunnerCfg:
     empirical_normalization: bool = MISSING
     """Whether to use empirical normalization."""
 
-    policy: RslRlPpoActorCriticCfg | RslRlDistillationStudentTeacherCfg = MISSING
+    policy: RslRlPpoActorCriticCfg | RslRlDistillationStudentTeacherCfg | RslRlSelfAttentionCfg = MISSING
     """The policy configuration."""
 
-    algorithm: RslRlPpoAlgorithmCfg | RslRlDistillationAlgorithmCfg = MISSING
+    algorithm: RslRlPpoAlgorithmCfg | RslRlDistillationAlgorithmCfg | RslRlSelfAttentionCfg = MISSING
     """The algorithm configuration."""
 
     clip_actions: float | None = None
