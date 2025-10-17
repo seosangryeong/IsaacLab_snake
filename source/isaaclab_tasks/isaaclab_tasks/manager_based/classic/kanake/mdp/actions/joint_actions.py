@@ -233,7 +233,7 @@ class JointEffortAction(JointAction):
         normalized_actions = torch.tanh(actions)
         
         # 3. 압축된 값을 5.0 곱하여 최종 범위를 [-5, 5]로 스케일링합니다.
-        self._processed_actions = 0.08 * normalized_actions
+        self._processed_actions = 3 * normalized_actions
         
 
     def apply_actions(self):

@@ -89,9 +89,12 @@ class ModularJointEffortAction(ActionTerm):
     def process_actions(self, actions: torch.Tensor):
         """액션을 처리하고 내부 버퍼에 저장합니다."""
         # 원본 액션을 저장합니다.
-        self._raw_actions[:] = actions
+        normalized_actions = torch.tanh(actions)
+        # 정규화된 원본 액션을 저장합니다.
+        self._raw_actions[:] = normalized_actions
         # 스케일을 적용하여 실제 토크 값으로 변환하고 저장합니다.
-        self._processed_actions = self.raw_actions * self._scale
+        self._processed_actions = self._raw_actions * self._scale
+
 
     def apply_actions(self):
         """처리된 액션(토크)을 시뮬레이션의 로봇 관절에 적용합니다."""

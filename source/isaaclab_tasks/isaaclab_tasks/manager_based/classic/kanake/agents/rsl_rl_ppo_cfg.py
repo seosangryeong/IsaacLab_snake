@@ -17,20 +17,20 @@ class kanakePPORunnerCfg(RslRlOnPolicyRunnerCfg):
     save_interval = 50
     experiment_name = "kanake"
     empirical_normalization = True
-    # policy = RslRlPpoActorCriticCfg(
-    #     init_noise_std=1.5,
-    #     actor_hidden_dims=[512, 256, 128],
-    #     critic_hidden_dims=[512, 256, 128],
-    #     activation="elu",
-    # )
-    policy = RslRlSelfAttentionCfg(
-        num_agents=16,
-        latent_dim=128,
-        num_attention_heads=2,
-        num_encoder_layers=1,
-        activation="elu",
+    policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,
-    )  
+        actor_hidden_dims=[512, 256, 128],
+        critic_hidden_dims=[512, 256, 128],
+        activation="elu",
+    )
+    # policy = RslRlSelfAttentionCfg(
+    #     num_agents=16,
+    #     latent_dim=128,
+    #     num_attention_heads=2,
+    #     num_encoder_layers=1,
+    #     activation="elu",
+    #     init_noise_std=1.0,
+    # )  
 
 
 

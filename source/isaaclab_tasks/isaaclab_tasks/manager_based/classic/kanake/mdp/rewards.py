@@ -488,6 +488,7 @@ class kanake_progress_to_command(ManagerTermBase):
         self.prev_potentials[:] = self.potentials[:]
         # 현재 스텝의 새로운 포텐셜 계산 (거리가 가까울수록 값이 커짐)
         self.potentials[:] = -current_distance / env.step_dt
+        # self.potentials[:] = -current_distance 
 
         # 포텐셜의 변화량을 보상으로 계산
         reward = self.potentials - self.prev_potentials
@@ -1849,3 +1850,191 @@ def average_body_velocity_alignment_reward(
     # 코사인 유사도 계산
     reward = torch.sum(avg_vel_dir * dir_to_target, dim=-1)
     return reward
+
+
+
+
+
+"""
+Movement penalty functions - 움직임이 없을 때 페널티
+"""
+
+def body_velocity_penalty(
+    env: ManagerBasedRLEnv,
+    threshold: float = 0.01,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    모든 바디의 평균 속도가 threshold 이하이면 페널티 부여.
+    
+    Returns:
+        양수 값 (페널티 크기)
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_velocities = asset.data.body_lin_vel_w
+    velocity_magnitudes = torch.norm(body_velocities, dim=-1)
+    avg_velocity = torch.mean(velocity_magnitudes, dim=1)
+    
+    penalty = torch.clamp(threshold - avg_velocity, min=0.0)
+    
+    return penalty  # ✅ 양수 반환
+
+
+def joint_velocity_penalty(
+    env: ManagerBasedRLEnv,
+    threshold: float = 0.05,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    모든 조인트의 평균 각속도가 threshold 이하이면 페널티.
+    
+    Returns:
+        양수 값 (페널티 크기)
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    joint_velocities = asset.data.joint_vel[:, asset_cfg.joint_ids]
+    avg_joint_vel = torch.mean(torch.abs(joint_velocities), dim=1)
+    
+    penalty = torch.clamp(threshold - avg_joint_vel, min=0.0)
+    
+    return penalty  # ✅ 양수 반환
+
+
+def action_magnitude_penalty(
+    env: ManagerBasedRLEnv,
+    threshold: float = 0.1
+) -> torch.Tensor:
+    """
+    현재 액션의 평균 크기가 threshold 이하이면 페널티.
+    
+    Returns:
+        양수 값 (페널티 크기)
+    """
+    current_action = env.action_manager.action
+    action_magnitude = torch.norm(current_action, dim=1)
+    
+    penalty = torch.clamp(threshold - action_magnitude, min=0.0)
+    
+    return penalty  # ✅ 양수 반환
+
+
+def base_movement_penalty(
+    env: ManagerBasedRLEnv,
+    threshold: float = 0.02,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    베이스(루트)의 XY 평면 속도가 threshold 이하이면 페널티.
+    
+    Returns:
+        양수 값 (페널티 크기)
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    base_vel_xy = asset.data.root_lin_vel_w[:, :2]
+    velocity_magnitude = torch.norm(base_vel_xy, dim=1)
+    
+    penalty = torch.clamp(threshold - velocity_magnitude, min=0.0)
+    
+    return penalty  # ✅ 양수 반환
+
+
+class MovementConsistencyPenalty(ManagerTermBase):
+    """여러 스텝에 걸쳐 움직임이 거의 없으면 페널티."""
+    
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.window_size = cfg.params.get("window_size", 10)
+        self.threshold = cfg.params.get("threshold", 0.05)
+        self.velocity_history = torch.zeros(
+            env.num_envs, self.window_size, device=env.device
+        )
+        self.ptr = torch.zeros(env.num_envs, dtype=torch.long, device=env.device)
+    
+    def reset(self, env_ids: torch.Tensor):
+        self.velocity_history[env_ids] = 0.0
+        self.ptr[env_ids] = 0
+    
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        threshold: float = 0.05,
+        window_size: int = 10,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        """
+        Returns:
+            양수 값 (페널티 크기)
+        """
+        asset: Articulation = env.scene[asset_cfg.name]
+        current_vel = torch.norm(asset.data.root_lin_vel_w[:, :2], dim=1)
+        
+        self.velocity_history[torch.arange(env.num_envs), self.ptr] = current_vel
+        self.ptr = (self.ptr + 1) % self.window_size
+        
+        avg_velocity = self.velocity_history.mean(dim=1)
+        penalty = torch.clamp(threshold - avg_velocity, min=0.0)
+        
+        return penalty  # ✅ 양수 반환
+
+
+def combined_movement_penalty(
+    env: ManagerBasedRLEnv,
+    body_threshold: float = 0.01,
+    joint_threshold: float = 0.05,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    바디 속도와 조인트 속도를 모두 고려한 종합 움직임 페널티.
+    
+    Returns:
+        양수 값 (페널티 크기)
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    body_velocities = asset.data.body_lin_vel_w
+    avg_body_vel = torch.mean(torch.norm(body_velocities, dim=-1), dim=1)
+    
+    joint_velocities = asset.data.joint_vel[:, asset_cfg.joint_ids]
+    avg_joint_vel = torch.mean(torch.abs(joint_velocities), dim=1)
+    
+    # 정규화된 페널티 계산
+    body_penalty = torch.clamp(body_threshold - avg_body_vel, min=0.0) / body_threshold
+    joint_penalty = torch.clamp(joint_threshold - avg_joint_vel, min=0.0) / joint_threshold
+    
+    combined_penalty = (body_penalty + joint_penalty) / 2.0
+    
+    return combined_penalty  # ✅ 양수 반환
+
+def forward_progress_penalty(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    threshold: float = 0.01,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    타겟 방향으로의 전진 속도가 threshold 이하이면 페널티.
+    단순히 움직이기만 하는 게 아니라 '올바른 방향'으로 움직이도록 유도.
+    
+    Returns:
+        양수 값 (페널티 크기). weight가 음수이므로 최종적으로 음의 보상이 됨.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    command_term = env.command_manager.get_term(command_name)
+    
+    # 타겟 방향
+    target_pos_w = command_term.world_command_pos[:, :2]
+    base_pos_w = asset.data.root_pos_w[:, :2]
+    vec_to_target = target_pos_w - base_pos_w
+    dir_to_target = F.normalize(vec_to_target, p=2, dim=-1)
+    
+    # 현재 베이스 속도
+    base_vel_w = asset.data.root_lin_vel_w[:, :2]
+    
+    # 타겟 방향으로의 속도 성분 계산 (내적)
+    forward_velocity = torch.sum(base_vel_w * dir_to_target, dim=-1)
+    
+    # 전진 속도가 threshold 이하면 페널티
+    # 후진하는 경우(음수)는 더 큰 페널티
+    penalty = torch.clamp(threshold - forward_velocity, min=0.0)
+    
+    return penalty  # ✅ 양수 반환 (이미 올바름)
