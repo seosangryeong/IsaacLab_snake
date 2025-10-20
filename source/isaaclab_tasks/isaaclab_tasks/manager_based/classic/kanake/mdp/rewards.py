@@ -303,6 +303,103 @@ def track_ang_vel_z_exp(
     return torch.exp(-ang_vel_error / std**2)
 
 
+def reward_com_forward_progress(
+    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    # --- 단순 평균 속도 계산 시작 ---
+    # 1. 모든 body의 월드 선형 속도를 가져옵니다.
+    #    Shape: [num_envs, num_bodies, 3]
+    body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+
+    # 2. 모든 body의 속도를 그냥 더합니다.
+    #    Shape: [num_envs, 3]
+    total_vel_w = torch.sum(body_lin_vels_w, dim=1)
+
+    # 3. body의 개수로 나눕니다.
+    num_bodies = body_lin_vels_w.shape[1]
+    
+    # "전체"의 단순 평균 월드 속도
+    current_avg_vel_w = total_vel_w / num_bodies
+    # --- 단순 평균 속도 계산 끝 ---
+
+    # 1. 명령된 전진 속도 (예: 0.5)
+    target_vel_x = env.command_manager.get_command(command_name)[:, 0]
+
+    # 3. 로봇의 Roll/Pitch를 무시한 "Heading(Yaw) 전용" 쿼터니언
+    current_heading_w = asset.data.heading_w
+    yaw_quat_w = math_utils.quat_from_euler_xyz(
+        torch.zeros_like(current_heading_w),
+        torch.zeros_like(current_heading_w),
+        current_heading_w
+    )
+    
+    # 4. 단순 평균 월드 속도를 "Heading Frame"으로 변환(투영)
+    current_vel_heading_frame = math_utils.quat_apply_inverse(
+        yaw_quat_w, current_avg_vel_w
+    )
+    
+    # 5. Heading Frame에서의 x축 속도 (이것이 "평균" 전진 속도)
+    current_forward_vel = current_vel_heading_frame[:, 0]
+    
+    # 6. 전진 보상 계산
+    is_moving = (target_vel_x > 0.1).float()
+    progress_reward = torch.min(current_forward_vel, target_vel_x)
+    progress_reward = torch.clamp(progress_reward, min=0.0)
+    
+    return progress_reward * is_moving
+
+def kanake_track_heading_frame_vel_xy_exp(
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    # 1. 명령된 속도를 가져옵니다. (이것은 "Heading Frame" 기준의 명령임)
+    #    (예: [0.5, 0.0])
+    vel_command_heading_frame = env.command_manager.get_command(command_name)[:, :2]
+
+    # 2. 로봇의 "실제 월드 속도"를 가져옵니다.
+    current_vel_w = asset.data.root_lin_vel_w[:, :3]
+
+    # 3. 로봇의 Roll/Pitch를 무시한 "Heading(Yaw) 전용" 쿼터니언을 만듭니다.
+    current_heading_w = asset.data.heading_w
+    # (roll=0, pitch=0, yaw=current_heading)
+    yaw_quat_w = math_utils.quat_from_euler_xyz(
+        torch.zeros_like(current_heading_w),
+        torch.zeros_like(current_heading_w),
+        current_heading_w
+    )
+
+    # 4. [핵심] 로봇의 "월드 속도"를 "Heading Frame"으로 변환(투영)합니다.
+    #    (즉, 로봇의 Roll/Pitch가 속도 계산에서 제거됨)
+    current_vel_heading_frame = math_utils.quat_apply_inverse(
+        yaw_quat_w, current_vel_w
+    )
+
+    # 5. "Heading Frame" 기준으로 명령된 속도와 실제 속도의 에러를 계산합니다.
+    lin_vel_error = torch.sum(
+        torch.square(vel_command_heading_frame - current_vel_heading_frame[:, :2]),
+        dim=1,
+    )
+    
+    return torch.exp(-lin_vel_error / std**2)
+
+def penalty_lateral_slip(
+    env: ManagerBasedRLEnv, std: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    로봇의 로컬 y축(측면) 속도(미끄러짐)에 대해 벌점을 줍니다.
+    """
+    asset: RigidObject = env.scene[asset_cfg.name]
+    
+    # 로컬 y축 속도 (좌우 흔들림)
+    lateral_vel_error = torch.square(asset.data.root_lin_vel_b[:, 1])
+    
+    return torch.exp(-lateral_vel_error / std**2) # 0에 가까울수록 리워드 1
+
 #custom reward functions
 
 def body_height_penalty(

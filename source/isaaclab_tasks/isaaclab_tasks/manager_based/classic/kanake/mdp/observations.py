@@ -804,6 +804,14 @@ def generated_commands(env: ManagerBasedRLEnv, command_name: str) -> torch.Tenso
     """The generated command from command term in the command manager with the given name."""
     return env.command_manager.get_command(command_name)
 
+def kanake_commands(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
+    """The generated command from command term in the command manager with the given name."""
+
+    command_term = env.command_manager.get_term(command_name)
+    target_pos_w = command_term.world_command_pos[:, :3]
+
+    return target_pos_w
+
 
 """
 Time.

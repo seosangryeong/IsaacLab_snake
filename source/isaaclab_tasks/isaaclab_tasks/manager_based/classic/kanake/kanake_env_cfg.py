@@ -86,19 +86,30 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
     # command -> (x,y,z)
-    kanake_command = mdp.KanakeBaseCommandCfg(
+    # kanake_command = mdp.KanakeBaseCommandCfg(
+    #     asset_name="robot",
+    #     simple_heading=True,
+    #     resampling_time_range=(10.0, 10.0), 
+    #     ranges=mdp.KanakeBaseCommandCfg.Ranges(
+    #         pos_x=(-2.0, 2.0),
+    #         pos_y=(-2.0, 2.0),
+    #         # pos_z = (0.05, 0.05),
+    #         heading=(-0.0, 0.0),
+    #     ),
+    #     debug_vis=True,
+    # )
+    kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        simple_heading=True,
-        resampling_time_range=(10.0, 10.0), 
-        ranges=mdp.KanakeBaseCommandCfg.Ranges(
-            pos_x=(-2.0, 2.0),
-            pos_y=(-2.0, 2.0),
-            # pos_z = (0.05, 0.05),
-            heading=(-0.0, 0.0),
-        ),
+        resampling_time_range=(10.0, 10.0),
+        rel_standing_envs=0.02,
+        rel_heading_envs=1.0,
+        heading_command=True,
+        heading_control_stiffness=0.5,
         debug_vis=True,
+        ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
+        ),
     )
-
     # head_command = mdp.KanakeWorldCommandCfg(
     #     asset_name="robot",
     #     resampling_time_range=(10.0, 10.0), 
@@ -157,6 +168,7 @@ class ObservationsCfg:
 
         joint_effort = ObsTerm(func=mdp.joint_effort)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
+        # pose_command = ObsTerm(func=mdp.kanake_commands, params={"command_name": "kanake_command"})
         joint_vel = ObsTerm(func=mdp.joint_vel)
         joint_pos = ObsTerm(func=mdp.joint_pos)
         actions = ObsTerm(func=mdp.last_action)
@@ -269,11 +281,26 @@ class RewardsCfg:
     ### Task1 - 이동
 
     # 타겟과의 거리 리워드
-    kanake_position_command_error_base = RewTerm(
-        func=mdp.kanake_position_command_error_base,
-        weight=-3.0,
-        params={"command_name": "kanake_command"},
+    # kanake_position_command_error_base = RewTerm(
+    #     func=mdp.kanake_position_command_error_base,
+    #     weight=-3.0,
+    #     params={"command_name": "kanake_command"},
+    # )
+    # track_lin_vel_xy_exp = RewTerm(
+    #     func=mdp.track_lin_vel_xy_exp, weight=1.0, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
+    # )
+    # track_ang_vel_z_exp = RewTerm(
+    #     func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
+    # )
+    # kanake_track_lin_vel_xy_exp = RewTerm(
+    #     func=mdp.kanake_track_lin_vel_xy_exp, weight=2.0, params={"command_name": "kanake_command"}
+    # )
+    kanake_track_heading_frame_vel_xy_exp = RewTerm(
+        func=mdp.kanake_track_heading_frame_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
     )
+    # reward_com_forward_progress = RewTerm(
+    #     func=mdp.reward_com_forward_progress, weight=3.0, params={"command_name": "kanake_command"}
+    # )
     # kanake_progress_to_command = RewTerm(
     #     func=mdp.kanake_progress_to_command,
     #     weight=3.0,
@@ -343,7 +370,7 @@ class RewardsCfg:
     upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
 
     # # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
-    # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=0.5)
+    # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
