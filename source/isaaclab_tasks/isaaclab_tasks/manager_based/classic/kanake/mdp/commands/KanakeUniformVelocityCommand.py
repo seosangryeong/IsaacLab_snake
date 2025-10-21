@@ -21,7 +21,7 @@ from isaaclab.markers import VisualizationMarkers
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
 
-    from .commands_cfg import NormalVelocityCommandCfg,KanakeUniformVelocityCommandCfg
+    from .commands_cfg import NormalVelocityCommandCfg, KanakeUniformVelocityCommandCfg
 
 
 class KanakeUniformVelocityCommand(CommandTerm):
@@ -80,6 +80,14 @@ class KanakeUniformVelocityCommand(CommandTerm):
         self.heading_target = torch.zeros(self.num_envs, device=self.device)
         self.is_heading_env = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
         self.is_standing_env = torch.zeros_like(self.is_heading_env)
+        
+        # 🔧 [NEW] 리샘플링 시점의 고정된 위치/방향 저장
+        self.command_spawn_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
+        self.command_spawn_heading_w = torch.zeros(self.num_envs, device=self.device)
+        
+        # 🔧 [NEW] 월드 기준 고정 커맨드 저장 (리샘플링 시점에 생성)
+        self.vel_command_w = torch.zeros(self.num_envs, 3, device=self.device)
+        
         # -- metrics
         self.metrics["error_vel_xy"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["error_vel_yaw"] = torch.zeros(self.num_envs, device=self.device)
@@ -101,8 +109,37 @@ class KanakeUniformVelocityCommand(CommandTerm):
 
     @property
     def command(self) -> torch.Tensor:
-        """The desired base velocity command in the base frame. Shape is (num_envs, 3)."""
-        return self.vel_command_b
+        # """
+        # [Kanake 오버라이드]
+        # 리샘플링 시점에 생성된 "월드 고정 커맨드"를 현재 로봇의 base frame으로 변환하여 반환.
+        
+        # Returns:
+        #     torch.Tensor: (num_envs, 3) - base frame 기준 속도 커맨드 [vx, vy, w_z]
+        # """
+        # # 현재 로봇의 heading
+        # current_heading_w = self.robot.data.heading_w
+        
+        # # 월드 → base frame 변환을 위한 quaternion
+        # yaw_quat_w = math_utils.quat_from_euler_xyz(
+        #     torch.zeros_like(current_heading_w),
+        #     torch.zeros_like(current_heading_w),
+        #     current_heading_w
+        # )
+        
+        # # 선형 속도 변환 (XY만, Z는 0)
+        # vel_command_w_3d = torch.cat([
+        #     self.vel_command_w[:, :2],
+        #     torch.zeros(self.num_envs, 1, device=self.device)
+        # ], dim=1)
+        
+        # vel_command_b_3d = math_utils.quat_apply_inverse(yaw_quat_w, vel_command_w_3d)
+        
+        # # base frame 커맨드 업데이트
+        # self.vel_command_b[:, :2] = vel_command_b_3d[:, :2]
+        # self.vel_command_b[:, 2] = self.vel_command_w[:, 2]  # 각속도는 동일
+        
+        # return self.vel_command_b
+        return self.vel_command_w  
 
     """
     Implementation specific functions.
@@ -121,43 +158,68 @@ class KanakeUniformVelocityCommand(CommandTerm):
         )
 
     def _resample_command(self, env_ids: Sequence[int]):
-        # sample velocity commands
+        """
+        [Kanake 오버라이드]
+        리샘플링 시 월드 고정 커맨드 생성
+        
+        1. 현재 위치/heading 저장
+        2. base frame 기준 임시 커맨드 생성
+        3. 월드 frame으로 변환하여 저장
+        """
         r = torch.empty(len(env_ids), device=self.device)
-        # -- linear velocity - x direction
-        self.vel_command_b[env_ids, 0] = r.uniform_(*self.cfg.ranges.lin_vel_x)
-        # -- linear velocity - y direction
-        self.vel_command_b[env_ids, 1] = r.uniform_(*self.cfg.ranges.lin_vel_y)
-        # -- ang vel yaw - rotation around z
-        self.vel_command_b[env_ids, 2] = r.uniform_(*self.cfg.ranges.ang_vel_z)
-        # heading target
+        
+        # 🔧 [STEP 1] 리샘플링 시점의 위치/heading 저장
+        body_pos_w = self.robot.data.body_com_pos_w[env_ids, :, :3]
+        self.command_spawn_pos_w[env_ids] = torch.mean(body_pos_w, dim=1)
+        self.command_spawn_heading_w[env_ids] = self.robot.data.heading_w[env_ids]
+        
+        # 🔧 [STEP 2] base frame 기준 임시 커맨드 생성
+        temp_cmd_x = r.uniform_(*self.cfg.ranges.lin_vel_x)
+        temp_cmd_y = r.uniform_(*self.cfg.ranges.lin_vel_y)
+        temp_cmd_yaw = r.uniform_(*self.cfg.ranges.ang_vel_z)
+        
+        # 🔧 [STEP 3] base → world frame 변환 (리샘플링 시점의 heading 사용)
+        spawn_heading = self.command_spawn_heading_w[env_ids]
+        yaw_quat_w = math_utils.quat_from_euler_xyz(
+            torch.zeros_like(spawn_heading),
+            torch.zeros_like(spawn_heading),
+            spawn_heading
+        )
+        
+        temp_cmd_3d = torch.stack([temp_cmd_x, temp_cmd_y, torch.zeros_like(temp_cmd_x)], dim=1)
+        vel_cmd_w_3d = math_utils.quat_apply(yaw_quat_w, temp_cmd_3d)
+        
+        # 월드 고정 커맨드 저장
+        self.vel_command_w[env_ids, 0] = vel_cmd_w_3d[:, 0]
+        self.vel_command_w[env_ids, 1] = vel_cmd_w_3d[:, 1]
+        self.vel_command_w[env_ids, 2] = temp_cmd_yaw  # yaw는 월드/base 동일
+        
+        # 🔧 [STEP 4] heading 커맨드 처리
         if self.cfg.heading_command:
             self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
-            # update heading envs
             self.is_heading_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_heading_envs
-        # update standing envs
+        
+        # standing 환경
         self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
 
     def _update_command(self):
-        """Post-processes the velocity command.
-
-        This function sets velocity command to zero for standing environments and computes angular
-        velocity from heading direction if the heading_command flag is set.
         """
-        # Compute angular velocity from heading direction
+        [Kanake 오버라이드]
+        heading control과 standing 처리 (월드 커맨드 기준)
+        """
+        # Heading control
         if self.cfg.heading_command:
-            # resolve indices of heading envs
             env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()
-            # compute angular velocity
             heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - self.robot.data.heading_w[env_ids])
-            self.vel_command_b[env_ids, 2] = torch.clip(
+            self.vel_command_w[env_ids, 2] = torch.clip(
                 self.cfg.heading_control_stiffness * heading_error,
                 min=self.cfg.ranges.ang_vel_z[0],
                 max=self.cfg.ranges.ang_vel_z[1],
             )
-        # Enforce standing (i.e., zero velocity command) for standing envs
-        # TODO: check if conversion is needed
+        
+        # Standing
         standing_env_ids = self.is_standing_env.nonzero(as_tuple=False).flatten()
-        self.vel_command_b[standing_env_ids, :] = 0.0
+        self.vel_command_w[standing_env_ids, :] = 0.0
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         # set visibility of markers
@@ -170,7 +232,7 @@ class KanakeUniformVelocityCommand(CommandTerm):
                 # -- current
                 self.current_vel_visualizer = VisualizationMarkers(self.cfg.current_vel_visualizer_cfg)
             # set their visibility to true
-            self.goal_vel_visualizer.set_visibility(False)
+            self.goal_vel_visualizer.set_visibility(True)  # 🔧 목표 화살표 켜기
             self.current_vel_visualizer.set_visibility(True)
         else:
             if hasattr(self, "goal_vel_visualizer"):
@@ -179,95 +241,66 @@ class KanakeUniformVelocityCommand(CommandTerm):
 
     def _debug_vis_callback(self, event):
         """
-        [Kanake 오버라이드]
-        시각화의 기준점을 '머리(root)'가 아닌,
-        모든 body의 "단순 평균 위치"로 수정합니다.
+        [Kanake 오버라이드 v4 - 최종]
         
-        또한, "현재 속도"도 "단순 평균 속도"를 계산하여 표시합니다.
+        1. **목표(초록색) 화살표**: 리샘플링 시점의 위치에 고정 (월드 커맨드 표시)
+        2. **현재(파란색) 화살표**: 현재 로봇의 평균 위치를 따라감 (월드 속도 표시)
         """
         if not self.robot.is_initialized:
             return
 
-        # --- 1. "평균 위치" 계산 (시각화 기준점) ---
-        # (질량이 거의 동일하다고 가정)
-        # (A) 모든 body의 월드 위치를 가져옵니다.
+        # --- 1. 현재 로봇의 평균 위치 (파란색 화살표용) ---
         body_pos_w = self.robot.data.body_com_pos_w[:, :, :3]
-        
-        # (B) 모든 위치를 더합니다.
-        total_pos_w = torch.sum(body_pos_w, dim=1)
-        
-        # (C) body 개수로 나누어 "평균 위치"를 계산합니다.
-        num_bodies = body_pos_w.shape[1]
-        avg_pos_w = total_pos_w / num_bodies
-        
-        # (D) 화살표를 지면에서 0.5m 띄워서 그립니다.
-        avg_pos_w[:, 2] += 0.5
-        # --- 계산 끝 ---
+        current_avg_pos_w = torch.mean(body_pos_w, dim=1)
+        current_avg_pos_w[:, 2] += 0.5  # 0.5m 띄우기
 
 
-        # --- 2. "명령" 화살표 (초록색) ---
-        #    - _resolve_xy_velocity_to_arrow가 지면에 평행하게 그려줍니다.
-        vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_xy_velocity_to_arrow(self.command[:, :2])
-        #    - [수정] 'base_pos_w' 대신 'avg_pos_w'에 그립니다.
-        self.goal_vel_visualizer.visualize(avg_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
-
-
-        # --- 3. "현재 평균 속도" 화살표 (파란색) ---
+        # --- 2. "목표" 화살표 (초록색) - 고정 위치 + 월드 커맨드 ---
+        fixed_pos_w = self.command_spawn_pos_w.clone()
+        fixed_pos_w[:, 2] += 0.5  # 0.5m 띄우기
         
-        # (A) "단순 평균 속도" 계산 (월드 기준)
+        # 🔧 월드 커맨드를 직접 시각화 (heading 변환 없이)
+        vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_world_velocity_to_arrow(
+            self.vel_command_w[:, :2]
+        )
+        
+        self.goal_vel_visualizer.visualize(fixed_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
+
+
+        # --- 3. "현재" 화살표 (파란색) - 현재 위치 + 월드 속도 ---
         body_lin_vels_w = self.robot.data.body_com_vel_w[:, :, :3]
-        total_vel_w = torch.sum(body_lin_vels_w, dim=1)
-        # (num_bodies는 위에서 이미 계산함)
-        current_avg_vel_w = total_vel_w / num_bodies
+        current_avg_vel_w = torch.mean(body_lin_vels_w, dim=1)
         
-        # (B) "Heading Frame"으로 변환 (지면 투영)
-        current_heading_w = self.robot.data.heading_w
-        yaw_quat_w = math_utils.quat_from_euler_xyz(
-            torch.zeros_like(current_heading_w),
-            torch.zeros_like(current_heading_w),
-            current_heading_w
+        # 🔧 월드 속도를 직접 시각화
+        vel_arrow_scale, vel_arrow_quat = self._resolve_world_velocity_to_arrow(
+            current_avg_vel_w[:, :2]
         )
-        current_avg_vel_heading_frame = math_utils.quat_apply_inverse(
-            yaw_quat_w, current_avg_vel_w
-        )[:, :2] # XY 성분만 필요
-
-        # (C) 계산된 "평균 속도"를 시각화 함수에 전달
-        vel_arrow_scale, vel_arrow_quat = self._resolve_xy_velocity_to_arrow(current_avg_vel_heading_frame)
-        #    - [수정] 'base_pos_w' 대신 'avg_pos_w'에 그립니다.
-        self.current_vel_visualizer.visualize(avg_pos_w, vel_arrow_quat, vel_arrow_scale)
+        
+        self.current_vel_visualizer.visualize(current_avg_pos_w, vel_arrow_quat, vel_arrow_scale)
 
 
-    def _resolve_xy_velocity_to_arrow(self, xy_velocity: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def _resolve_world_velocity_to_arrow(
+        self, 
+        xy_velocity_w: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
-        [Kanake 오버라이드]
-        XY 속도 명령을 화살표의 방향과 크기로 변환합니다.
-        (이 함수는 '명령'과 '현재 속도' 시각화 모두에 사용됩니다.)
-
-        원본과 달리, 로봇의 전체 3D 방향(root_quat_w) 대신,
-        Roll/Pitch가 0으로 고정된 "Heading(Yaw) 방향(yaw_quat_w)"을 사용합니다.
+        [새 함수] 월드 기준 XY 속도를 화살표로 변환
+        
+        Args:
+            xy_velocity_w: (num_envs, 2) - 월드 기준 XY 속도
+        
+        Returns:
+            arrow_scale: (num_envs, 3) - 화살표 크기
+            arrow_quat_w: (num_envs, 4) - 화살표 방향 (월드 기준)
         """
-        # 1. 마커의 기본 스케일 가져오기
+        # 1. 화살표 크기
         default_scale = self.goal_vel_visualizer.cfg.markers["arrow"].scale
+        arrow_scale = torch.tensor(default_scale, device=self.device).repeat(xy_velocity_w.shape[0], 1)
+        arrow_scale[:, 0] *= torch.linalg.norm(xy_velocity_w, dim=1) * 3.0
 
-        # 2. 화살표 크기 (속도 크기에 비례)
-        arrow_scale = torch.tensor(default_scale, device=self.device).repeat(xy_velocity.shape[0], 1)
-        arrow_scale[:, 0] *= torch.linalg.norm(xy_velocity, dim=1) * 3.0
-
-        # 3. 화살표의 상대적 방향 (로봇 기준)
-        heading_angle = torch.atan2(xy_velocity[:, 1], xy_velocity[:, 0])
-        zeros = torch.zeros_like(heading_angle)
-        arrow_quat_relative = math_utils.quat_from_euler_xyz(zeros, zeros, heading_angle)
-
-        # 4. [핵심 수정] 화살표의 절대(월드) 방향 계산
-        #    로봇의 Roll/Pitch를 무시한 "Heading(Yaw) 전용" 쿼터니언을 만듭니다.
-        current_heading_w = self.robot.data.heading_w
-        yaw_quat_w = math_utils.quat_from_euler_xyz(
-            torch.zeros_like(current_heading_w),
-            torch.zeros_like(current_heading_w),
-            current_heading_w
-        )
-
-        # 5. 로봇의 "Heading" 방향에 "상대적 화살표 방향"을 곱합니다.
-        arrow_quat_w = math_utils.quat_mul(yaw_quat_w, arrow_quat_relative)
+        # 2. 월드 기준 화살표 방향 (atan2로 yaw 계산)
+        heading_angle_w = torch.atan2(xy_velocity_w[:, 1], xy_velocity_w[:, 0])
+        zeros = torch.zeros_like(heading_angle_w)
+        arrow_quat_w = math_utils.quat_from_euler_xyz(zeros, zeros, heading_angle_w)
 
         return arrow_scale, arrow_quat_w

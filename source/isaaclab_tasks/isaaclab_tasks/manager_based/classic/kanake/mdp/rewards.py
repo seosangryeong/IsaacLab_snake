@@ -357,48 +357,271 @@ def kanake_track_heading_frame_vel_xy_exp(
 
     asset: Articulation = env.scene[asset_cfg.name]
     
-    # 1. 명령된 속도를 가져옵니다. (이것은 "Heading Frame" 기준의 명령임)
-    #    (예: [0.5, 0.0])
-    vel_command_heading_frame = env.command_manager.get_command(command_name)[:, :2]
+    # # 커맨드 속도
+    # vel_command_heading_frame = env.command_manager.get_command(command_name)[:, :2]
 
-    # 2. 로봇의 "실제 월드 속도"를 가져옵니다.
-    current_vel_w = asset.data.root_lin_vel_w[:, :3]
+    # # 로봇(head) 속도
+    # current_vel_w = asset.data.root_lin_vel_w[:, :3]
 
-    # 3. 로봇의 Roll/Pitch를 무시한 "Heading(Yaw) 전용" 쿼터니언을 만듭니다.
-    current_heading_w = asset.data.heading_w
-    # (roll=0, pitch=0, yaw=current_heading)
-    yaw_quat_w = math_utils.quat_from_euler_xyz(
-        torch.zeros_like(current_heading_w),
-        torch.zeros_like(current_heading_w),
-        current_heading_w
-    )
+    # current_heading_w = asset.data.heading_w
+    # # (roll=0, pitch=0, yaw=current_heading)
+    # yaw_quat_w = math_utils.quat_from_euler_xyz(
+    #     torch.zeros_like(current_heading_w),
+    #     torch.zeros_like(current_heading_w),
+    #     current_heading_w
+    # )
+    # current_vel_heading_frame = math_utils.quat_apply_inverse(
+    #     yaw_quat_w, current_vel_w
+    # )
 
-    # 4. [핵심] 로봇의 "월드 속도"를 "Heading Frame"으로 변환(투영)합니다.
-    #    (즉, 로봇의 Roll/Pitch가 속도 계산에서 제거됨)
-    current_vel_heading_frame = math_utils.quat_apply_inverse(
-        yaw_quat_w, current_vel_w
-    )
+    # lin_vel_error = torch.sum(
+    #     torch.square(vel_command_heading_frame - current_vel_heading_frame[:, :2]),
+    #     dim=1,
+    # )
 
-    # 5. "Heading Frame" 기준으로 명령된 속도와 실제 속도의 에러를 계산합니다.
+    vel_command_w = env.command_manager.get_command(command_name)[:, :2]
+    print("vel_command_w", vel_command_w)
+    
+    # 현재 평균 월드 속도
+    body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+    current_avg_vel_w = torch.mean(body_lin_vels_w, dim=1)[:, :2]
+    
+    print("current vel w", current_avg_vel_w)
+
+    # 월드 기준 에러
     lin_vel_error = torch.sum(
-        torch.square(vel_command_heading_frame - current_vel_heading_frame[:, :2]),
+        torch.square(vel_command_w - current_avg_vel_w),
         dim=1,
     )
     
+    
     return torch.exp(-lin_vel_error / std**2)
 
-def penalty_lateral_slip(
-    env: ManagerBasedRLEnv, std: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+class VelocityDirectionAlignmentSmoothed(ManagerTermBase):
+    """
+    [개선] 일정 시간 동안의 평균 속도를 사용하여 방향 정렬 리워드 계산
+    뱀의 사행 운동을 고려한 버전
+    """
+    
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        
+        # 🔧 윈도우 크기 설정 (예: 10 타임스텝 = 0.1초 * 10 = 1초)
+        self.window_size = cfg.params.get("window_size", 10)
+        
+        # 🔧 속도 히스토리 버퍼 [num_envs, window_size, 2]
+        self.velocity_history = torch.zeros(
+            env.num_envs, self.window_size, 2, device=env.device
+        )
+        
+        # 🔧 현재 포인터
+        self.ptr = torch.zeros(env.num_envs, dtype=torch.long, device=env.device)
+        
+        # 🔧 버퍼가 채워졌는지 확인
+        self.buffer_filled = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+    
+    def reset(self, env_ids: torch.Tensor):
+        """에피소드 리셋 시 히스토리 초기화"""
+        self.velocity_history[env_ids] = 0.0
+        self.ptr[env_ids] = 0
+        self.buffer_filled[env_ids] = False
+    
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        window_size: int = 10,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        """
+        일정 시간 동안의 평균 속도를 사용한 방향 정렬 리워드
+        
+        Returns:
+            -1 ~ 1 범위의 리워드
+        """
+        asset: Articulation = env.scene[asset_cfg.name]
+        
+        # 🔧 [STEP 1] 현재 평균 속도 계산
+        body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+        current_instant_vel = torch.mean(body_lin_vels_w, dim=1)[:, :2]  # [num_envs, 2]
+        
+        # 🔧 [STEP 2] 히스토리 버퍼에 저장
+        self.velocity_history[torch.arange(env.num_envs), self.ptr] = current_instant_vel
+        self.ptr = (self.ptr + 1) % self.window_size
+        
+        # 🔧 [STEP 3] 버퍼가 한 바퀴 돌았는지 체크
+        self.buffer_filled |= (self.ptr == 0)
+        
+        # 🔧 [STEP 4] 시간 윈도우 평균 속도 계산
+        smoothed_vel = self.velocity_history.mean(dim=1)  # [num_envs, 2]
+        
+        # 🔧 [STEP 5] 커맨드 방향과 비교
+        vel_command_w = env.command_manager.get_command(command_name)[:, :2]
+        
+        # 방향 벡터 정규화
+        command_dir = F.normalize(vel_command_w, p=2, dim=-1, eps=1e-6)
+        smoothed_dir = F.normalize(smoothed_vel, p=2, dim=-1, eps=1e-6)
+        
+        # 코사인 유사도
+        alignment = torch.sum(command_dir * smoothed_dir, dim=-1)
+        alignment = torch.clamp(alignment, -1.0, 1.0)
+        
+        # 🔧 [STEP 6] 버퍼가 아직 안 찼으면 보상 0 (학습 초기)
+        alignment = torch.where(self.buffer_filled, alignment, torch.zeros_like(alignment))
+        
+        # 🔧 [디버깅] 주기적 출력
+        if env.common_step_counter % 1000 == 0:
+            print(f"\n[Smoothed Velocity Alignment - Step {env.common_step_counter}]")
+            print(f"Command: {vel_command_w[0].cpu().numpy()}")
+            print(f"Instant vel: {current_instant_vel[0].cpu().numpy()}")
+            print(f"Smoothed vel: {smoothed_vel[0].cpu().numpy()}")
+            print(f"Alignment: {alignment[0].item():.3f}")
+        
+        return alignment
+
+class VelocityMagnitudeTrackingSmoothed(ManagerTermBase):
+    """
+    [개선] 일정 시간 동안의 평균 속도 크기를 추적
+    """
+    
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        super().__init__(cfg, env)
+        self.window_size = cfg.params.get("window_size", 10)
+        
+        # 속도 크기 히스토리 [num_envs, window_size]
+        self.speed_history = torch.zeros(
+            env.num_envs, self.window_size, device=env.device
+        )
+        self.ptr = torch.zeros(env.num_envs, dtype=torch.long, device=env.device)
+        self.buffer_filled = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+    
+    def reset(self, env_ids: torch.Tensor):
+        self.speed_history[env_ids] = 0.0
+        self.ptr[env_ids] = 0
+        self.buffer_filled[env_ids] = False
+    
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        std: float,
+        command_name: str,
+        window_size: int = 10,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        """
+        일정 시간 동안의 평균 속도 크기 추적 리워드
+        
+        Returns:
+            0 ~ 1 범위의 리워드
+        """
+        asset: Articulation = env.scene[asset_cfg.name]
+        
+        # 현재 순간 속도 크기
+        body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+        current_instant_vel = torch.mean(body_lin_vels_w, dim=1)[:, :2]
+        current_speed = torch.norm(current_instant_vel, dim=-1)
+        
+        # 히스토리 저장
+        self.speed_history[torch.arange(env.num_envs), self.ptr] = current_speed
+        self.ptr = (self.ptr + 1) % self.window_size
+        self.buffer_filled |= (self.ptr == 0)
+        
+        # 평균 속도 크기
+        smoothed_speed = self.speed_history.mean(dim=1)
+        
+        # 커맨드 속도 크기
+        vel_command_w = env.command_manager.get_command(command_name)[:, :2]
+        command_speed = torch.norm(vel_command_w, dim=-1)
+        
+        # 에러 계산
+        speed_error = torch.square(command_speed - smoothed_speed)
+        reward = torch.exp(-speed_error / std**2)
+        
+        # 버퍼 안 찼으면 0
+        reward = torch.where(self.buffer_filled, reward, torch.zeros_like(reward))
+        
+        return reward
+    
+def velocity_direction_alignment_reward(
+    env: ManagerBasedRLEnv, 
+    command_name: str, 
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     """
-    로봇의 로컬 y축(측면) 속도(미끄러짐)에 대해 벌점을 줍니다.
+    속도 '방향' 정렬 리워드 (코사인 유사도)
+    
+    Returns:
+        -1 ~ 1 범위의 리워드
+        - 같은 방향: +1
+        - 수직: 0
+        - 반대 방향: -1
+    
+    Args:
+        env: 환경
+        command_name: 커맨드 이름
+        asset_cfg: 로봇 에셋 설정
     """
-    asset: RigidObject = env.scene[asset_cfg.name]
+    asset: Articulation = env.scene[asset_cfg.name]
     
-    # 로컬 y축 속도 (좌우 흔들림)
-    lateral_vel_error = torch.square(asset.data.root_lin_vel_b[:, 1])
+    # 월드 커맨드 속도 (목표 방향)
+    vel_command_w = env.command_manager.get_command(command_name)[:, :2]
     
-    return torch.exp(-lateral_vel_error / std**2) # 0에 가까울수록 리워드 1
+    # 현재 평균 월드 속도
+    body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+    current_avg_vel_w = torch.mean(body_lin_vels_w, dim=1)[:, :2]
+    
+    # 방향 벡터 정규화 (단위 벡터로 만들기)
+    command_dir = F.normalize(vel_command_w, p=2, dim=-1, eps=1e-6)
+    current_dir = F.normalize(current_avg_vel_w, p=2, dim=-1, eps=1e-6)
+    
+    # 코사인 유사도 계산 (내적)
+    alignment = torch.sum(command_dir * current_dir, dim=-1)
+    alignment = torch.clamp(alignment, -1.0, 1.0)
+    # print("alignment reward", alignment)
+    
+    return alignment
+
+def velocity_magnitude_tracking_reward(
+    env: ManagerBasedRLEnv, 
+    std: float,
+    command_name: str, 
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    속도 '크기' 추적 리워드 (지수 커널)
+    
+    커맨드의 속도 크기와 현재 평균 속도 크기를 비교하여 보상
+    
+    Returns:
+        0 ~ 1 범위의 리워드
+        - 속도 크기가 일치: 1
+        - 속도 크기가 다를수록: 0에 가까워짐
+    
+    Args:
+        env: 환경
+        std: 표준편차 (작을수록 민감, 클수록 관대)
+        command_name: 커맨드 이름
+        asset_cfg: 로봇 에셋 설정
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    # 월드 커맨드 속도
+    vel_command_w = env.command_manager.get_command(command_name)[:, :2]
+    
+    # 현재 평균 월드 속도
+    body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+    current_avg_vel_w = torch.mean(body_lin_vels_w, dim=1)[:, :2]
+    
+    # 속도 크기 계산
+    command_speed = torch.norm(vel_command_w, dim=-1)  # [num_envs]
+    current_speed = torch.norm(current_avg_vel_w, dim=-1)  # [num_envs]
+    
+    #속도 크기 차이 계산
+    speed_error = torch.square(command_speed - current_speed)
+    
+    reward = torch.exp(-speed_error / std**2)
+    
+    return reward
 
 #custom reward functions
 
