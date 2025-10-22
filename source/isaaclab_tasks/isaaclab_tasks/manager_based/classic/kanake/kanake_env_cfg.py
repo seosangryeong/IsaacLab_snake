@@ -110,6 +110,18 @@ class CommandsCfg:
             lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
         ),
     )
+    # kanake_command = mdp.UniformVelocityCommandCfg(
+    #     asset_name="robot",
+    #     resampling_time_range=(10.0, 10.0),
+    #     rel_standing_envs=0.02,
+    #     rel_heading_envs=1.0,
+    #     heading_command=True,
+    #     heading_control_stiffness=0.5,
+    #     debug_vis=True,
+    #     ranges=mdp.UniformVelocityCommandCfg.Ranges(
+    #         lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
+    #     ),
+    # )
     # head_command = mdp.KanakeWorldCommandCfg(
     #     asset_name="robot",
     #     resampling_time_range=(10.0, 10.0), 
@@ -169,6 +181,9 @@ class ObservationsCfg:
         joint_effort = ObsTerm(func=mdp.joint_effort)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
         # pose_command = ObsTerm(func=mdp.kanake_commands, params={"command_name": "kanake_command"})
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        projected_gravity = ObsTerm(func=mdp.projected_gravity)
         joint_vel = ObsTerm(func=mdp.joint_vel)
         joint_pos = ObsTerm(func=mdp.joint_pos)
         actions = ObsTerm(func=mdp.last_action)
@@ -181,7 +196,9 @@ class ObservationsCfg:
     class CriticCfg(ObsGroup):
 
         base_height = ObsTerm(func=mdp.base_pos_z)
-        base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        projected_gravity = ObsTerm(func=mdp.projected_gravity)
         base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
@@ -290,20 +307,20 @@ class RewardsCfg:
     # kanake_track_heading_frame_vel_xy_exp = RewTerm(
     #     func=mdp.kanake_track_heading_frame_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
     # )
-    velocity_direction_alignment_reward = RewTerm(
-        func=mdp.velocity_direction_alignment_reward, weight=40.0, params={"command_name": "kanake_command"}
-    )
-    velocity_magnitude_tracking = RewTerm(
-        func=mdp.velocity_magnitude_tracking_reward,
-        weight=1.0, 
-        params={"std": 0.5, "command_name": "kanake_command"}
-    )
-    # track_lin_vel_xy_exp = RewTerm(
-    #     func=mdp.track_lin_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.5)}
-    # )   
-    # track_ang_vel_z_exp = RewTerm(
-    #     func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
+    # velocity_direction_alignment_reward = RewTerm(
+    #     func=mdp.velocity_direction_alignment_reward, weight=40.0, params={"command_name": "kanake_command"}
     # )
+    # velocity_magnitude_tracking = RewTerm(
+    #     func=mdp.velocity_magnitude_tracking_reward,
+    #     weight=1.0, 
+    #     params={"std": 0.5, "command_name": "kanake_command"}
+    # )
+    track_lin_vel_xy_exp = RewTerm(
+        func=mdp.track_lin_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.5)}
+    )   
+    track_ang_vel_z_exp = RewTerm(
+        func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
+    )
 
     # kanake_progress_to_command = RewTerm(
     #     func=mdp.kanake_progress_to_command,
@@ -377,7 +394,7 @@ class RewardsCfg:
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
 
 

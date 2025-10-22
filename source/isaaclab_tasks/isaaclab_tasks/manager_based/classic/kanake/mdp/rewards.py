@@ -357,42 +357,28 @@ def kanake_track_heading_frame_vel_xy_exp(
 
     asset: Articulation = env.scene[asset_cfg.name]
     
-    # # 커맨드 속도
-    # vel_command_heading_frame = env.command_manager.get_command(command_name)[:, :2]
+    # 커맨드 속도
+    vel_command_heading_frame = env.command_manager.get_command(command_name)[:, :2]
 
-    # # 로봇(head) 속도
-    # current_vel_w = asset.data.root_lin_vel_w[:, :3]
+    # 로봇 속도
+    current_vel_w = asset.data.root_lin_vel_w[:, :3]
 
-    # current_heading_w = asset.data.heading_w
-    # # (roll=0, pitch=0, yaw=current_heading)
-    # yaw_quat_w = math_utils.quat_from_euler_xyz(
-    #     torch.zeros_like(current_heading_w),
-    #     torch.zeros_like(current_heading_w),
-    #     current_heading_w
-    # )
-    # current_vel_heading_frame = math_utils.quat_apply_inverse(
-    #     yaw_quat_w, current_vel_w
-    # )
+    current_heading_w = asset.data.heading_w
+    # (roll=0, pitch=0, yaw=current_heading)
+    yaw_quat_w = math_utils.quat_from_euler_xyz(
+        torch.zeros_like(current_heading_w),
+        torch.zeros_like(current_heading_w),
+        current_heading_w
+    )
+    current_vel_heading_frame = math_utils.quat_apply_inverse(
+        yaw_quat_w, current_vel_w
+    )
 
-    # lin_vel_error = torch.sum(
-    #     torch.square(vel_command_heading_frame - current_vel_heading_frame[:, :2]),
-    #     dim=1,
-    # )
-
-    vel_command_w = env.command_manager.get_command(command_name)[:, :2]
-    print("vel_command_w", vel_command_w)
-    
-    # 현재 평균 월드 속도
-    body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
-    current_avg_vel_w = torch.mean(body_lin_vels_w, dim=1)[:, :2]
-    
-    print("current vel w", current_avg_vel_w)
-
-    # 월드 기준 에러
     lin_vel_error = torch.sum(
-        torch.square(vel_command_w - current_avg_vel_w),
+        torch.square(vel_command_heading_frame - current_vel_heading_frame[:, :2]),
         dim=1,
     )
+
     
     
     return torch.exp(-lin_vel_error / std**2)
