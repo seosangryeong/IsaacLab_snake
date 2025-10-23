@@ -303,18 +303,22 @@ class RewardsCfg:
     #     weight=-3.0,
     #     params={"command_name": "kanake_command"},
     # )
-
+    reward_com_forward_progress = RewTerm(
+        func=mdp.reward_com_forward_progress,
+        weight=1.0,
+        params={"command_name": "kanake_command"},
+    )
     # kanake_track_heading_frame_vel_xy_exp = RewTerm(
     #     func=mdp.kanake_track_heading_frame_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
     # )
-    velocity_direction_alignment_reward = RewTerm(
-        func=mdp.velocity_direction_alignment_reward, weight=40.0, params={"command_name": "kanake_command"}
-    )
-    velocity_magnitude_tracking = RewTerm(
-        func=mdp.velocity_magnitude_tracking_reward,
-        weight=1.0, 
-        params={"std": 0.5, "command_name": "kanake_command"}
-    )
+    # velocity_direction_alignment_reward = RewTerm(
+    #     func=mdp.velocity_direction_alignment_reward, weight=40.0, params={"command_name": "kanake_command"}
+    # )
+    # velocity_magnitude_tracking = RewTerm(
+    #     func=mdp.velocity_magnitude_tracking_reward,
+    #     weight=1.0, 
+    #     params={"std": 0.5, "command_name": "kanake_command"}
+    # )
     # track_lin_vel_xy_exp = RewTerm(
     #     func=mdp.track_lin_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.5)}
     # )   
