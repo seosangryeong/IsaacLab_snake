@@ -307,20 +307,20 @@ class RewardsCfg:
     # kanake_track_heading_frame_vel_xy_exp = RewTerm(
     #     func=mdp.kanake_track_heading_frame_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
     # )
-    # velocity_direction_alignment_reward = RewTerm(
-    #     func=mdp.velocity_direction_alignment_reward, weight=40.0, params={"command_name": "kanake_command"}
-    # )
-    # velocity_magnitude_tracking = RewTerm(
-    #     func=mdp.velocity_magnitude_tracking_reward,
-    #     weight=1.0, 
-    #     params={"std": 0.5, "command_name": "kanake_command"}
-    # )
-    track_lin_vel_xy_exp = RewTerm(
-        func=mdp.track_lin_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.5)}
-    )   
-    track_ang_vel_z_exp = RewTerm(
-        func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
+    velocity_direction_alignment_reward = RewTerm(
+        func=mdp.velocity_direction_alignment_reward, weight=40.0, params={"command_name": "kanake_command"}
     )
+    velocity_magnitude_tracking = RewTerm(
+        func=mdp.velocity_magnitude_tracking_reward,
+        weight=1.0, 
+        params={"std": 0.5, "command_name": "kanake_command"}
+    )
+    # track_lin_vel_xy_exp = RewTerm(
+    #     func=mdp.track_lin_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.5)}
+    # )   
+    # track_ang_vel_z_exp = RewTerm(
+    #     func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
+    # )
 
     # kanake_progress_to_command = RewTerm(
     #     func=mdp.kanake_progress_to_command,
@@ -394,7 +394,7 @@ class RewardsCfg:
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
 
 
