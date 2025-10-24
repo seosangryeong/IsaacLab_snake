@@ -302,6 +302,42 @@ def track_ang_vel_z_exp(
     ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - asset.data.root_ang_vel_b[:, 2])
     return torch.exp(-ang_vel_error / std**2)
 
+def reward_world_progress(
+    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    [수정] 방향 정렬도만 보상 (속도 크기 무시)
+    
+    - 타겟 속도 방향과 현재 평균 속도 방향의 코사인 유사도를 계산
+    - -1(반대) ~ 1(정렬) 범위를 0 ~ 1 보상으로 변환
+    - 타겟 속도가 0이면 보상 0
+    
+    Returns:
+        0 ~ 1 범위의 보상 (방향 정렬도 기반)
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    # 🔧 [STEP 1] 타겟 속도 방향 (단위 벡터)
+    target_vel_w_xy = env.command_manager.get_command(command_name)[:, :2]
+    target_vel_direction = F.normalize(target_vel_w_xy, p=2, dim=1, eps=1e-6)
+    
+    # 🔧 [STEP 2] 현재 평균 속도 방향 (단위 벡터)
+    body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+    current_avg_vel_w_xy = torch.mean(body_lin_vels_w, dim=1)[:, :2]
+    current_vel_direction = F.normalize(current_avg_vel_w_xy, p=2, dim=1, eps=1e-6)
+    
+    # 🔧 [STEP 3] 방향 정렬도 계산 (코사인 유사도, -1 ~ 1)
+    alignment = torch.sum(current_vel_direction * target_vel_direction, dim=1)
+    alignment = torch.clamp(alignment, -1.0, 1.0)  # 안전 클리핑
+    
+
+    
+    # print(f"\n[Direction Alignment Reward - Step {env.common_step_counter}]")
+    # print(f"Target direction: {target_vel_direction[0].cpu().numpy()}")
+    # print(f"Current direction: {current_vel_direction[0].cpu().numpy()}")
+    # print(f"Alignment: {alignment[0].item():.3f} ")
+    
+    return alignment
 
 def reward_com_forward_progress(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")

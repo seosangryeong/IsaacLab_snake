@@ -101,13 +101,13 @@ class CommandsCfg:
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
-        rel_standing_envs=0.02,
+        rel_standing_envs=0.0,
         rel_heading_envs=1.0,
-        heading_command=True,
+        heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.57, 1.57), heading=(-math.pi, math.pi)
         ),
     )
     # kanake_command = mdp.UniformVelocityCommandCfg(
@@ -303,10 +303,15 @@ class RewardsCfg:
     #     weight=-3.0,
     #     params={"command_name": "kanake_command"},
     # )
-    reward_com_forward_progress = RewTerm(
-        func=mdp.reward_com_forward_progress,
-        weight=1.0,
-        params={"command_name": "kanake_command"},
+    # reward_com_forward_progress = RewTerm(
+    #     func=mdp.reward_com_forward_progress,
+    #     weight=1.0,
+    #     params={"command_name": "kanake_command"},
+    # )
+    reward_world_progress = RewTerm(
+        func=mdp.reward_world_progress,
+        weight=10.0,
+        params={"command_name": "kanake_command"}
     )
     # kanake_track_heading_frame_vel_xy_exp = RewTerm(
     #     func=mdp.kanake_track_heading_frame_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}

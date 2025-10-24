@@ -25,36 +25,13 @@ if TYPE_CHECKING:
 
 
 class KanakeUniformVelocityCommand(CommandTerm):
-    r"""Command generator that generates a velocity command in SE(2) from uniform distribution.
 
-    The command comprises of a linear velocity in x and y direction and an angular velocity around
-    the z-axis. It is given in the robot's base frame.
 
-    If the :attr:`cfg.heading_command` flag is set to True, the angular velocity is computed from the heading
-    error similar to doing a proportional control on the heading error. The target heading is sampled uniformly
-    from the provided range. Otherwise, the angular velocity is sampled uniformly from the provided range.
-
-    Mathematically, the angular velocity is computed as follows from the heading command:
-
-    .. math::
-
-        \omega_z = \frac{1}{2} \text{wrap_to_pi}(\theta_{\text{target}} - \theta_{\text{current}})
-
-    """
 
     cfg: KanakeUniformVelocityCommandCfg
-    """The configuration of the command generator."""
 
     def __init__(self, cfg: KanakeUniformVelocityCommandCfg, env: ManagerBasedEnv):
-        """Initialize the command generator.
 
-        Args:
-            cfg: The configuration of the command generator.
-            env: The environment.
-
-        Raises:
-            ValueError: If the heading command is active but the heading range is not provided.
-        """
         # initialize the base class
         super().__init__(cfg, env)
 
@@ -81,11 +58,11 @@ class KanakeUniformVelocityCommand(CommandTerm):
         self.is_heading_env = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
         self.is_standing_env = torch.zeros_like(self.is_heading_env)
         
-        # 🔧 [NEW] 리샘플링 시점의 고정된 위치/방향 저장
+        # 리샘플링 시점의 고정된 위치/방향 저장
         self.command_spawn_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
         self.command_spawn_heading_w = torch.zeros(self.num_envs, device=self.device)
         
-        # 🔧 [NEW] 월드 기준 고정 커맨드 저장 (리샘플링 시점에 생성)
+        # 월드 기준 고정 커맨드 저장 (리샘플링 시점에 생성)
         self.vel_command_w = torch.zeros(self.num_envs, 3, device=self.device)
         
         # -- metrics
@@ -159,7 +136,6 @@ class KanakeUniformVelocityCommand(CommandTerm):
 
     def _resample_command(self, env_ids: Sequence[int]):
         """
-        [Kanake 오버라이드]
         리샘플링 시 월드 고정 커맨드 생성
         
         1. 현재 위치/heading 저장
@@ -168,17 +144,17 @@ class KanakeUniformVelocityCommand(CommandTerm):
         """
         r = torch.empty(len(env_ids), device=self.device)
         
-        # 🔧 [STEP 1] 리샘플링 시점의 위치/heading 저장
+        # 리샘플링 시점의 위치/heading 저장
         body_pos_w = self.robot.data.body_com_pos_w[env_ids, :, :3]
         self.command_spawn_pos_w[env_ids] = torch.mean(body_pos_w, dim=1)
         self.command_spawn_heading_w[env_ids] = self.robot.data.heading_w[env_ids]
         
-        # 🔧 [STEP 2] base frame 기준 임시 커맨드 생성
+        # base frame 기준 임시 커맨드 생성
         temp_cmd_x = r.uniform_(*self.cfg.ranges.lin_vel_x)
         temp_cmd_y = r.uniform_(*self.cfg.ranges.lin_vel_y)
         temp_cmd_yaw = r.uniform_(*self.cfg.ranges.ang_vel_z)
         
-        # 🔧 [STEP 3] base → world frame 변환 (리샘플링 시점의 heading 사용)
+        # base → world frame 변환 (리샘플링 시점의 heading 사용)
         spawn_heading = self.command_spawn_heading_w[env_ids]
         yaw_quat_w = math_utils.quat_from_euler_xyz(
             torch.zeros_like(spawn_heading),
@@ -194,7 +170,7 @@ class KanakeUniformVelocityCommand(CommandTerm):
         self.vel_command_w[env_ids, 1] = vel_cmd_w_3d[:, 1]
         self.vel_command_w[env_ids, 2] = temp_cmd_yaw  # yaw는 월드/base 동일
         
-        # 🔧 [STEP 4] heading 커맨드 처리
+        # heading 커맨드 처리
         if self.cfg.heading_command:
             self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
             self.is_heading_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_heading_envs
@@ -232,7 +208,7 @@ class KanakeUniformVelocityCommand(CommandTerm):
                 # -- current
                 self.current_vel_visualizer = VisualizationMarkers(self.cfg.current_vel_visualizer_cfg)
             # set their visibility to true
-            self.goal_vel_visualizer.set_visibility(True)  # 🔧 목표 화살표 켜기
+            self.goal_vel_visualizer.set_visibility(True)  
             self.current_vel_visualizer.set_visibility(True)
         else:
             if hasattr(self, "goal_vel_visualizer"):
@@ -243,8 +219,8 @@ class KanakeUniformVelocityCommand(CommandTerm):
         """
         [Kanake 오버라이드 v4 - 최종]
         
-        1. **목표(초록색) 화살표**: 리샘플링 시점의 위치에 고정 (월드 커맨드 표시)
-        2. **현재(파란색) 화살표**: 현재 로봇의 평균 위치를 따라감 (월드 속도 표시)
+        1. 목표(초록색) 화살표: 리샘플링 시점의 위치에 고정 (월드 커맨드 표시)
+        2. 현재(파란색) 화살표: 현재 로봇의 평균 위치를 따라감 (월드 속도 표시)
         """
         if not self.robot.is_initialized:
             return
@@ -271,7 +247,7 @@ class KanakeUniformVelocityCommand(CommandTerm):
         body_lin_vels_w = self.robot.data.body_com_vel_w[:, :, :3]
         current_avg_vel_w = torch.mean(body_lin_vels_w, dim=1)
         
-        # 🔧 월드 속도를 직접 시각화
+        # 월드 속도 시각화
         vel_arrow_scale, vel_arrow_quat = self._resolve_world_velocity_to_arrow(
             current_avg_vel_w[:, :2]
         )
