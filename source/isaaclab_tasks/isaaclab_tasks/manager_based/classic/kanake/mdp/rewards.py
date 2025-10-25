@@ -306,14 +306,15 @@ def reward_world_progress(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     """
-    [수정] 방향 정렬도만 보상 (속도 크기 무시)
+    [수정] 방향 정렬도 기반 리워드 (속도 크기 무시)
     
     - 타겟 속도 방향과 현재 평균 속도 방향의 코사인 유사도를 계산
-    - -1(반대) ~ 1(정렬) 범위를 0 ~ 1 보상으로 변환
+    - threshold(0.8) 이하: 페널티 부여 (정렬 유도)
+    - threshold 이상: 리워드 점점 증가 (완벽 정렬 1.0 유도)
     - 타겟 속도가 0이면 보상 0
     
     Returns:
-        0 ~ 1 범위의 보상 (방향 정렬도 기반)
+        리워드 (threshold 이하: 음수, 이상: 양수 증가)
     """
     asset: Articulation = env.scene[asset_cfg.name]
     
@@ -330,13 +331,35 @@ def reward_world_progress(
     alignment = torch.sum(current_vel_direction * target_vel_direction, dim=1)
     alignment = torch.clamp(alignment, -1.0, 1.0)  # 안전 클리핑
     
-
+    # 🔧 [STEP 4] 타겟 속도가 0이면 보상 0 (정지 명령)
+    target_magnitude = torch.norm(target_vel_w_xy, dim=1)
+    is_valid_command = (target_magnitude > 1e-6).float()
     
-    # print(f"\n[Direction Alignment Reward - Step {env.common_step_counter}]")
+    # 🔧 [STEP 5] Threshold 기반 리워드 계산
+    threshold = 0.8  # 얼라이먼트 threshold
+    penalty_scale = 2.0  # threshold 이하 페널티 강도
+    reward_scale = 5.0   # threshold 이상 리워드 강도 (완벽 정렬 유도)
+    
+    # threshold 이하: 페널티 (alignment가 낮을수록 더 큰 페널티)
+    penalty = (alignment - threshold) * penalty_scale
+    
+    # threshold 이상: 리워드 (alignment가 1에 가까울수록 급격히 증가)
+    # (alignment - threshold) / (1 - threshold)를 제곱하여 완벽 정렬 유도
+    normalized_alignment = (alignment - threshold) / (1 - threshold)
+    reward = torch.pow(normalized_alignment, 2) * reward_scale  # 제곱으로 급격 증가
+    
+    # 최종 리워드: threshold 이하 페널티, 이상 리워드
+    final_reward = torch.where(alignment < threshold, penalty, reward)
+    
+    # 유효 명령일 때만 리워드 적용
+    final_reward = final_reward * is_valid_command
+    
+    # print(f"\n[Thresholded Direction Alignment Reward - Step {env.common_step_counter}]")
     # print(f"Target direction: {target_vel_direction[0].cpu().numpy()}")
     # print(f"Current direction: {current_vel_direction[0].cpu().numpy()}")
-    # print(f"Alignment: {alignment[0].item():.3f} ")
+    # print(f"Alignment: {alignment[0].item():.3f} → Reward: {final_reward[0].item():.3f}")
     
+    return final_reward
     return alignment
 
 def reward_com_forward_progress(
