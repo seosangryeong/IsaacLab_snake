@@ -100,7 +100,7 @@ class CommandsCfg:
     # )
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(20.0, 20.0),
+        resampling_time_range=(5.0, 5.0),
         rel_standing_envs=0.0,
         rel_heading_envs=1.0,
         heading_command=False,
@@ -198,7 +198,7 @@ class ObservationsCfg:
         base_height = ObsTerm(func=mdp.base_pos_z)
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        
+        average_body_lin_vel_xy = ObsTerm(func=mdp.average_body_lin_vel_xy)
         projected_gravity = ObsTerm(func=mdp.projected_gravity)
         base_pos = ObsTerm(func=mdp.base_pos)
         joint_effort = ObsTerm(func=mdp.joint_effort)

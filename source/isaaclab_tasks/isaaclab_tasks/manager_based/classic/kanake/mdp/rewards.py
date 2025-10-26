@@ -336,7 +336,7 @@ def reward_world_progress(
     is_valid_command = (target_magnitude > 1e-6).float()
     
     # 🔧 [STEP 5] Threshold 기반 리워드 계산
-    threshold = 0.8  # 얼라이먼트 threshold
+    threshold = 0.85 # 얼라이먼트 threshold
     penalty_scale = 2.0  # threshold 이하 페널티 강도
     reward_scale = 5.0   # threshold 이상 리워드 강도 (완벽 정렬 유도)
     
@@ -354,10 +354,10 @@ def reward_world_progress(
     # 유효 명령일 때만 리워드 적용
     final_reward = final_reward * is_valid_command
     
-    print(f"\n[Thresholded Direction Alignment Reward - Step {env.common_step_counter}]")
-    print(f"Target direction: {target_vel_direction[0].cpu().numpy()}")
-    print(f"Current direction: {current_vel_direction[0].cpu().numpy()}")
-    print(f"Alignment: {alignment[0].item():.3f} → Reward: {final_reward[0].item():.3f}")
+    # print(f"\n[Thresholded Direction Alignment Reward - Step {env.common_step_counter}]")
+    # print(f"Target direction: {target_vel_direction[0].cpu().numpy()}")
+    # print(f"Current direction: {current_vel_direction[0].cpu().numpy()}")
+    # print(f"Alignment: {alignment[0].item():.3f} → Reward: {final_reward[0].item():.3f}")
     
     return final_reward
     return alignment
