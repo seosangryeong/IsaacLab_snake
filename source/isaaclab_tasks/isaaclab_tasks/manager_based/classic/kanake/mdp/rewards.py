@@ -354,10 +354,10 @@ def reward_world_progress(
     # 유효 명령일 때만 리워드 적용
     final_reward = final_reward * is_valid_command
     
-    # print(f"\n[Thresholded Direction Alignment Reward - Step {env.common_step_counter}]")
-    # print(f"Target direction: {target_vel_direction[0].cpu().numpy()}")
-    # print(f"Current direction: {current_vel_direction[0].cpu().numpy()}")
-    # print(f"Alignment: {alignment[0].item():.3f} → Reward: {final_reward[0].item():.3f}")
+    print(f"\n[Thresholded Direction Alignment Reward - Step {env.common_step_counter}]")
+    print(f"Target direction: {target_vel_direction[0].cpu().numpy()}")
+    print(f"Current direction: {current_vel_direction[0].cpu().numpy()}")
+    print(f"Alignment: {alignment[0].item():.3f} → Reward: {final_reward[0].item():.3f}")
     
     return final_reward
     return alignment

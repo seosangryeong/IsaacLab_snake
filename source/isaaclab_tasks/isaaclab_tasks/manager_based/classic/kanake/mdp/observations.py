@@ -331,6 +331,11 @@ def body_projected_gravity_b(
     gravity_dir = asset.data.GRAVITY_VEC_W.unsqueeze(1)
     return math_utils.quat_apply_inverse(body_quat, gravity_dir).view(env.num_envs, -1)
 
+def average_body_lin_vel_xy(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """몸체 평균 XY 선속도 (월드 frame)."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_lin_vels_w = asset.data.body_lin_vel_w[:, asset_cfg.body_ids, :3]
+    return torch.mean(body_lin_vels_w, dim=1)[:, :2]  
 
 """
 Joint state.
