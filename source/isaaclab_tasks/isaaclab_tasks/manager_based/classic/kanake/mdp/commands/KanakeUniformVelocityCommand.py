@@ -149,10 +149,10 @@ class KanakeUniformVelocityCommand(CommandTerm):
         self.command_spawn_pos_w[env_ids] = torch.mean(body_pos_w, dim=1)
         self.command_spawn_heading_w[env_ids] = self.robot.data.heading_w[env_ids]
         
-        # base frame 기준 임시 커맨드 생성
-        temp_cmd_x = r.uniform_(*self.cfg.ranges.lin_vel_x)
-        temp_cmd_y = r.uniform_(*self.cfg.ranges.lin_vel_y)
-        temp_cmd_yaw = r.uniform_(*self.cfg.ranges.ang_vel_z)
+        # 각 변수마다 새로운 텐서를 생성하여 할당합니다.
+        temp_cmd_x = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.lin_vel_x)
+        temp_cmd_y = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.lin_vel_y)
+        temp_cmd_yaw = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.ang_vel_z)
         
         # base → world frame 변환 (리샘플링 시점의 heading 사용)
         spawn_heading = self.command_spawn_heading_w[env_ids]

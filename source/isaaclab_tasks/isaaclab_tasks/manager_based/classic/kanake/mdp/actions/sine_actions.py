@@ -262,13 +262,14 @@ class JointSineAction(ActionTerm):
 
         ########
         #진폭 : 0.5~1.5
+        # amplitudes = 0.5 +(torch.tanh(amp_actions)+ 1.0) / 2.0
         amplitudes = 0.5 +(torch.tanh(amp_actions)+ 1.0) / 2.0
 
         # 주파수 : 0.3 ~ 1.1
-        freq_v = 0.5 + 0.8 * (torch.tanh(freq_v_action) + 1.0) / 2.0
-        freq_h = 0.5 + 0.8 * (torch.tanh(freq_h_action) + 1.0) / 2.0
-        # freq_v = 1.1 * (torch.tanh(freq_v_action)) 
-        # freq_h = 1.1 * (torch.tanh(freq_h_action)) 
+        # freq_v = 0.5 + 0.8 * (torch.tanh(freq_v_action) + 1.0) / 2.0
+        # freq_h = 0.5 + 0.8 * (torch.tanh(freq_h_action) + 1.0) / 2.0
+        freq_v = 0.0 + 1.5 * (torch.tanh(freq_v_action) + 1.0) / 2.0
+        freq_h = 0.0 + 1.5 * (torch.tanh(freq_h_action) + 1.0) / 2.0
 
         # 위상 (Phase)
         phase_v = np.pi/4 * torch.tanh(phase_v_action) 
