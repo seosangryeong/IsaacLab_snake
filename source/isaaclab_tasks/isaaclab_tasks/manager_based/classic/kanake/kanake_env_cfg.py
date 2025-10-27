@@ -12,7 +12,7 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.sensors import CameraCfg, ContactSensorCfg, RayCasterCfg, patterns
 from isaaclab.sensors import FrameTransformerCfg, FrameTransformer
-
+from isaaclab.sensors import imu, ImuCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 import math
@@ -81,6 +81,10 @@ class MySceneCfg(InteractiveSceneCfg):
         ),
     )
 
+    imu = ImuCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/head"
+    )
+
 
 @configclass
 class CommandsCfg:
@@ -101,13 +105,13 @@ class CommandsCfg:
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(5.0, 20.0),
-        rel_standing_envs=0.0,
+        rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.57, 1.57), heading=(-math.pi, math.pi)
+            lin_vel_x=(-0.2, 0.2), lin_vel_y=(-0.2, 0.2), ang_vel_z=(-1.57, 1.57), heading=(-math.pi, math.pi)
         ),
     )
     # kanake_command = mdp.UniformVelocityCommandCfg(
@@ -178,15 +182,24 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for the policy."""
 
-        joint_effort = ObsTerm(func=mdp.joint_effort)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        # pose_command = ObsTerm(func=mdp.kanake_commands, params={"command_name": "kanake_command"})
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        # imu_lin_acc = ObsTerm(func=mdp.imu_lin_acc)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        projected_gravity = ObsTerm(func=mdp.projected_gravity)
+        root_quat_w = ObsTerm(func=mdp.root_quat_w)
+        # imu_ang_vel = ObsTerm(func=mdp.imu_ang_vel)
+        # projected_gravity = ObsTerm(func=mdp.projected_gravity)
+        # imu_orientation = ObsTerm(func=mdp.imu_orientation)
+        joint_effort = ObsTerm(func=mdp.joint_effort)
         joint_vel = ObsTerm(func=mdp.joint_vel)
         joint_pos = ObsTerm(func=mdp.joint_pos)
         actions = ObsTerm(func=mdp.last_action)
+
+        # imu_orientation = ObsTerm(func=mdp.imu_orientation)
+        # imu_ang_vel = ObsTerm(func=mdp.imu_ang_vel)
+        # imu_lin_acc = ObsTerm(func=mdp.imu_lin_acc)
+
+
 
         def __post_init__(self):
             self.enable_corruption = False
@@ -314,6 +327,12 @@ class RewardsCfg:
         weight=2.0,
         params={"command_name": "kanake_command"}
     )
+
+    velocity_magnitude_reward = RewTerm(
+        func=mdp.reward_velocity_magnitude,
+        weight=1.0,
+        params={"std": 0.5, "command_name": "kanake_command"},
+    )
     # kanake_track_heading_frame_vel_xy_exp = RewTerm(
     #     func=mdp.kanake_track_heading_frame_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
     # )
@@ -398,7 +417,7 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.kanake_upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
 
     # # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)

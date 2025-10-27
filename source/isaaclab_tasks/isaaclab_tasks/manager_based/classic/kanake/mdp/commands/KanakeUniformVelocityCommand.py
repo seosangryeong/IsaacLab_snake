@@ -179,10 +179,7 @@ class KanakeUniformVelocityCommand(CommandTerm):
         self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
 
     def _update_command(self):
-        """
-        [Kanake 오버라이드]
-        heading control과 standing 처리 (월드 커맨드 기준)
-        """
+
         # Heading control
         if self.cfg.heading_command:
             env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()

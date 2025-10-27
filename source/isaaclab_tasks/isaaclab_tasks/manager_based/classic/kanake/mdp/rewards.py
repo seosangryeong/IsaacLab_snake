@@ -306,15 +306,13 @@ def reward_world_progress(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     """
-    [수정] 방향 정렬도 기반 리워드 (속도 크기 무시)
+    방향 정렬도 기반 리워드 (속도 크기 x)
     
     - 타겟 속도 방향과 현재 평균 속도 방향의 코사인 유사도를 계산
     - threshold(0.8) 이하: 페널티 부여 (정렬 유도)
     - threshold 이상: 리워드 점점 증가 (완벽 정렬 1.0 유도)
     - 타겟 속도가 0이면 보상 0
     
-    Returns:
-        리워드 (threshold 이하: 음수, 이상: 양수 증가)
     """
     asset: Articulation = env.scene[asset_cfg.name]
     
@@ -361,6 +359,46 @@ def reward_world_progress(
     
     return final_reward
     return alignment
+def reward_velocity_magnitude(
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    속도 크기 기반 리워드 (방향 무관)
+    
+    - 타겟 속도 크기와 현재 평균 속도 크기의 차이를 계산
+    - 차이가 작을수록 높은 리워드 (지수 커널 사용)
+    - 타겟 속도가 0이면 보상 0 (정지 명령)
+    
+    Args:
+        std: 표준편차 (민감도 조정, 작을수록 엄격)
+        command_name: 커맨드 이름
+        asset_cfg: 로봇 에셋 설정
+    
+    Returns:
+        0 ~ 1 범위의 리워드 텐서
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    # 타겟 속도 크기 계산
+    target_vel_w_xy = env.command_manager.get_command(command_name)[:, :2]
+    target_magnitude = torch.norm(target_vel_w_xy, dim=1)
+    
+    # 현재 평균 속도 크기 계산
+    body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+    current_avg_vel_w_xy = torch.mean(body_lin_vels_w, dim=1)[:, :2]
+    current_magnitude = torch.norm(current_avg_vel_w_xy, dim=1)
+    
+    # 속도 크기 오차 계산
+    magnitude_error = torch.square(target_magnitude - current_magnitude)
+    
+    # 지수 커널로 리워드 계산
+    reward = torch.exp(-magnitude_error / std**2)
+    
+    # 타겟 속도가 0이면 보상 0 (정지 명령)
+    is_valid_command = (target_magnitude > 1e-6).float()
+    reward = reward * is_valid_command
+    
+    return reward
 
 def reward_com_forward_progress(
     env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
