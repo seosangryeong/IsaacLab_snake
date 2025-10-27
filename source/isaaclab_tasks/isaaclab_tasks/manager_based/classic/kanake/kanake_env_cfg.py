@@ -100,7 +100,7 @@ class CommandsCfg:
     # )
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(5.0, 5.0),
+        resampling_time_range=(5.0, 20.0),
         rel_standing_envs=0.0,
         rel_heading_envs=1.0,
         heading_command=False,
@@ -404,7 +404,7 @@ class RewardsCfg:
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
 
 
