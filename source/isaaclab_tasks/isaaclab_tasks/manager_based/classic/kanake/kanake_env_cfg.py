@@ -81,9 +81,9 @@ class MySceneCfg(InteractiveSceneCfg):
         ),
     )
 
-    imu = ImuCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/head"
-    )
+    # imu = ImuCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/head"
+    # )
 
 
 @configclass
