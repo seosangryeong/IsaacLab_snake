@@ -111,7 +111,7 @@ class CommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 0.5), lin_vel_y=(-0.5, 0.5), ang_vel_z=(0.0, 0.0), heading=(-math.pi, math.pi)
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
         ),
     )
     # kanake_command = mdp.UniformVelocityCommandCfg(
@@ -202,31 +202,31 @@ class ObservationsCfg:
 
 
         def __post_init__(self):
-            self.enable_corruption = False
+            self.enable_corruption = True
             self.concatenate_terms = True
 
-    @configclass
-    class CriticCfg(ObsGroup):
+    # @configclass
+    # class CriticCfg(ObsGroup):
 
-        base_height = ObsTerm(func=mdp.base_pos_z)
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        average_body_lin_vel_xy = ObsTerm(func=mdp.average_body_lin_vel_xy)
-        projected_gravity = ObsTerm(func=mdp.projected_gravity)
-        base_pos = ObsTerm(func=mdp.base_pos)
-        joint_effort = ObsTerm(func=mdp.joint_effort)
-        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        joint_vel = ObsTerm(func=mdp.joint_vel)
-        joint_pos = ObsTerm(func=mdp.joint_pos)
-        actions = ObsTerm(func=mdp.last_action)
+    #     base_height = ObsTerm(func=mdp.base_pos_z)
+    #     base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+    #     base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+    #     average_body_lin_vel_xy = ObsTerm(func=mdp.average_body_lin_vel_xy)
+    #     projected_gravity = ObsTerm(func=mdp.projected_gravity)
+    #     base_pos = ObsTerm(func=mdp.base_pos)
+    #     joint_effort = ObsTerm(func=mdp.joint_effort)
+    #     pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
+    #     joint_vel = ObsTerm(func=mdp.joint_vel)
+    #     joint_pos = ObsTerm(func=mdp.joint_pos)
+    #     actions = ObsTerm(func=mdp.last_action)
 
-        def __post_init__(self):
-            self.enable_corruption = False
-            self.concatenate_terms = True
+    #     def __post_init__(self):
+    #         self.enable_corruption = False
+    #         self.concatenate_terms = True
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
-    critic: CriticCfg = CriticCfg()
+    # critic: CriticCfg = CriticCfg()
 
 # @configclass
 # class ObservationsCfg:
@@ -253,14 +253,14 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.25, 0.25), "yaw": (-np.pi,np.pi)},
+            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "z": (0.25, 0.25), "yaw": (-3.14, 3.14)},
             "velocity_range": {
-                "x": (0.0, 0.0),
-                "y": (0.0, 0.0),
-                "z": (0.0, 0.0),
-                "roll": (0.0, 0.0),
-                "pitch": (0.0, 0.0),
-                "yaw": (0.0,0.0),
+                "x": (-0.5, 0.5),
+                "y": (-0.5, 0.5),
+                "z": (-0.5, 0.5),
+                "roll": (-0.5, 0.5),
+                "pitch": (-0.5, 0.5),
+                "yaw": (-0.5, 0.5),
             },
         },
     )

@@ -320,12 +320,10 @@ def reward_world_progress(
     target_vel_w_xy = env.command_manager.get_command(command_name)[:, :2]
     target_vel_direction = F.normalize(target_vel_w_xy, p=2, dim=1, eps=1e-6)
     
-    # 🔧 [STEP 2] 현재 평균 속도 방향 (단위 벡터)
     body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
     current_avg_vel_w_xy = torch.mean(body_lin_vels_w, dim=1)[:, :2]
     current_vel_direction = F.normalize(current_avg_vel_w_xy, p=2, dim=1, eps=1e-6)
     
-    # 🔧 [STEP 3] 방향 정렬도 계산 (코사인 유사도, -1 ~ 1)
     alignment = torch.sum(current_vel_direction * target_vel_direction, dim=1)
     alignment = torch.clamp(alignment, -1.0, 1.0)  # 안전 클리핑
     
@@ -333,23 +331,20 @@ def reward_world_progress(
     target_magnitude = torch.norm(target_vel_w_xy, dim=1)
     is_valid_command = (target_magnitude > 1e-6).float()
     
-    # 🔧 [STEP 5] Threshold 기반 리워드 계산
     threshold = 0.85 # 얼라이먼트 threshold
-    penalty_scale = 2.0  # threshold 이하 페널티 강도
-    reward_scale = 5.0   # threshold 이상 리워드 강도 (완벽 정렬 유도)
+    penalty_scale = 2.0  
+    reward_scale = 5.0  
     
     # threshold 이하: 페널티 (alignment가 낮을수록 더 큰 페널티)
     penalty = (alignment - threshold) * penalty_scale
     
     # threshold 이상: 리워드 (alignment가 1에 가까울수록 급격히 증가)
-    # (alignment - threshold) / (1 - threshold)를 제곱하여 완벽 정렬 유도
     normalized_alignment = (alignment - threshold) / (1 - threshold)
-    reward = torch.pow(normalized_alignment, 2) * reward_scale  # 제곱으로 급격 증가
+    reward = torch.pow(normalized_alignment, 2) * reward_scale  
     
     # 최종 리워드: threshold 이하 페널티, 이상 리워드
     final_reward = torch.where(alignment < threshold, penalty, reward)
     
-    # 유효 명령일 때만 리워드 적용
     final_reward = final_reward * is_valid_command
     
     # print(f"\n[Thresholded Direction Alignment Reward - Step {env.common_step_counter}]")
