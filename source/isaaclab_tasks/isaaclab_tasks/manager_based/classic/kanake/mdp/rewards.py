@@ -18,6 +18,9 @@ from isaaclab.sensors import Camera, Imu, RayCaster, RayCasterCamera, TiledCamer
 import torch.nn.functional as F
 from . import observations as obs
 from isaaclab.utils.math import combine_frame_transforms, quat_error_magnitude, quat_mul
+import csv
+import os
+from pathlib import Path
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedEnv
@@ -238,12 +241,55 @@ def applied_torque_limits(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = Sc
 
 def action_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the rate of change of the actions using L2 squared kernel."""
+    # print("=== ACTION RATE L2 CALLED ===")
     return torch.sum(torch.square(env.action_manager.action - env.action_manager.prev_action), dim=1)
 
 
 def action_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the actions using L2 squared kernel."""
     return torch.sum(torch.square(env.action_manager.action), dim=1)
+
+def raw_action_save(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Penalize the raw actions using L2 squared kernel and save actions to CSV."""
+    
+    # CSV 저장 경로 설정
+    csv_dir = Path("/home/nuc/IsaacLab_snake/logs/actions")
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    csv_file = csv_dir / "raw_actions.csv"
+    
+    # 현재 액션 가져오기
+    current_actions = env.action_manager.action  # [num_envs, action_dim]
+    
+    # CSV 저장 (첫 번째 환경의 액션만 저장)
+    if hasattr(env, 'common_step_counter'):
+        step = env.common_step_counter
+    else:
+        step = getattr(env, '_step_counter', 0)
+    
+    # 첫 번째 환경의 액션만 저장 (메모리 효율성)
+    action_data = current_actions[0].cpu().numpy()
+    
+    # CSV 헤더 생성 (처음 저장할 때만)
+    file_exists = csv_file.exists()
+    
+    try:
+        with open(csv_file, 'a', newline='') as f:
+            writer = csv.writer(f)
+            
+            # 헤더 작성 (파일이 처음 생성될 때)
+            if not file_exists:
+                header = ['step'] + [f'action_{i}' for i in range(len(action_data))]
+                writer.writerow(header)
+            
+            # 데이터 작성
+            row = [step] + action_data.tolist()
+            writer.writerow(row)
+            
+    except Exception as e:
+        print(f"ERROR saving actions to CSV: {e}")
+    
+    # 원래 리워드 계산 (L2)
+    return torch.sum(torch.square(current_actions), dim=1)
 
 
 """
