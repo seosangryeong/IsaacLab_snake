@@ -427,7 +427,7 @@ class RewardsCfg:
     # # action이 급변하지 않도록 페널티
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
-    raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
+    # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
 
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(

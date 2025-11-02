@@ -24,19 +24,19 @@ import os
 KANAKE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_251022.usd",
-        rigid_props=sim_utils.RigidBodyPropertiesCfg(
-            disable_gravity=False,
-            max_linear_velocity=100.0,
-            max_angular_velocity=100.0,
-            max_depenetration_velocity=10.0,
-        ),
-        articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=True,
-            solver_position_iteration_count=16,
-            solver_velocity_iteration_count=16,
-        ),       
-        copy_from_source=False,
+        usd_path="./kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_251101.usd",
+        # rigid_props=sim_utils.RigidBodyPropertiesCfg(
+        #     disable_gravity=False,
+        #     max_linear_velocity=100.0,
+        #     max_angular_velocity=100.0,
+        #     max_depenetration_velocity=10.0,
+        # ),
+        # articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+        #     enabled_self_collisions=True,
+        #     solver_position_iteration_count=16,
+        #     solver_velocity_iteration_count=16,
+        # ),       
+        copy_from_source=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         joint_pos={".*": 0.0},
