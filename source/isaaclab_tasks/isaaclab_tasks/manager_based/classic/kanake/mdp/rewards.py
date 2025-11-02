@@ -2154,30 +2154,35 @@ def cube_x_axis_target_alignment_reward(
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
     """
-    cube의 로컬x가 타겟을 향하도록 하는 리워드
+    cube의 로컬x축이 커맨드 속도 방향을 향하도록 하는 리워드 (xy 평면만)
     """
     # 에셋(로봇) 인스턴스 및 커맨드 가져오기
     asset: Articulation = env.scene[asset_cfg.name]
-    command_term = env.command_manager.get_term(command_name)
-    target_pos_w = command_term.world_command_pos[:, :3]  
+    command_vel = env.command_manager.get_command(command_name)[:, :2]  # xy 평면만
 
     try:
         cube_idx = asset.body_names.index("cube")
     except ValueError:
         raise ValueError(f"The asset '{asset_cfg.name}' does not have a body named 'cube'.")
     
-    cube_pos_w = asset.data.body_pos_w[:, cube_idx]
-    cube_quat= asset.data.body_quat_w[:, cube_idx]
+    cube_quat = asset.data.body_quat_w[:, cube_idx]
 
+    # cube의 로컬 x축 방향 벡터를 월드 좌표계로 변환
     local_x_axis_b = torch.tensor([1.0, 0.0, 0.0], device=env.device).expand(env.num_envs, -1)
-    cube_x_dir_w = math_utils.quat_apply(cube_quat, local_x_axis_b)
-
-    vec_to_target_w = target_pos_w - cube_pos_w
-    dir_to_target_w = F.normalize(vec_to_target_w, p=2, dim=-1)
+    cube_x_dir_w_3d = math_utils.quat_apply(cube_quat, local_x_axis_b)
     
-    cosine_similarity = torch.sum(cube_x_dir_w * dir_to_target_w, dim=-1)
-    # print("cosine_similarity: ", cosine_similarity)
+    # xy 평면만 추출
+    cube_x_dir_w = cube_x_dir_w_3d[:, :2]  # z 성분 제거
 
+    # 커맨드 속도 방향 정규화 (xy 평면)
+    command_vel_dir = F.normalize(command_vel, p=2, dim=-1)
+    
+    # cube x축 방향도 정규화 (xy 평면)
+    cube_x_dir_normalized = F.normalize(cube_x_dir_w, p=2, dim=-1)
+    
+    # cube x축 방향과 커맨드 속도 방향의 코사인 유사도 (xy 평면)
+    cosine_similarity = torch.sum(cube_x_dir_normalized * command_vel_dir, dim=-1)
+    
     return cosine_similarity
 
 

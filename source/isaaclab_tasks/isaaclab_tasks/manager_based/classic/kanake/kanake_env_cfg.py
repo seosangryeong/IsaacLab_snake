@@ -104,7 +104,7 @@ class CommandsCfg:
     # )
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(5.0, 20.0),
+        resampling_time_range=(1.0, 1.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=False,
@@ -419,7 +419,7 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.kanake_upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.85})
 
     # # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
@@ -470,7 +470,7 @@ class RewardsCfg:
     #     params={"command_name": "kanake_command", "threshold": 0.01}
     # )
     
-    # # # 또는 타겟 방향 속도 리워드
+    # # #  타겟 방향 속도 리워드
     # # speed_towards_target_reward = RewTerm(
     # #     func=mdp.speed_towards_target_reward,
     # #     weight=5.0,
