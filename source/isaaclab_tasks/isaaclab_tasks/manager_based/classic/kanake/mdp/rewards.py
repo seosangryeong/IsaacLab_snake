@@ -254,45 +254,95 @@ def action_l1(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the actions using L1 norm."""
     return torch.sum(torch.abs(env.action_manager.action), dim=1)
 
-def raw_action_save(env: ManagerBasedRLEnv) -> torch.Tensor:
-    """Penalize the raw actions using L2 squared kernel and save actions to CSV."""
+
+
+import pandas as pd
+import numpy as np
+import torch
+import csv
+from pathlib import Path
+
+
+
+def raw_action_save(env: ManagerBasedRLEnv, writer=None) -> torch.Tensor:
+    """
+    Raw actions를 CSV에 저장하고 TensorBoard 로깅
+    """
+    from torch.utils.tensorboard import SummaryWriter
     
     # CSV 저장 경로 설정
     csv_dir = Path("/home/nuc/IsaacLab_snake/logs/actions")
     csv_dir.mkdir(parents=True, exist_ok=True)
     csv_file = csv_dir / "raw_actions1.csv"
-    
+
     # 현재 액션 가져오기
-    current_actions = env.action_manager.action  # [num_envs, action_dim]
+    current_actions = env.action_manager.action
     
-    # CSV 저장 (첫 번째 환경의 액션만 저장)
+    # 스텝 카운터 가져오기
     if hasattr(env, 'common_step_counter'):
         step = env.common_step_counter
     else:
         step = getattr(env, '_step_counter', 0)
-    
-    # 첫 번째 환경의 액션만 저장 (메모리 효율성)
+
+    # 첫 번째 환경의 액션만 가져오기
     action_data = current_actions[0].cpu().numpy()
-    
-    # CSV 헤더 생성 (처음 저장할 때만)
-    file_exists = csv_file.exists()
-    
+
+    # CSV 저장 로직
     try:
+        file_exists = csv_file.exists()
         with open(csv_file, 'a', newline='') as f:
-            writer = csv.writer(f)
-            
-            # 헤더 작성 (파일이 처음 생성될 때)
+            writer_csv = csv.writer(f)
             if not file_exists:
                 header = ['step'] + [f'action_{i}' for i in range(len(action_data))]
-                writer.writerow(header)
-            
-            # 데이터 작성
+                writer_csv.writerow(header)
             row = [step] + action_data.tolist()
-            writer.writerow(row)
-            
+            writer_csv.writerow(row)
     except Exception as e:
         print(f"ERROR saving actions to CSV: {e}")
-    
+
+    # 🔧 TensorBoard 로깅 (올바른 디렉토리로 수정)
+    if step % 10 == 0:  # 10스텝마다 기록
+        try:
+            # 로그 디렉토리를 TensorBoard가 보는 경로로 수정
+            log_dir = "/home/nuc/IsaacLab_snake/logs/actions_realtime"
+            Path(log_dir).mkdir(parents=True, exist_ok=True)
+            
+            # SummaryWriter 생성
+            tb_writer = SummaryWriter(log_dir)
+            
+            # Raw Actions에서 값 추출 (인덱스 확인 필요)
+            if len(action_data) > 19:  # 안전성 체크
+                raw_freq_v = action_data[16]
+                raw_phase_v = action_data[17]
+                raw_freq_h = action_data[18]
+                raw_phase_h = action_data[19]
+
+                # Processed Actions 계산
+                processed_freq_v = 0.7 + 0.7 * (np.tanh(raw_freq_v/50) + 1.0) / 2.0
+                processed_freq_h = 0.7 + 0.7 * (np.tanh(raw_freq_h/50) + 1.0) / 2.0
+                processed_phase_v = np.pi/4 * np.tanh(raw_phase_v/50)
+                processed_phase_h = np.pi/4 * np.tanh(raw_phase_h/50)
+
+                # TensorBoard에 기록
+                tb_writer.add_scalar("Processed/Vertical_Phase", float(processed_phase_v), global_step=step)
+                tb_writer.add_scalar("Processed/Horizontal_Phase", float(processed_phase_h), global_step=step)
+                tb_writer.add_scalar("Processed/Vertical_Frequency", float(processed_freq_v), global_step=step)
+                tb_writer.add_scalar("Processed/Horizontal_Frequency", float(processed_freq_h), global_step=step)
+                
+                # Raw Actions도 추가로 로깅
+                tb_writer.add_scalar("Raw/Vertical_Frequency_Raw", float(raw_freq_v), global_step=step)
+                tb_writer.add_scalar("Raw/Horizontal_Frequency_Raw", float(raw_freq_h), global_step=step)
+                tb_writer.add_scalar("Raw/Vertical_Phase_Raw", float(raw_phase_v), global_step=step)
+                tb_writer.add_scalar("Raw/Horizontal_Phase_Raw", float(raw_phase_h), global_step=step)
+            
+            # Writer 종료
+            tb_writer.close()
+            
+            print(f"✅ TensorBoard data logged at step {step}")
+            
+        except Exception as e:
+            print(f"ERROR logging to TensorBoard: {e}")
+
     # 원래 리워드 계산 (L2)
     return torch.sum(torch.square(current_actions), dim=1)
 

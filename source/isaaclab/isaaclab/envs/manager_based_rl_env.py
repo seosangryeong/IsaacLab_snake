@@ -21,7 +21,7 @@ from isaaclab.ui.widgets import ManagerLiveVisualizer
 from .common import VecEnvStepReturn
 from .manager_based_env import ManagerBasedEnv
 from .manager_based_rl_env_cfg import ManagerBasedRLEnvCfg
-
+from torch.utils.tensorboard import SummaryWriter
 
 class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
     """The superclass for the manager-based workflow reinforcement learning-based environments.
@@ -72,6 +72,10 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
             render_mode: The render mode for the environment. Defaults to None, which
                 is similar to ``"human"``.
         """
+
+        log_dir = "logs/actions_realtime"
+        print(f"[ManagerBasedRLEnv] Initializing TensorBoard SummaryWriter at: {log_dir}")
+        self.writer = SummaryWriter(log_dir)
         # -- counter for curriculum
         self.common_step_counter = 0
 

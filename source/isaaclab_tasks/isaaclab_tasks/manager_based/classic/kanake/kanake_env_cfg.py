@@ -27,7 +27,7 @@ import isaaclab_tasks.manager_based.classic.kanake.mdp as mdp
 
 # Pre-defined configs
 from isaaclab_assets.robots.kanake import KANAKE_CFG 
-
+from torch.utils.tensorboard import SummaryWriter
 # TARGET_MARKER_CFG = FRAME_MARKER_CFG.replace(prim_path="/World/target_marker")
 # arrow_cfg = GREEN_ARROW_X_MARKER_CFG.replace(
 #     prim_path="/World/my_green_arrow",
@@ -285,7 +285,7 @@ class EventCfg:
             "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
             "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
 ),
-            "static_friction_range": (0.4, 1.0),2
+            "static_friction_range": (0.4, 1.0),
             "dynamic_friction_range": (0.4, 1.0),
             "restitution_range": (0.0, 0.2),
             "num_buckets": 64,
@@ -432,7 +432,7 @@ class RewardsCfg:
 
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
-    # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
+    raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
 
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(
