@@ -26,8 +26,6 @@ if TYPE_CHECKING:
 
 class KanakeUniformVelocityCommand(CommandTerm):
 
-
-
     cfg: KanakeUniformVelocityCommandCfg
 
     def __init__(self, cfg: KanakeUniformVelocityCommandCfg, env: ManagerBasedEnv):
@@ -58,12 +56,11 @@ class KanakeUniformVelocityCommand(CommandTerm):
         self.is_heading_env = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
         self.is_standing_env = torch.zeros_like(self.is_heading_env)
         
-        # 리샘플링 시점의 고정된 위치/방향 저장
-        self.command_spawn_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
-        self.command_spawn_heading_w = torch.zeros(self.num_envs, device=self.device)
-        
-        # 월드 기준 고정 커맨드 저장 (리샘플링 시점에 생성)
+        # 월드 기준 고정 커맨드 저장 (리샘플링 시점에 생성되어 고정됨)
         self.vel_command_w = torch.zeros(self.num_envs, 3, device=self.device)
+        
+        # 시각화용: 리샘플링 시점의 고정된 위치 저장
+        self.command_spawn_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
         
         # -- metrics
         self.metrics["error_vel_xy"] = torch.zeros(self.num_envs, device=self.device)
@@ -71,7 +68,7 @@ class KanakeUniformVelocityCommand(CommandTerm):
 
     def __str__(self) -> str:
         """Return a string representation of the command generator."""
-        msg = "UniformVelocityCommand:\n"
+        msg = "KanakeUniformVelocityCommand:\n"
         msg += f"\tCommand dimension: {tuple(self.command.shape[1:])}\n"
         msg += f"\tResampling time range: {self.cfg.resampling_time_range}\n"
         msg += f"\tHeading command: {self.cfg.heading_command}\n"
@@ -86,37 +83,35 @@ class KanakeUniformVelocityCommand(CommandTerm):
 
     @property
     def command(self) -> torch.Tensor:
-        # """
-        # [Kanake 오버라이드]
-        # 리샘플링 시점에 생성된 "월드 고정 커맨드"를 현재 로봇의 base frame으로 변환하여 반환.
+        """
+        월드 기준 고정 커맨드를 현재 로봇의 base frame으로 변환하여 반환.
         
-        # Returns:
-        #     torch.Tensor: (num_envs, 3) - base frame 기준 속도 커맨드 [vx, vy, w_z]
-        # """
-        # # 현재 로봇의 heading
-        # current_heading_w = self.robot.data.heading_w
+        Returns:
+            torch.Tensor: (num_envs, 3) - base frame 기준 속도 커맨드 [vx, vy, w_z]
+        """
+        # 현재 로봇의 heading
+        current_heading_w = self.robot.data.heading_w
         
-        # # 월드 → base frame 변환을 위한 quaternion
-        # yaw_quat_w = math_utils.quat_from_euler_xyz(
-        #     torch.zeros_like(current_heading_w),
-        #     torch.zeros_like(current_heading_w),
-        #     current_heading_w
-        # )
+        # 월드 → base frame 변환을 위한 quaternion
+        yaw_quat_w = math_utils.quat_from_euler_xyz(
+            torch.zeros_like(current_heading_w),
+            torch.zeros_like(current_heading_w),
+            current_heading_w
+        )
         
-        # # 선형 속도 변환 (XY만, Z는 0)
-        # vel_command_w_3d = torch.cat([
-        #     self.vel_command_w[:, :2],
-        #     torch.zeros(self.num_envs, 1, device=self.device)
-        # ], dim=1)
+        # 선형 속도 변환 (XY만, Z는 0)
+        vel_command_w_3d = torch.cat([
+            self.vel_command_w[:, :2],
+            torch.zeros(self.num_envs, 1, device=self.device)
+        ], dim=1)
         
-        # vel_command_b_3d = math_utils.quat_apply_inverse(yaw_quat_w, vel_command_w_3d)
+        vel_command_b_3d = math_utils.quat_apply_inverse(yaw_quat_w, vel_command_w_3d)
         
-        # # base frame 커맨드 업데이트
-        # self.vel_command_b[:, :2] = vel_command_b_3d[:, :2]
-        # self.vel_command_b[:, 2] = self.vel_command_w[:, 2]  # 각속도는 동일
+        # base frame 커맨드 업데이트
+        self.vel_command_b[:, :2] = vel_command_b_3d[:, :2]
+        self.vel_command_b[:, 2] = self.vel_command_w[:, 2]  # 각속도는 동일
         
-        # return self.vel_command_b
-        return self.vel_command_w  
+        return self.vel_command_b
 
     """
     Implementation specific functions.
@@ -136,39 +131,21 @@ class KanakeUniformVelocityCommand(CommandTerm):
 
     def _resample_command(self, env_ids: Sequence[int]):
         """
-        리샘플링 시 월드 고정 커맨드 생성
+        월드 기준으로 직접 고정 커맨드 생성 (base frame 변환 없이)
         
-        1. 현재 위치/heading 저장
-        2. base frame 기준 임시 커맨드 생성
-        3. 월드 frame으로 변환하여 저장
+        Args:
+            env_ids: 리샘플링할 환경 ID들
         """
         r = torch.empty(len(env_ids), device=self.device)
         
-        # 리샘플링 시점의 위치/heading 저장
+        # 시각화용: 리샘플링 시점의 위치 저장
         body_pos_w = self.robot.data.body_com_pos_w[env_ids, :, :3]
         self.command_spawn_pos_w[env_ids] = torch.mean(body_pos_w, dim=1)
-        self.command_spawn_heading_w[env_ids] = self.robot.data.heading_w[env_ids]
         
-        # 각 변수마다 새로운 텐서를 생성하여 할당합니다.
-        temp_cmd_x = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.lin_vel_x)
-        temp_cmd_y = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.lin_vel_y)
-        temp_cmd_yaw = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.ang_vel_z)
-        
-        # base → world frame 변환 (리샘플링 시점의 heading 사용)
-        spawn_heading = self.command_spawn_heading_w[env_ids]
-        yaw_quat_w = math_utils.quat_from_euler_xyz(
-            torch.zeros_like(spawn_heading),
-            torch.zeros_like(spawn_heading),
-            spawn_heading
-        )
-        
-        temp_cmd_3d = torch.stack([temp_cmd_x, temp_cmd_y, torch.zeros_like(temp_cmd_x)], dim=1)
-        vel_cmd_w_3d = math_utils.quat_apply(yaw_quat_w, temp_cmd_3d)
-        
-        # 월드 고정 커맨드 저장
-        self.vel_command_w[env_ids, 0] = vel_cmd_w_3d[:, 0]
-        self.vel_command_w[env_ids, 1] = vel_cmd_w_3d[:, 1]
-        self.vel_command_w[env_ids, 2] = temp_cmd_yaw  # yaw는 월드/base 동일
+        # 🔧 월드 기준으로 직접 커맨드 생성 (변환 없이)
+        self.vel_command_w[env_ids, 0] = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.lin_vel_x)
+        self.vel_command_w[env_ids, 1] = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.lin_vel_y)
+        self.vel_command_w[env_ids, 2] = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.ang_vel_z)
         
         # heading 커맨드 처리
         if self.cfg.heading_command:
@@ -179,7 +156,9 @@ class KanakeUniformVelocityCommand(CommandTerm):
         self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
 
     def _update_command(self):
-
+        """
+        생성된 월드 커맨드를 업데이트 (heading control, standing 처리)
+        """
         # Heading control
         if self.cfg.heading_command:
             env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()
@@ -214,10 +193,10 @@ class KanakeUniformVelocityCommand(CommandTerm):
 
     def _debug_vis_callback(self, event):
         """
-        [Kanake 오버라이드 v4 - 최종]
+        월드 기준 시각화
         
-        1. 목표(초록색) 화살표: 리샘플링 시점의 위치에 고정 (월드 커맨드 표시)
-        2. 현재(파란색) 화살표: 현재 로봇의 평균 위치를 따라감 (월드 속도 표시)
+        1. 목표(초록색) 화살표: 리샘플링 시점의 위치에 고정 + 월드 커맨드 방향
+        2. 현재(파란색) 화살표: 현재 로봇의 평균 위치 + 월드 속도 방향
         """
         if not self.robot.is_initialized:
             return
@@ -227,18 +206,16 @@ class KanakeUniformVelocityCommand(CommandTerm):
         current_avg_pos_w = torch.mean(body_pos_w, dim=1)
         current_avg_pos_w[:, 2] += 0.5  # 0.5m 띄우기
 
-
         # --- 2. "목표" 화살표 (초록색) - 고정 위치 + 월드 커맨드 ---
         fixed_pos_w = self.command_spawn_pos_w.clone()
         fixed_pos_w[:, 2] += 0.5  # 0.5m 띄우기
         
-        # 🔧 월드 커맨드를 직접 시각화 (heading 변환 없이)
+        # 월드 커맨드를 직접 시각화
         vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_world_velocity_to_arrow(
             self.vel_command_w[:, :2]
         )
         
         self.goal_vel_visualizer.visualize(fixed_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
-
 
         # --- 3. "현재" 화살표 (파란색) - 현재 위치 + 월드 속도 ---
         body_lin_vels_w = self.robot.data.body_com_vel_w[:, :, :3]
@@ -251,13 +228,12 @@ class KanakeUniformVelocityCommand(CommandTerm):
         
         self.current_vel_visualizer.visualize(current_avg_pos_w, vel_arrow_quat, vel_arrow_scale)
 
-
     def _resolve_world_velocity_to_arrow(
         self, 
         xy_velocity_w: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
-        [새 함수] 월드 기준 XY 속도를 화살표로 변환
+        월드 기준 XY 속도를 화살표로 변환
         
         Args:
             xy_velocity_w: (num_envs, 2) - 월드 기준 XY 속도

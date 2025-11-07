@@ -249,13 +249,18 @@ def action_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the actions using L2 squared kernel."""
     return torch.sum(torch.square(env.action_manager.action), dim=1)
 
+
+def action_l1(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Penalize the actions using L1 norm."""
+    return torch.sum(torch.abs(env.action_manager.action), dim=1)
+
 def raw_action_save(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the raw actions using L2 squared kernel and save actions to CSV."""
     
     # CSV 저장 경로 설정
     csv_dir = Path("/home/nuc/IsaacLab_snake/logs/actions")
     csv_dir.mkdir(parents=True, exist_ok=True)
-    csv_file = csv_dir / "raw_actions.csv"
+    csv_file = csv_dir / "raw_actions1.csv"
     
     # 현재 액션 가져오기
     current_actions = env.action_manager.action  # [num_envs, action_dim]
@@ -290,6 +295,49 @@ def raw_action_save(env: ManagerBasedRLEnv) -> torch.Tensor:
     
     # 원래 리워드 계산 (L2)
     return torch.sum(torch.square(current_actions), dim=1)
+
+
+def observation_save(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Dummy reward term that saves observations to CSV for analysis."""
+    
+    # CSV 저장 경로 설정
+    csv_dir = Path("/home/nuc/IsaacLab_snake/logs/observations")
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    csv_file = csv_dir / "observations.csv"
+    
+    # 현재 관측치 가져오기
+    observations = env.observation_manager.get_observation()  # [num_envs, obs_dim]
+    
+    # CSV 저장 (첫 번째 환경의 관측치만 저장)
+    if hasattr(env, 'common_step_counter'):
+        step = env.common_step_counter
+    else:
+        step = getattr(env, '_step_counter', 0)
+    
+    # 첫 번째 환경의 관측치만 저장 (메모리 효율성)
+    obs_data = observations[0].cpu().numpy()
+    
+    # CSV 헤더 생성 (처음 저장할 때만)
+    file_exists = csv_file.exists()
+    
+    try:
+        with open(csv_file, 'a', newline='') as f:
+            writer = csv.writer(f)
+            
+            # 헤더 작성 (파일이 처음 생성될 때)
+            if not file_exists:
+                header = ['step'] + [f'obs_{i}' for i in range(len(obs_data))]
+                writer.writerow(header)
+            
+            # 데이터 작성
+            row = [step] + obs_data.tolist()
+            writer.writerow(row)
+            
+    except Exception as e:
+        print(f"ERROR saving observations to CSV: {e}")
+    
+    # 더미 리워드 반환
+    return torch.zeros(env.num_envs, device=env.device)
 
 
 """
@@ -363,7 +411,10 @@ def reward_world_progress(
     asset: Articulation = env.scene[asset_cfg.name]
     
     # 🔧 [STEP 1] 타겟 속도 방향 (단위 벡터)
-    target_vel_w_xy = env.command_manager.get_command(command_name)[:, :2]
+    # target_vel_w_xy = env.command_manager.get_command(command_name)[:, :2]
+    # target_vel_direction = F.normalize(target_vel_w_xy, p=2, dim=1, eps=1e-6)
+    command_term = env.command_manager.get_term(command_name)
+    target_vel_w_xy = command_term.vel_command_w[:, :2]
     target_vel_direction = F.normalize(target_vel_w_xy, p=2, dim=1, eps=1e-6)
     
     body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]

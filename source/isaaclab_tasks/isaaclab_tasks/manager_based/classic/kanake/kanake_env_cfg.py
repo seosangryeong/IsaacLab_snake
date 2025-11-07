@@ -53,11 +53,13 @@ class MySceneCfg(InteractiveSceneCfg):
 
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
-        # terrain_type="usd",
-        terrain_type="plane",
+        terrain_type="usd",
+        # terrain_type="plane",
         # terrain_type="generator",
         # terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
         # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
+        usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd",  
+
         # terrain_type="plane",
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
@@ -104,15 +106,15 @@ class CommandsCfg:
     # )
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(1.0, 1.0),
+        resampling_time_range=(10.0, 10.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
-            # lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
-            lin_vel_x=(1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(-0.0, 0.0), heading=(0.0, 0.0)
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
+            # lin_vel_x=(1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0.0, 0.0)
 
         ),
     )
@@ -251,58 +253,58 @@ class ObservationsCfg:
 class EventCfg:
     """Configuration for events."""
 
-#     reset_base = EventTerm(
-#         func=mdp.reset_root_state_uniform,
-#         mode="reset",
-#         params={
-#             "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "z": (0.25, 0.25), "yaw": (-3.14, 3.14)},
-#             "velocity_range": {
-#                 "x": (-0.5, 0.5),
-#                 "y": (-0.5, 0.5),
-#                 "z": (-0.5, 0.5),
-#                 "roll": (-0.5, 0.5),
-#                 "pitch": (-0.5, 0.5),
-#                 "yaw": (-0.5, 0.5),
-#             },
-#         },
-#     )
+    reset_base = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "z": (0.25, 0.25), "yaw": (-3.14, 3.14)},
+            "velocity_range": {
+                "x": (-0.5, 0.5),
+                "y": (-0.5, 0.5),
+                "z": (-0.5, 0.5),
+                "roll": (-0.5, 0.5),
+                "pitch": (-0.5, 0.5),
+                "yaw": (-0.5, 0.5),
+            },
+        },
+    )
 
-#     reset_robot_joints = EventTerm(
-#         func=mdp.reset_joints_by_offset,
-#         mode="reset",
-#         params={
-#             "position_range": (-np.pi/6, np.pi/6),  
-#             "velocity_range": (0, 0),
-#         },
-#     )
+    reset_robot_joints = EventTerm(
+        func=mdp.reset_joints_by_offset,
+        mode="reset",
+        params={
+            "position_range": (-np.pi/6, np.pi/6),  
+            "velocity_range": (0, 0),
+        },
+    )
 
-#     physics_material = EventTerm(
-#         func=mdp.randomize_rigid_body_material,
-#         mode="startup",
-#         params={
-#             "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
-#             "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
-# ),
-#             "static_friction_range": (0.4, 1.0),
-#             "dynamic_friction_range": (0.4, 1.0),
-#             "restitution_range": (0.0, 0.2),
-#             "num_buckets": 64,
-#         },
-#     )
+    physics_material = EventTerm(
+        func=mdp.randomize_rigid_body_material,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
+            "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
+),
+            "static_friction_range": (0.4, 1.0),2
+            "dynamic_friction_range": (0.4, 1.0),
+            "restitution_range": (0.0, 0.2),
+            "num_buckets": 64,
+        },
+    )
 
 
 
-#     add_base_mass = EventTerm(
-#         func=mdp.randomize_rigid_body_mass,
-#         mode="startup",
-#         params={
-#             "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
-#             "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
-# ),
-#             "mass_distribution_params": (-0.005, 0.005),
-#             "operation": "add",
-#         },
-#     )
+    add_base_mass = EventTerm(
+        func=mdp.randomize_rigid_body_mass,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
+            "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
+),
+            "mass_distribution_params": (-0.005, 0.005),
+            "operation": "add",
+        },
+    )
     
     
 
@@ -425,7 +427,10 @@ class RewardsCfg:
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
+    action_l1 = RewTerm(func=mdp.action_l1, weight=-0.0001)
+
+
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
     # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
 
@@ -492,7 +497,7 @@ class TerminationsCfg:
 
 @configclass
 class CurriculumCfg:
-     """Curriculum terms for the MDP."""
+    """Curriculum terms for the MDP."""
 
     # camera_orientation_alignment_reward = CurrTerm(
     #     func=mdp.modify_reward_weight, params={"term_name": "camera_orientation_alignment_reward", "weight": 2.0, "num_steps": 10000}
@@ -515,6 +520,20 @@ class CurriculumCfg:
     # speed_towards_target_reward = CurrTerm(
     #     func=mdp.modify_reward_weight, params={"term_name": "speed_towards_target_reward", "weight": 2.0, "num_steps": 10000}
     # )
+    # action_rate_l2 = CurrTerm(
+    #     func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.01, "num_steps": 50000}
+    # )
+    # action_l2 = CurrTerm(
+    #     func=mdp.modify_reward_weight, params={"term_name": "action_l2", "weight": -0.01, "num_steps": 50000}
+    # )
+    modify_command_resampling_time = CurrTerm(
+        func=mdp.modify_command_resampling_time,
+        params={
+            "command_name": "kanake_command",
+            "resampling_time_range": (1.0, 3.0),  # 더 빠른 리샘플링
+            "num_steps": 50000,  
+        }
+    )
 
 
 @configclass

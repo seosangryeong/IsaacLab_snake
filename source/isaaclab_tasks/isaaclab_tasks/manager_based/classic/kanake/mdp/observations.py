@@ -220,6 +220,7 @@ def base_lin_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
     asset: RigidObject = env.scene[asset_cfg.name]
     # print(asset.data.root_lin_vel_b)
     base_lin_vel = asset.data.root_lin_vel_b
+    # print("Base Linear Velocity (Body Frame):", base_lin_vel)
 
 
     return base_lin_vel
@@ -231,7 +232,7 @@ def base_ang_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
     asset: RigidObject = env.scene[asset_cfg.name]
     base_ang_vel = asset.data.root_ang_vel_b
 
-    # print(asset.data.root_ang_vel_b)
+    # print("Base Angular Velocity (Body Frame):", base_ang_vel)
     return asset.data.root_ang_vel_b
 
 
@@ -262,6 +263,7 @@ def root_quat_w(
     asset: RigidObject = env.scene[asset_cfg.name]
 
     quat = asset.data.root_quat_w
+    # print(quat)
     # make the quaternion real-part positive if configured
     return math_utils.quat_unique(quat) if make_quat_unique else quat
 
@@ -432,6 +434,9 @@ def joint_effort(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
     # print(asset.data.applied_torque[:, asset_cfg.joint_ids])
+    # print(f"Target positions: {asset.data.joint_pos_target[:, asset_cfg.joint_ids]}")
+    # print(f"Current positions: {asset.data.joint_pos[:, asset_cfg.joint_ids]}")
+    # print(f"Applied torque: {asset.data.applied_torque[:, asset_cfg.joint_ids]}")
     return asset.data.applied_torque[:, asset_cfg.joint_ids]
 
 
