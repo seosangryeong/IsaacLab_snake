@@ -106,7 +106,7 @@ class CommandsCfg:
     # )
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(10.0, 10.0),
+        resampling_time_range=(8.0, 12.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=False,
@@ -328,7 +328,7 @@ class RewardsCfg:
     # )
     reward_world_progress = RewTerm(
         func=mdp.reward_world_progress,
-        weight=2.0,
+        weight=3.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -427,12 +427,12 @@ class RewardsCfg:
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
-    action_l1 = RewTerm(func=mdp.action_l1, weight=-0.0001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.1)
+    # action_l1 = RewTerm(func=mdp.action_l1, weight=-0.0001)
 
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
-    raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
+    # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
 
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(
@@ -530,7 +530,7 @@ class CurriculumCfg:
         func=mdp.modify_command_resampling_time,
         params={
             "command_name": "kanake_command",
-            "resampling_time_range": (1.0, 3.0),  # 더 빠른 리샘플링
+            "resampling_time_range": (1.0, 4.0),  # 더 빠른 리샘플링
             "num_steps": 50000,  
         }
     )

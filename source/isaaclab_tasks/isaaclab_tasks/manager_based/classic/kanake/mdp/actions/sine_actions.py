@@ -96,51 +96,28 @@ class JointSineAction(ActionTerm):
         phase_h_action = actions[:, self._num_joints + 3]
 
 
-        # # 진폭 (Amplitude)
-        # amplitudes = 1.0 *(torch.tanh(amp_actions)+ 1.0)
-
-        # # 주파수 (Frequency)
-        # freq_v = 1.0 * (torch.tanh(freq_v_action) + 1.0) 
-        # freq_h = 1.0 * (torch.tanh(freq_h_action) + 1.0) 
-
-        # # 위상 (Phase)
-        # phase_v = np.pi * torch.tanh(phase_v_action) 
-        # phase_h = np.pi * torch.tanh(phase_h_action)
-        # amplitudes = 0.5 +(torch.tanh(amp_actions)+ 1.0)
-        ########
-        # # 주파수 (Frequency)
-        # freq_v = 0.3 + 0.5 * (torch.tanh(freq_v_action) + 1.0) / 2.0
-        # freq_h = 0.3 + 0.5 * (torch.tanh(freq_h_action) + 1.0) / 2.0
-
-        # # 위상 (Phase)
-        # phase_v = np.pi/4 * torch.tanh(phase_v_action) 
-        # phase_h = np.pi/4 * torch.tanh(phase_h_action)
 
         ########
-        #진폭 : 0.5~1.5
         # amplitudes = 0.5 +(torch.tanh(amp_actions)+ 1.0) / 2.0
-        amplitudes = 0.5 +(torch.tanh(amp_actions/50)+ 1.0) / 2.0
 
-        # 주파수 : 0.3 ~ 1.1
-        # freq_v = 0.5 + 0.8 * (torch.tanh(freq_v_action) + 1.0) / 2.0
-        # freq_h = 0.5 + 0.8 * (torch.tanh(freq_h_action) + 1.0) / 2.0
-        freq_v = 0.7 + 0.7 * (torch.tanh(freq_v_action/50) + 1.0) / 2.0
-        freq_h = 0.7 + 0.7 * (torch.tanh(freq_h_action/50) + 1.0) / 2.0
-
-        # 위상 (Phase)
-        phase_v = np.pi/4 * torch.tanh(phase_v_action/50) 
-        phase_h = np.pi/4 * torch.tanh(phase_h_action/50) 
-        
-        # # 진폭 (Amplitude)
-        # amplitudes = 1.0 *torch.tanh(amp_actions)
-
-        # # 주파수 (Frequency)
-        # freq_v = (torch.tanh(freq_v_action) + 1.0) * 1.5
-        # freq_h = (torch.tanh(freq_h_action) + 1.0) * 1.5
+        # freq_v = 0.7 + 0.7 * (torch.tanh(freq_v_action/ 5) + 1.0) / 2.0
+        # freq_h = 0.7 + 0.7 * (torch.tanh(freq_h_action/ 5 ) + 1.0) / 2.0
 
         # # 위상 (Phase)
-        # phase_v = 1.5 + torch.tanh(phase_v_action) 
-        # phase_h = 1.5 + torch.tanh(phase_h_action)
+        # phase_v = np.pi/4 * torch.tanh(phase_v_action/ 5) 
+        # phase_h = np.pi/4 * torch.tanh(phase_h_action/ 5) 
+        # 진폭 (Amplitude): 0.5 ~ 1.5
+        amplitudes = 0.5 + (torch.nn.functional.softsign(amp_actions) + 1.0) / 2.0
+
+        # 주파수 (Frequency): 0.3 ~ 1.1
+        freq_v = 0.7 + 0.7 * (torch.nn.functional.softsign(freq_v_action / 5) + 1.0) / 2.0
+        freq_h = 0.7 + 0.7 * (torch.nn.functional.softsign(freq_h_action / 5) + 1.0) / 2.0
+
+        # 위상 (Phase): -π/4 ~ π/4
+        phase_v = np.pi / 4 * torch.nn.functional.softsign(phase_v_action / 5)
+        phase_h = np.pi / 4 * torch.nn.functional.softsign(phase_h_action / 5)
+        
+
         
         t = torch.full((self.num_envs, 1), self._current_time, device=self.device)
 
