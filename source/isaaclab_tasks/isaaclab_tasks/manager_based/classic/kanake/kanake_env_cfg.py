@@ -187,10 +187,10 @@ class ObservationsCfg:
         """Observations for the policy."""
 
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         # imu_lin_acc = ObsTerm(func=mdp.imu_lin_acc)
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        root_quat_w = ObsTerm(func=mdp.root_quat_w)
+        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        # root_quat_w = ObsTerm(func=mdp.root_quat_w)
         # imu_ang_vel = ObsTerm(func=mdp.imu_ang_vel)
         # projected_gravity = ObsTerm(func=mdp.projected_gravity)
         # imu_orientation = ObsTerm(func=mdp.imu_orientation)
@@ -208,6 +208,7 @@ class ObservationsCfg:
         def __post_init__(self):
             self.enable_corruption = True
             self.concatenate_terms = True
+            # self.history_length = 5
 
     # @configclass
     # class CriticCfg(ObsGroup):
@@ -328,7 +329,7 @@ class RewardsCfg:
     # )
     reward_world_progress = RewTerm(
         func=mdp.reward_world_progress,
-        weight=3.0,
+        weight=2.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -421,14 +422,14 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.85})
+    upright = RewTerm(func=mdp.upright_posture_shaped_penalty, weight=2.0, params={"threshold": 0.8})
 
     # # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.1)
-    # action_l1 = RewTerm(func=mdp.action_l1, weight=-0.0001)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    action_l1 = RewTerm(func=mdp.action_l1, weight=-0.0001)
 
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)

@@ -882,18 +882,25 @@ def upright_posture_bonus(
 
     return (up_proj > threshold).float()
 
-def upright_posture_shaped(env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
-    """Shaped upright posture reward:
-    - 아래는 선형 증가
-    - threshold 이후는 모두 1.0 고정
+def upright_posture_shaped_penalty(
+    env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
     """
-    up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)  # [-1, 1]
-    up_proj_clipped = torch.clip(up_proj, min=0.0)  # [0, 1]로 제한
+    Shaped upright posture reward:
+    - threshold 이하: 선형 페널티 (반대가 될수록 더 큰 음수)
+    - threshold 이상: 선형 보상 (수직에 가까울수록 더 큰 양수)
+    """
+    up_proj = obs.base_up_proj(env, asset_cfg).squeeze(-1)  # [-1, 1]
+    
+    # threshold 기준으로 나누어 처리
     reward = torch.where(
-        up_proj_clipped > threshold,
-        torch.ones_like(up_proj_clipped),
-        up_proj_clipped / threshold
+        up_proj >= threshold,
+        # threshold 이상: 선형 증가 보상 (threshold에서 0, 1.0에서 최대)
+        (up_proj - threshold) / (1.0 - threshold),
+        # threshold 이하: 선형 페널티 (-1에서 최대 페널티, threshold에서 0)
+        (up_proj - threshold) / (threshold + 1.0) * 2.0  # 페널티를 2배로 강화
     )
+    
     return reward
 
 
