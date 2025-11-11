@@ -91,58 +91,35 @@ class MySceneCfg(InteractiveSceneCfg):
 @configclass
 class CommandsCfg:
     """Command specifications for the MDP."""
-    # command -> (x,y,z)
-    # kanake_command = mdp.KanakeBaseCommandCfg(
+
+    # kanake_command = mdp.KanakeUniformVelocityCommandCfg(
     #     asset_name="robot",
-    #     simple_heading=True,
-    #     resampling_time_range=(10.0, 10.0), 
-    #     ranges=mdp.KanakeBaseCommandCfg.Ranges(
-    #         pos_x=(-2.0, 2.0),
-    #         pos_y=(-2.0, 2.0),
-    #         # pos_z = (0.05, 0.05),
-    #         heading=(-0.0, 0.0),
-    #     ),
+    #     resampling_time_range=(8.0, 12.0),
+    #     rel_standing_envs=0.02,
+    #     rel_heading_envs=1.0,
+    #     heading_command=False,
+    #     heading_control_stiffness=0.5,
     #     debug_vis=True,
+    #     ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
+    #         lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
+    #         # lin_vel_x=(1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0.0, 0.0)
+
+    #     ),
     # )
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(8.0, 12.0),
-        rel_standing_envs=0.02,
+        resampling_time_range=(100.0, 100.0),
+        rel_standing_envs=0.0,
         rel_heading_envs=1.0,
         heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
-            # lin_vel_x=(1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0.0, 0.0)
+            # lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
+            lin_vel_x=(1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0.0, 0.0)
 
         ),
     )
-    # kanake_command = mdp.UniformVelocityCommandCfg(
-    #     asset_name="robot",
-    #     resampling_time_range=(10.0, 10.0),
-    #     rel_standing_envs=0.02,
-    #     rel_heading_envs=1.0,
-    #     heading_command=True,
-    #     heading_control_stiffness=0.5,
-    #     debug_vis=True,
-    #     ranges=mdp.UniformVelocityCommandCfg.Ranges(
-    #         lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
-    #     ),
-    # )
-    # head_command = mdp.KanakeWorldCommandCfg(
-    #     asset_name="robot",
-    #     resampling_time_range=(10.0, 10.0), 
-    #     ranges=mdp.KanakeWorldCommandCfg.Ranges(
-
-    #         pos_z=(0.15, 0.15),
-
-    #         pitch=(-0.1, 0.1),
-    #         yaw=(0.0, 0.0),
-    #         roll=(0.0, 0.0)
-    #     ),
-    #     debug_vis=True,
-    # )
 
 @configclass
 class ActionsCfg:
@@ -254,58 +231,58 @@ class ObservationsCfg:
 class EventCfg:
     """Configuration for events."""
 
-    reset_base = EventTerm(
-        func=mdp.reset_root_state_uniform,
-        mode="reset",
-        params={
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "z": (0.25, 0.25), "yaw": (-3.14, 3.14)},
-            "velocity_range": {
-                "x": (-0.5, 0.5),
-                "y": (-0.5, 0.5),
-                "z": (-0.5, 0.5),
-                "roll": (-0.5, 0.5),
-                "pitch": (-0.5, 0.5),
-                "yaw": (-0.5, 0.5),
-            },
-        },
-    )
+#     reset_base = EventTerm(
+#         func=mdp.reset_root_state_uniform,
+#         mode="reset",
+#         params={
+#             "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "z": (0.25, 0.25), "yaw": (-3.14, 3.14)},
+#             "velocity_range": {
+#                 "x": (-0.5, 0.5),
+#                 "y": (-0.5, 0.5),
+#                 "z": (-0.5, 0.5),
+#                 "roll": (-0.5, 0.5),
+#                 "pitch": (-0.5, 0.5),
+#                 "yaw": (-0.5, 0.5),
+#             },
+#         },
+#     )
 
-    reset_robot_joints = EventTerm(
-        func=mdp.reset_joints_by_offset,
-        mode="reset",
-        params={
-            "position_range": (-np.pi/6, np.pi/6),  
-            "velocity_range": (0, 0),
-        },
-    )
+#     reset_robot_joints = EventTerm(
+#         func=mdp.reset_joints_by_offset,
+#         mode="reset",
+#         params={
+#             "position_range": (-np.pi/6, np.pi/6),  
+#             "velocity_range": (0, 0),
+#         },
+#     )
 
-    physics_material = EventTerm(
-        func=mdp.randomize_rigid_body_material,
-        mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
-            "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
-),
-            "static_friction_range": (0.4, 1.0),
-            "dynamic_friction_range": (0.4, 1.0),
-            "restitution_range": (0.0, 0.2),
-            "num_buckets": 64,
-        },
-    )
+#     physics_material = EventTerm(
+#         func=mdp.randomize_rigid_body_material,
+#         mode="startup",
+#         params={
+#             "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
+#             "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
+# ),
+#             "static_friction_range": (0.4, 1.0),
+#             "dynamic_friction_range": (0.4, 1.0),
+#             "restitution_range": (0.0, 0.2),
+#             "num_buckets": 64,
+#         },
+#     )
 
 
 
-    add_base_mass = EventTerm(
-        func=mdp.randomize_rigid_body_mass,
-        mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
-            "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
-),
-            "mass_distribution_params": (-0.005, 0.005),
-            "operation": "add",
-        },
-    )
+#     add_base_mass = EventTerm(
+#         func=mdp.randomize_rigid_body_mass,
+#         mode="startup",
+#         params={
+#             "asset_cfg": SceneEntityCfg("robot", body_names = ["Link1", "Link2", "Link3", "Link4","Link5",
+#             "Link6","Link7", "Link8", "Link9", "Link10", "Link11", "Link12", "Link13", "Link14", "Link15", "tail", "head"]
+# ),
+#             "mass_distribution_params": (-0.005, 0.005),
+#             "operation": "add",
+#         },
+#     )
     
     
 
@@ -433,7 +410,7 @@ class RewardsCfg:
 
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
-    # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
+    raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
 
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(
@@ -580,3 +557,5 @@ class kanakeEnvCfg_PLAY(kanakeEnvCfg):
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
+        self.episode_length_s = 1000.0
+        self.terminations.max.params["maximum_height"] = 20.0  

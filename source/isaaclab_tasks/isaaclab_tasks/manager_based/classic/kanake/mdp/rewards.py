@@ -290,7 +290,7 @@ def raw_action_save(env: ManagerBasedRLEnv, writer=None) -> torch.Tensor:
     # CSV 저장 로직
     try:
         file_exists = csv_file.exists()
-        with open(csv_file, 'a', newline='') as f:
+        with open(csv_file, 'w', newline='') as f:
             writer_csv = csv.writer(f)
             if not file_exists:
                 header = ['step'] + [f'action_{i}' for i in range(len(action_data))]
