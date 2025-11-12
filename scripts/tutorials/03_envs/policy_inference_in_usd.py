@@ -47,7 +47,8 @@ from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
-from isaaclab_tasks.manager_based.locomotion.velocity.config.h1.rough_env_cfg import H1RoughEnvCfg_PLAY
+# from isaaclab_tasks.manager_based.locomotion.velocity.config.h1.rough_env_cfg import H1RoughEnvCfg_PLAY
+from isaaclab_tasks.manager_based.classic.kanake.kanake_env_cfg import kanakeEnvCfg_PLAY
 
 
 def main():
@@ -59,13 +60,13 @@ def main():
     policy = torch.jit.load(file, map_location=args_cli.device)
 
     # setup environment
-    env_cfg = H1RoughEnvCfg_PLAY()
+    env_cfg = kanakeEnvCfg_PLAY()
     env_cfg.scene.num_envs = 1
     env_cfg.curriculum = None
     env_cfg.scene.terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="usd",
-        usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Simple_Warehouse/warehouse.usd",
+        usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd",
     )
     env_cfg.sim.device = args_cli.device
     if args_cli.device == "cpu":

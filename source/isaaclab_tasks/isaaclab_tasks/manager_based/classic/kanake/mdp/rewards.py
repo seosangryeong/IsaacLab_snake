@@ -242,6 +242,7 @@ def applied_torque_limits(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = Sc
 def action_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the rate of change of the actions using L2 squared kernel."""
     # print("=== ACTION RATE L2 CALLED ===")
+    # print("Current Actions:", env.action_manager.action)
     return torch.sum(torch.square(env.action_manager.action - env.action_manager.prev_action), dim=1)
 
 
@@ -290,7 +291,7 @@ def raw_action_save(env: ManagerBasedRLEnv, writer=None) -> torch.Tensor:
     # CSV 저장 로직
     try:
         file_exists = csv_file.exists()
-        with open(csv_file, 'w', newline='') as f:
+        with open(csv_file, 'a', newline='') as f:
             writer_csv = csv.writer(f)
             if not file_exists:
                 header = ['step'] + [f'action_{i}' for i in range(len(action_data))]
@@ -464,7 +465,7 @@ def reward_world_progress(
     # target_vel_w_xy = env.command_manager.get_command(command_name)[:, :2]
     # target_vel_direction = F.normalize(target_vel_w_xy, p=2, dim=1, eps=1e-6)
     command_term = env.command_manager.get_term(command_name)
-    target_vel_w_xy = command_term.vel_command_w[:, :2]
+    target_vel_w_xy = command_term.goal_vel_w_debug[:, :2]
     target_vel_direction = F.normalize(target_vel_w_xy, p=2, dim=1, eps=1e-6)
     
     body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
@@ -890,7 +891,7 @@ def upright_posture_shaped_penalty(
     - threshold 이하: 선형 페널티 (반대가 될수록 더 큰 음수)
     - threshold 이상: 선형 보상 (수직에 가까울수록 더 큰 양수)
     """
-    up_proj = obs.base_up_proj(env, asset_cfg).squeeze(-1)  # [-1, 1]
+    up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)  # [-1, 1]
     
     # threshold 기준으로 나누어 처리
     reward = torch.where(
