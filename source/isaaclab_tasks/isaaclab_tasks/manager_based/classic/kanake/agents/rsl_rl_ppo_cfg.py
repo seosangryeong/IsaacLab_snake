@@ -12,17 +12,28 @@ from isaaclab.utils import configclass
 @configclass
 class kanakePPORunnerCfg(RslRlOnPolicyRunnerCfg):
     # num_steps_per_env = 32
-    num_steps_per_env = 32
+    num_steps_per_env = 20
     max_iterations = 10000
     save_interval = 50
     experiment_name = "kanake"
     empirical_normalization = True
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,
-        actor_hidden_dims=[400, 200, 100],
-        critic_hidden_dims=[400, 200, 100],
+        actor_hidden_dims=[512, 256, 128],
+        critic_hidden_dims=[512, 256, 128],
         activation="elu",
     )
+    # policy = RslRlSelfAttentionCfg(
+    #     num_agents=16,
+    #     latent_dim=128,
+    #     num_attention_heads=2,
+    #     num_encoder_layers=1,
+    #     activation="elu",
+    #     init_noise_std=1.0,
+    # )  
+
+
+
 
     algorithm = RslRlPpoAlgorithmCfg(
         value_loss_coef=1.0,
@@ -31,25 +42,10 @@ class kanakePPORunnerCfg(RslRlOnPolicyRunnerCfg):
         entropy_coef=0.02,
         num_learning_epochs=5,
         num_mini_batches=4,
-        learning_rate=5e-4,
+        learning_rate=0.005,
         schedule="adaptive",
         gamma=0.99,
         lam=0.95,
         desired_kl=0.01,
         max_grad_norm=1.0,
     )
-
-    # algorithm = RslRlPpoAlgorithmCfg(
-    #     value_loss_coef=0.5,
-    #     use_clipped_value_loss=True,
-    #     clip_param=0.2,
-    #     entropy_coef=0.01,
-    #     num_learning_epochs=5,
-    #     num_mini_batches=2,
-    #     learning_rate=0.0005,
-    #     schedule="adaptive",
-    #     gamma=0.99,
-    #     lam=0.95,
-    #     desired_kl=0.01,
-    #     max_grad_norm=0.5,
-    # )
