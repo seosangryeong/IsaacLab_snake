@@ -891,7 +891,8 @@ def upright_posture_shaped_penalty(
     - threshold 이하: 선형 페널티 (반대가 될수록 더 큰 음수)
     - threshold 이상: 선형 보상 (수직에 가까울수록 더 큰 양수)
     """
-    up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)  # [-1, 1]
+    up_proj = obs.base_up_proj(env, asset_cfg).squeeze(-1)  # [-1, 1]
+    # print("up_proj", up_proj)
     
     # threshold 기준으로 나누어 처리
     reward = torch.where(
@@ -901,6 +902,7 @@ def upright_posture_shaped_penalty(
         # threshold 이하: 선형 페널티 (-1에서 최대 페널티, threshold에서 0)
         (up_proj - threshold) / (threshold + 1.0) * 2.0  # 페널티를 2배로 강화
     )
+    # print("upright posture shaped reward", reward)
     
     return reward
 

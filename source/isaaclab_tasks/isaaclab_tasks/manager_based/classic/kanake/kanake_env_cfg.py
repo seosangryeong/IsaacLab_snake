@@ -101,7 +101,7 @@ class CommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
+            lin_vel_x=(-0.5, 0.5), lin_vel_y=(-0.5,0.5), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
             # lin_vel_x=(1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0.0, 0.0)
 
         ),
@@ -125,10 +125,10 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
     
-    # joint_effort = mdp.JointEffortActionCfg(        
+    # joint_pos = mdp.JointPositionActionCfg(        
     #     asset_name="robot",
     #     joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-    #     scale=1.0)  
+    #     scale=0.5)  
     
     joint_sine = mdp.JointSineActionCfg(
         asset_name="robot",               
@@ -306,7 +306,7 @@ class RewardsCfg:
     # )
     reward_world_progress = RewTerm(
         func=mdp.reward_world_progress,
-        weight=3.0,
+        weight=2.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -399,14 +399,14 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_shaped_penalty, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.upright_posture_shaped_penalty, weight=3.0, params={"threshold": 0.8})
 
     # # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.001)
+    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.001)
 
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
