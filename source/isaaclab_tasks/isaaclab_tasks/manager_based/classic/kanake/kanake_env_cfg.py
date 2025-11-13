@@ -183,32 +183,32 @@ class ObservationsCfg:
 
 
         def __post_init__(self):
-            self.enable_corruption = True
+            self.enable_corruption = False
             self.concatenate_terms = True
             # self.history_length = 5
 
-    # @configclass
-    # class CriticCfg(ObsGroup):
+    @configclass
+    class CriticCfg(ObsGroup):
 
-    #     base_height = ObsTerm(func=mdp.base_pos_z)
-    #     base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
-    #     base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-    #     average_body_lin_vel_xy = ObsTerm(func=mdp.average_body_lin_vel_xy)
-    #     projected_gravity = ObsTerm(func=mdp.projected_gravity)
-    #     base_pos = ObsTerm(func=mdp.base_pos)
-    #     joint_effort = ObsTerm(func=mdp.joint_effort)
-    #     pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-    #     joint_vel = ObsTerm(func=mdp.joint_vel)
-    #     joint_pos = ObsTerm(func=mdp.joint_pos)
-    #     actions = ObsTerm(func=mdp.last_action)
+        base_height = ObsTerm(func=mdp.base_pos_z)
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        average_body_lin_vel_xy = ObsTerm(func=mdp.average_body_lin_vel_xy)
+        projected_gravity = ObsTerm(func=mdp.projected_gravity)
+        base_pos = ObsTerm(func=mdp.base_pos)
+        joint_effort = ObsTerm(func=mdp.joint_effort)
+        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
+        joint_vel = ObsTerm(func=mdp.joint_vel)
+        joint_pos = ObsTerm(func=mdp.joint_pos)
+        actions = ObsTerm(func=mdp.last_action)
 
-    #     def __post_init__(self):
-    #         self.enable_corruption = False
-    #         self.concatenate_terms = True
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
-    # critic: CriticCfg = CriticCfg()
+    critic: CriticCfg = CriticCfg()
 
 # @configclass
 # class ObservationsCfg:
@@ -399,7 +399,7 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_shaped_penalty, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
 
     # # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
@@ -535,7 +535,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
         self.decimation = 2
         self.episode_length_s = 20.0
         # simulation settings
-        self.sim.dt = 1 / 60.0
+        self.sim.dt = 1 / 80.0
         self.sim.render_interval = 2
         # self.sim.render_interval = 2
         self.sim.physx.bounce_threshold_velocity = 0.2
