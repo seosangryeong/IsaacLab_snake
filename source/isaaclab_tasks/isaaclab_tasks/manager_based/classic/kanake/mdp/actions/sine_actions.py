@@ -172,7 +172,7 @@ class JointSineAction(ActionTerm):
 
     def apply_actions(self):
         self._asset.set_joint_position_target(self._processed_actions, joint_ids=self._joint_ids)
-        print("Applied Actions:", self._asset.set_joint_position_target(self._processed_actions, joint_ids=self._joint_ids))
+        # print("Applied Actions:", self._asset.set_joint_position_target(self._processed_actions, joint_ids=self._joint_ids))
 
     def reset(self, env_ids: Sequence[int] | None = None) -> None:
         if env_ids is None:

@@ -175,6 +175,7 @@ def main():
     # simulate environment
     while simulation_app.is_running():
         start_time = time.time()
+        
         # run everything in inference mode
         with torch.inference_mode():
             # agent stepping

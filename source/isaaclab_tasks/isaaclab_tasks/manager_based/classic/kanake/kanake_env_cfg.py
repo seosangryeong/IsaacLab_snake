@@ -54,11 +54,13 @@ class MySceneCfg(InteractiveSceneCfg):
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         # terrain_type="usd",
-        terrain_type="plane",
+        terrain_type="usd",
+        # terrain_type="plane",
         # terrain_type="generator",
         # terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
         # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
-        # terrain_type="plane",
+        usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd",  
+
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="average",
@@ -111,7 +113,7 @@ class CommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 0.5), lin_vel_y=(-0.5, 0.5), ang_vel_z=(0.0, 0.0), heading=(-math.pi, math.pi)
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
         ),
     )
     # kanake_command = mdp.UniformVelocityCommandCfg(
@@ -185,8 +187,8 @@ class ObservationsCfg:
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
         # base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         # imu_lin_acc = ObsTerm(func=mdp.imu_lin_acc)
-        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        # root_quat_w = ObsTerm(func=mdp.root_quat_w)
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        root_quat_w = ObsTerm(func=mdp.root_quat_w)
         # imu_ang_vel = ObsTerm(func=mdp.imu_ang_vel)
         # projected_gravity = ObsTerm(func=mdp.projected_gravity)
         # imu_orientation = ObsTerm(func=mdp.imu_orientation)
@@ -324,7 +326,7 @@ class RewardsCfg:
     # )
     reward_world_progress = RewTerm(
         func=mdp.reward_world_progress,
-        weight=2.0,
+        weight=10.0,
         params={"command_name": "kanake_command"}
     )
 
@@ -417,15 +419,15 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.kanake_upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.kanake_upright_posture_bonus, weight=3.0, params={"threshold": 0.8})
 
     # # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.5)
-    action_rate_l2_acceleration = RewTerm(func=mdp.action_rate_l2_acceleration, weight=-0.1)
-    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.01)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.1)
+    action_rate_l2_acceleration = RewTerm(func=mdp.action_rate_l2_acceleration, weight=-0.05)
+    action_l2_threshold = RewTerm(func=mdp.action_l2_threshold, weight=-0.05)
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
     # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=-0.001)

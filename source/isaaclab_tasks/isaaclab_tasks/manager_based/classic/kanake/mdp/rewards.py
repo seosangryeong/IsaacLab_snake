@@ -264,6 +264,19 @@ def action_l1(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the actions using L1 norm."""
     return torch.sum(torch.abs(env.action_manager.action), dim=1)
 
+def action_l2_threshold(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Penalize the actions using L2 squared kernel with threshold."""
+    action_l2 = torch.sum(torch.square(env.action_manager.action), dim=1)
+    threshold = 2.0
+    
+    # threshold 이하면 페널티 0, 초과하면 기존 방식
+    penalty = torch.where(
+        action_l2 <= threshold,
+        torch.zeros_like(action_l2),          # threshold 이하: 페널티 0
+        action_l2 - threshold                 # threshold 초과: 초과분만큼 페널티
+    )
+    
+    return penalty
 
 
 import pandas as pd
@@ -470,7 +483,6 @@ def reward_world_progress(
     """
     asset: Articulation = env.scene[asset_cfg.name]
     
-    # 🔧 [STEP 1] 타겟 속도 방향 (단위 벡터)
     # target_vel_w_xy = env.command_manager.get_command(command_name)[:, :2]
     # target_vel_direction = F.normalize(target_vel_w_xy, p=2, dim=1, eps=1e-6)
     command_term = env.command_manager.get_term(command_name)
@@ -484,7 +496,6 @@ def reward_world_progress(
     alignment = torch.sum(current_vel_direction * target_vel_direction, dim=1)
     alignment = torch.clamp(alignment, -1.0, 1.0)  # 안전 클리핑
     
-    # 🔧 [STEP 4] 타겟 속도가 0이면 보상 0 (정지 명령)
     target_magnitude = torch.norm(target_vel_w_xy, dim=1)
     is_valid_command = (target_magnitude > 1e-6).float()
     
