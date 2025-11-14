@@ -351,6 +351,7 @@ def joint_pos(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
+    # print("joint_pos:",asset.data.joint_pos[:, asset_cfg.joint_ids])
     return asset.data.joint_pos[:, asset_cfg.joint_ids]
 
 
@@ -405,7 +406,7 @@ def joint_vel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
-    # print(asset.data.joint_vel[:, asset_cfg.joint_ids])
+    # print("joint_vel:",asset.data.joint_vel[:, asset_cfg.joint_ids])
     return asset.data.joint_vel[:, asset_cfg.joint_ids]
 
 
@@ -433,7 +434,7 @@ def joint_effort(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
-    # print(asset.data.applied_torque[:, asset_cfg.joint_ids])
+    # print("torque::", asset.data.applied_torque[:, asset_cfg.joint_ids])
     # print(f"Target positions: {asset.data.joint_pos_target[:, asset_cfg.joint_ids]}")
     # print(f"Current positions: {asset.data.joint_pos[:, asset_cfg.joint_ids]}")
     # print(f"Applied torque: {asset.data.applied_torque[:, asset_cfg.joint_ids]}")
@@ -800,6 +801,7 @@ def last_action(env: ManagerBasedEnv, action_name: str | None = None) -> torch.T
     entire action tensor is returned.
     """
     if action_name is None:
+        # print("last action:", env.action_manager.action)
         return env.action_manager.action
     else:
         return env.action_manager.get_term(action_name).raw_actions
@@ -812,7 +814,7 @@ Commands.
 
 def generated_commands(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
     """The generated command from command term in the command manager with the given name."""
-    # print(env.command_manager.get_command(command_name))
+    # print("command:",env.command_manager.get_command(command_name))
     return env.command_manager.get_command(command_name)
 
 def kanake_commands(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:

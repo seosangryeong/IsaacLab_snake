@@ -98,14 +98,14 @@ class JointSineAction(ActionTerm):
 
 
         ########
-        amplitudes = 0.5 +(torch.tanh(amp_actions )+ 1.0) / 2.0
+        # amplitudes = 0.5 +(torch.tanh(amp_actions )+ 1.0) / 2.0
 
-        freq_v = 0.7 + 0.7 * (torch.tanh(freq_v_action ) + 1.0) / 2.0
-        freq_h = 0.7 + 0.7 * (torch.tanh(freq_h_action) + 1.0) / 2.0
+        # freq_v = 0.7 + 0.7 * (torch.tanh(freq_v_action ) + 1.0) / 2.0
+        # freq_h = 0.7 + 0.7 * (torch.tanh(freq_h_action) + 1.0) / 2.0
 
-        # 위상 (Phase)
-        phase_v = np.pi/4 * torch.tanh(phase_v_action ) 
-        phase_h = np.pi/4 * torch.tanh(phase_h_action) 
+        # # 위상 (Phase)
+        # phase_v = np.pi/4 * torch.tanh(phase_v_action ) 
+        # phase_h = np.pi/4 * torch.tanh(phase_h_action) 
         # 진폭 (Amplitude): 0.5 ~ 1.5
         # amplitudes = 0.5 + (torch.nn.functional.softsign(amp_actions) + 1.0) / 2.0
 
@@ -117,14 +117,14 @@ class JointSineAction(ActionTerm):
         # phase_v = np.pi / 4 * torch.nn.functional.softsign(phase_v_action / 5)
         # phase_h = np.pi / 4 * torch.nn.functional.softsign(phase_h_action / 5)
         
-        # amplitudes = amp_actions
+        amplitudes = amp_actions
 
-        # freq_v = freq_v_action
-        # freq_h = freq_h_action
+        freq_v = freq_v_action
+        freq_h = freq_h_action
 
-        # # 위상 (Phase)
-        # phase_v = phase_v_action 
-        # phase_h = phase_h_action
+        # 위상 (Phase)
+        phase_v = phase_v_action 
+        phase_h = phase_h_action
         
         t = torch.full((self.num_envs, 1), self._current_time, device=self.device)
 
@@ -172,6 +172,7 @@ class JointSineAction(ActionTerm):
 
     def apply_actions(self):
         self._asset.set_joint_position_target(self._processed_actions, joint_ids=self._joint_ids)
+        print("Applied Actions:", self._asset.set_joint_position_target(self._processed_actions, joint_ids=self._joint_ids))
 
     def reset(self, env_ids: Sequence[int] | None = None) -> None:
         if env_ids is None:

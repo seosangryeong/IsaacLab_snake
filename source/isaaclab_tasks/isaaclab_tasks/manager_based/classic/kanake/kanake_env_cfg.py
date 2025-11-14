@@ -27,7 +27,7 @@ import isaaclab_tasks.manager_based.classic.kanake.mdp as mdp
 
 # Pre-defined configs
 from isaaclab_assets.robots.kanake import KANAKE_CFG 
-from torch.utils.tensorboard import SummaryWriter
+
 # TARGET_MARKER_CFG = FRAME_MARKER_CFG.replace(prim_path="/World/target_marker")
 # arrow_cfg = GREEN_ARROW_X_MARKER_CFG.replace(
 #     prim_path="/World/my_green_arrow",
@@ -53,13 +53,11 @@ class MySceneCfg(InteractiveSceneCfg):
 
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
-        terrain_type="usd",
-        # terrain_type="plane",
+        # terrain_type="usd",
+        terrain_type="plane",
         # terrain_type="generator",
         # terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
         # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
-        usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd",  
-
         # terrain_type="plane",
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
@@ -91,44 +89,65 @@ class MySceneCfg(InteractiveSceneCfg):
 @configclass
 class CommandsCfg:
     """Command specifications for the MDP."""
-
+    # command -> (x,y,z)
+    # kanake_command = mdp.KanakeBaseCommandCfg(
+    #     asset_name="robot",
+    #     simple_heading=True,
+    #     resampling_time_range=(10.0, 10.0), 
+    #     ranges=mdp.KanakeBaseCommandCfg.Ranges(
+    #         pos_x=(-2.0, 2.0),
+    #         pos_y=(-2.0, 2.0),
+    #         # pos_z = (0.05, 0.05),
+    #         heading=(-0.0, 0.0),
+    #     ),
+    #     debug_vis=True,
+    # )
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(8.0, 12.0),
+        resampling_time_range=(5.0, 20.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 0.5), lin_vel_y=(-0.5,0.5), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
-            # lin_vel_x=(1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0.0, 0.0)
-
+            lin_vel_x=(-0.5, 0.5), lin_vel_y=(-0.5, 0.5), ang_vel_z=(0.0, 0.0), heading=(-math.pi, math.pi)
         ),
     )
-    # kanake_command = mdp.KanakeUniformVelocityCommandCfg(
+    # kanake_command = mdp.UniformVelocityCommandCfg(
     #     asset_name="robot",
-    #     resampling_time_range=(100.0, 100.0),
-    #     rel_standing_envs=0.0,
+    #     resampling_time_range=(10.0, 10.0),
+    #     rel_standing_envs=0.02,
     #     rel_heading_envs=1.0,
-    #     heading_command=False,
+    #     heading_command=True,
     #     heading_control_stiffness=0.5,
     #     debug_vis=True,
-    #     ranges=mdp.KanakeUniformVelocityCommandCfg.Ranges(
-    #         # lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-3.14, 3.14), heading=(-3.14, 3.14)
-    #         lin_vel_x=(1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0.0, 0.0)
-
+    #     ranges=mdp.UniformVelocityCommandCfg.Ranges(
+    #         lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
     #     ),
+    # )
+    # head_command = mdp.KanakeWorldCommandCfg(
+    #     asset_name="robot",
+    #     resampling_time_range=(10.0, 10.0), 
+    #     ranges=mdp.KanakeWorldCommandCfg.Ranges(
+
+    #         pos_z=(0.15, 0.15),
+
+    #         pitch=(-0.1, 0.1),
+    #         yaw=(0.0, 0.0),
+    #         roll=(0.0, 0.0)
+    #     ),
+    #     debug_vis=True,
     # )
 
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
     
-    # joint_pos = mdp.JointPositionActionCfg(        
+    # joint_effort = mdp.JointEffortActionCfg(        
     #     asset_name="robot",
     #     joint_names=["j1", "j2", "j3", "j4", "j5", "j6", "j7", "j8", "j9", "j10", "j11", "j12", "j13", "j14", "j15", "j16"],
-    #     scale=0.5)  
+    #     scale=1.0)  
     
     joint_sine = mdp.JointSineActionCfg(
         asset_name="robot",               
@@ -164,10 +183,10 @@ class ObservationsCfg:
         """Observations for the policy."""
 
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         # imu_lin_acc = ObsTerm(func=mdp.imu_lin_acc)
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        root_quat_w = ObsTerm(func=mdp.root_quat_w)
+        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        # root_quat_w = ObsTerm(func=mdp.root_quat_w)
         # imu_ang_vel = ObsTerm(func=mdp.imu_ang_vel)
         # projected_gravity = ObsTerm(func=mdp.projected_gravity)
         # imu_orientation = ObsTerm(func=mdp.imu_orientation)
@@ -185,7 +204,6 @@ class ObservationsCfg:
         def __post_init__(self):
             self.enable_corruption = False
             self.concatenate_terms = True
-            # self.history_length = 5
 
     @configclass
     class CriticCfg(ObsGroup):
@@ -235,14 +253,14 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "z": (0.25, 0.25), "yaw": (-3.14, 3.14)},
+            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.25, 0.25), "yaw": (0.0,0.0)},
             "velocity_range": {
-                "x": (-0.5, 0.5),
-                "y": (-0.5, 0.5),
-                "z": (-0.5, 0.5),
-                "roll": (-0.5, 0.5),
-                "pitch": (-0.5, 0.5),
-                "yaw": (-0.5, 0.5),
+                "x": (0.0, 0.0),
+                "y": (0.0, 0.0),
+                "z": (0.0, 0.0),
+                "roll": (0.0, 0.0),
+                "pitch": (0.0, 0.0),
+                "yaw": (0.0,0.0),
             },
         },
     )
@@ -399,18 +417,19 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.kanake_upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
 
     # # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-    # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.001)
-
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.5)
+    action_rate_l2_acceleration = RewTerm(func=mdp.action_rate_l2_acceleration, weight=-0.1)
+    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.01)
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
-    # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=0.01)
+    # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=-0.001)
+
 
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(
@@ -453,7 +472,7 @@ class RewardsCfg:
     #     params={"command_name": "kanake_command", "threshold": 0.01}
     # )
     
-    # # #  타겟 방향 속도 리워드
+    # # # 또는 타겟 방향 속도 리워드
     # # speed_towards_target_reward = RewTerm(
     # #     func=mdp.speed_towards_target_reward,
     # #     weight=5.0,
@@ -475,7 +494,7 @@ class TerminationsCfg:
 
 @configclass
 class CurriculumCfg:
-    """Curriculum terms for the MDP."""
+     """Curriculum terms for the MDP."""
 
     # camera_orientation_alignment_reward = CurrTerm(
     #     func=mdp.modify_reward_weight, params={"term_name": "camera_orientation_alignment_reward", "weight": 2.0, "num_steps": 10000}
@@ -498,20 +517,6 @@ class CurriculumCfg:
     # speed_towards_target_reward = CurrTerm(
     #     func=mdp.modify_reward_weight, params={"term_name": "speed_towards_target_reward", "weight": 2.0, "num_steps": 10000}
     # )
-    # action_rate_l2 = CurrTerm(
-    #     func=mdp.modify_reward_weight, params={"term_name": "action_rate_l2", "weight": -0.01, "num_steps": 50000}
-    # )
-    # action_l2 = CurrTerm(
-    #     func=mdp.modify_reward_weight, params={"term_name": "action_l2", "weight": -0.01, "num_steps": 50000}
-    # )
-    modify_command_resampling_time = CurrTerm(
-        func=mdp.modify_command_resampling_time,
-        params={
-            "command_name": "kanake_command",
-            "resampling_time_range": (1.0, 4.0),  # 더 빠른 리샘플링
-            "num_steps": 50000,  
-        }
-    )
 
 
 @configclass
@@ -520,6 +525,7 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
     scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=0.0)
     observations: ObservationsCfg = ObservationsCfg()
+    print("observations:",observations)
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
 
@@ -557,5 +563,3 @@ class kanakeEnvCfg_PLAY(kanakeEnvCfg):
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
-        self.episode_length_s = 1000.0
-        self.terminations.max.params["maximum_height"] = 20.0  

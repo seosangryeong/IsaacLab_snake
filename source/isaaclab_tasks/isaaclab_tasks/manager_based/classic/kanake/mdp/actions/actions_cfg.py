@@ -325,7 +325,7 @@ class JointSineActionCfg(JointActionCfg):
     # action_scale_wavefqv: float = 0.4    # 수직 주파수(Hz) 조절 범위: ±0.4Hz
     # action_scale_shapefqh: float = 0.5   # 수평 위상 계수 조절 범위: ±0.5
     # action_scale_shapefqv: float = 0.5   # 수직 위상 계수 조절 범위: ±0.5
-    additional_joint_scale: float = 1.0
+    additional_joint_scale: float = 0.0
 
 
 

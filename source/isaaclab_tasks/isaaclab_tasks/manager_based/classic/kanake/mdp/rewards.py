@@ -245,6 +245,15 @@ def action_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     # print("Current Actions:", env.action_manager.action)
     return torch.sum(torch.square(env.action_manager.action - env.action_manager.prev_action), dim=1)
 
+def action_rate_l2_acceleration(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Penalize the acceleration (second derivative) of the actions using L2 squared kernel.
+    
+    This implements: r_s2 = k_s2 ||q_t^des - 2q_{t-1}^des + q_{t-2}^des||^2
+    which is the squared L2 norm of the second-order finite difference (acceleration).
+    """
+    # q_t - 2*q_{t-1} + q_{t-2}
+    acceleration = env.action_manager.action - 2.0 * env.action_manager.prev_action + env.action_manager.prev_prev_action
+    return torch.sum(torch.square(acceleration), dim=1)
 
 def action_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the actions using L2 squared kernel."""
