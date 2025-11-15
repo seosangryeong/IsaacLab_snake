@@ -207,28 +207,28 @@ class ObservationsCfg:
             self.enable_corruption = False
             self.concatenate_terms = True
 
-    @configclass
-    class CriticCfg(ObsGroup):
+    # @configclass
+    # class CriticCfg(ObsGroup):
 
-        base_height = ObsTerm(func=mdp.base_pos_z)
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        average_body_lin_vel_xy = ObsTerm(func=mdp.average_body_lin_vel_xy)
-        projected_gravity = ObsTerm(func=mdp.projected_gravity)
-        base_pos = ObsTerm(func=mdp.base_pos)
-        joint_effort = ObsTerm(func=mdp.joint_effort)
-        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
-        joint_vel = ObsTerm(func=mdp.joint_vel)
-        joint_pos = ObsTerm(func=mdp.joint_pos)
-        actions = ObsTerm(func=mdp.last_action)
+    #     base_height = ObsTerm(func=mdp.base_pos_z)
+    #     base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+    #     base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+    #     average_body_lin_vel_xy = ObsTerm(func=mdp.average_body_lin_vel_xy)
+    #     projected_gravity = ObsTerm(func=mdp.projected_gravity)
+    #     base_pos = ObsTerm(func=mdp.base_pos)
+    #     joint_effort = ObsTerm(func=mdp.joint_effort)
+    #     pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "kanake_command"})
+    #     joint_vel = ObsTerm(func=mdp.joint_vel)
+    #     joint_pos = ObsTerm(func=mdp.joint_pos)
+    #     actions = ObsTerm(func=mdp.last_action)
 
-        def __post_init__(self):
-            self.enable_corruption = False
-            self.concatenate_terms = True
+    #     def __post_init__(self):
+    #         self.enable_corruption = False
+    #         self.concatenate_terms = True
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
-    critic: CriticCfg = CriticCfg()
+    # critic: CriticCfg = CriticCfg()
 
 # @configclass
 # class ObservationsCfg:
@@ -425,9 +425,9 @@ class RewardsCfg:
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.1)
-    action_rate_l2_acceleration = RewTerm(func=mdp.action_rate_l2_acceleration, weight=-0.05)
-    action_l2_threshold = RewTerm(func=mdp.action_l2_threshold, weight=-0.05)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    action_rate_l2_acceleration = RewTerm(func=mdp.action_rate_l2_acceleration, weight=-0.005)
+    action_l2_threshold = RewTerm(func=mdp.action_l2_threshold, weight=-0.01)
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
     # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=-0.001)
@@ -527,7 +527,6 @@ class kanakeEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
     scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=0.0)
     observations: ObservationsCfg = ObservationsCfg()
-    print("observations:",observations)
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
 
