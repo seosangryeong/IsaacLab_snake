@@ -326,15 +326,15 @@ class RewardsCfg:
     # )
     reward_world_progress = RewTerm(
         func=mdp.reward_world_progress,
-        weight=10.0,
+        weight=5.0,
         params={"command_name": "kanake_command"}
     )
 
-    velocity_magnitude_reward = RewTerm(
-        func=mdp.reward_velocity_magnitude,
-        weight=1.0,
-        params={"std": 0.5, "command_name": "kanake_command"},
-    )
+    # velocity_magnitude_reward = RewTerm(
+    #     func=mdp.reward_velocity_magnitude,
+    #     weight=1.0,
+    #     params={"std": 0.5, "command_name": "kanake_command"},
+    # )
     # kanake_track_heading_frame_vel_xy_exp = RewTerm(
     #     func=mdp.kanake_track_heading_frame_vel_xy_exp, weight=3.0, params={"command_name": "kanake_command", "std": math.sqrt(0.25)}
     # )
@@ -419,15 +419,15 @@ class RewardsCfg:
     ### 자세 유지
 
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.kanake_upright_posture_bonus, weight=3.0, params={"threshold": 0.8})
+    # upright = RewTerm(func=mdp.upright_posture_bonus, weight=3.0, params={"threshold": 0.8})
 
     # # 몸체가 타겟방향으로 순서대로 배치될 수 있도록(앞을 향해 갈수 있도록)
     # BodyOrderReward = RewTerm(func=mdp.BodyOrderReward,weight=1.3)
 
     # # action이 급변하지 않도록 페널티
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-    action_rate_l2_acceleration = RewTerm(func=mdp.action_rate_l2_acceleration, weight=-0.005)
-    action_l2_threshold = RewTerm(func=mdp.action_l2_threshold, weight=-0.01)
+    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    # action_rate_l2_acceleration = RewTerm(func=mdp.action_rate_l2_acceleration, weight=-0.005)
+    # action_l2_threshold = RewTerm(func=mdp.action_l2_threshold, weight=-0.01)
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
     # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=-0.001)

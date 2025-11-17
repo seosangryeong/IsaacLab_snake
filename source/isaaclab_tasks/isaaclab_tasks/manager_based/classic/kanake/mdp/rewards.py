@@ -483,10 +483,10 @@ def reward_world_progress(
     """
     asset: Articulation = env.scene[asset_cfg.name]
     
-    # target_vel_w_xy = env.command_manager.get_command(command_name)[:, :2]
+    target_vel_w_xy = env.command_manager.get_command(command_name)[:, :2]
     # target_vel_direction = F.normalize(target_vel_w_xy, p=2, dim=1, eps=1e-6)
-    command_term = env.command_manager.get_term(command_name)
-    target_vel_w_xy = command_term.goal_vel_w_debug[:, :2]
+    # command_term = env.command_manager.get_term(command_name)
+    # target_vel_w_xy = command_term.goal_vel_w_debug[:, :2]
     target_vel_direction = F.normalize(target_vel_w_xy, p=2, dim=1, eps=1e-6)
     
     body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
