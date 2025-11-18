@@ -89,8 +89,8 @@ class JointSineAction(ActionTerm):
         self._init_amplitude = 1.0
         self._init_freq_v = 1.4
         self._init_freq_h = 1.4
-        self._init_phase_v = np.pi / 2.0
-        self._init_phase_h = np.pi / 2.0
+        self._init_phase_v = 0.0
+        self._init_phase_h = 0.0
 
         self._amplitude_state = torch.full(
             (self.num_envs, self._num_joints), self._init_amplitude, device=self.device
@@ -101,9 +101,9 @@ class JointSineAction(ActionTerm):
         self._phase_h_state = torch.full((self.num_envs, 1), self._init_phase_h, device=self.device)
 
         # Δ 적용 스케일 (얼마나 천천히 바꿀지)
-        self._alpha_amp = 0.1    # Δamp 스케일
-        self._alpha_freq = 0.02   # Δfreq 스케일
-        self._alpha_phase = 0.04  # Δphase 스케일
+        self._alpha_amp = 1.0    # Δamp 스케일
+        self._alpha_freq = 1.4   # Δfreq 스케일
+        self._alpha_phase = 1.4  # Δphase 스케일
 
         # 파라미터 클램프 범위
         self._amp_min = -1.0
