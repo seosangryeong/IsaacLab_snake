@@ -102,7 +102,8 @@ class JointSineAction(ActionTerm):
         # 진폭: 0.5 ~ 1.5
         # amplitudes = 0.5 + (torch.tanh(amp_actions) + 1.0) / 2.0
         amplitudes = amp_actions
-        amplitudes = 0.5 + (torch.tanh(amplitudes) + 1.0) / 2.0
+        # amplitudes = 0.5 + (torch.tanh(amplitudes) + 1.0) / 2.0
+        amplitudes = 1.5 * (torch.tanh(amplitudes) + 1.0) / 2.0
 
 
         # 주파수: 고정값 사용 (액션에서 제거)

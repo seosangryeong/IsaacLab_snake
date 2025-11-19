@@ -106,7 +106,7 @@ class CommandsCfg:
     # )
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(2.0, 3.0),
+        resampling_time_range=(5.0, 20.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=False,
