@@ -323,7 +323,7 @@ def raw_action_save(env: ManagerBasedRLEnv, writer=None) -> torch.Tensor:
     except Exception as e:
         print(f"ERROR saving actions to CSV: {e}")
 
-    # 🔧 TensorBoard 로깅 (올바른 디렉토리로 수정)
+    # 🔧 TensorBoard 로깅 (모든 조인트 진폭 저장)
     if step % 10 == 0:  # 10스텝마다 기록
         try:
             # 로그 디렉토리를 TensorBoard가 보는 경로로 수정
@@ -333,38 +333,86 @@ def raw_action_save(env: ManagerBasedRLEnv, writer=None) -> torch.Tensor:
             # SummaryWriter 생성
             tb_writer = SummaryWriter(log_dir)
             
-            # Raw Actions에서 값 추출 (인덱스 확인 필요)
-            if len(action_data) > 19:  # 안전성 체크
-                raw_freq_v = action_data[16]
-                raw_phase_v = action_data[17]
-                raw_freq_h = action_data[18]
-                raw_phase_h = action_data[19]
-
-                # Processed Actions 계산
-                processed_freq_v = 0.7 + 0.7 * (np.tanh(raw_freq_v/50) + 1.0) / 2.0
-                processed_freq_h = 0.7 + 0.7 * (np.tanh(raw_freq_h/50) + 1.0) / 2.0
-                processed_phase_v = np.pi/4 * np.tanh(raw_phase_v/50)
-                processed_phase_h = np.pi/4 * np.tanh(raw_phase_h/50)
+            # 현재 액션 구조에 맞게 수정 (조인트 개수 + 2)
+            num_joints = len(action_data) - 2
+            
+            if len(action_data) >= num_joints + 2:  # 안전성 체크
+                # Raw Actions에서 값 추출
+                raw_phase_v = action_data[num_joints]      # 수직 위상
+                raw_phase_h = action_data[num_joints + 1]  # 수평 위상
+                
+                # 진폭들 (모든 조인트)
+                raw_amplitudes = action_data[:num_joints]
+                
+                # Processed Actions 계산 (현재 코드와 동일한 방식)
+                # 진폭: 1.5 * (tanh(x) + 1.0) / 2.0 → [0, 1.5] 범위
+                processed_amplitudes = [1.5 * (np.tanh(float(amp)) + 1.0) / 2.0 for amp in raw_amplitudes]
+                
+                # 위상: sign(tanh(x)) * π/4 → -π/4 또는 +π/4
+                phase_v_sign = np.sign(np.tanh(float(raw_phase_v)))
+                phase_h_sign = np.sign(np.tanh(float(raw_phase_h)))
+                processed_phase_v = (np.pi / 4.0) * phase_v_sign
+                processed_phase_h = (np.pi / 4.0) * phase_h_sign
+                
+                # 주파수는 고정값
+                fixed_freq_v = 1.0
+                fixed_freq_h = 1.0
 
                 # TensorBoard에 기록
+                # 위상 정보
                 tb_writer.add_scalar("Processed/Vertical_Phase", float(processed_phase_v), global_step=step)
                 tb_writer.add_scalar("Processed/Horizontal_Phase", float(processed_phase_h), global_step=step)
-                tb_writer.add_scalar("Processed/Vertical_Frequency", float(processed_freq_v), global_step=step)
-                tb_writer.add_scalar("Processed/Horizontal_Frequency", float(processed_freq_h), global_step=step)
-                
-                # Raw Actions도 추가로 로깅
-                tb_writer.add_scalar("Raw/Vertical_Frequency_Raw", float(raw_freq_v), global_step=step)
-                tb_writer.add_scalar("Raw/Horizontal_Frequency_Raw", float(raw_freq_h), global_step=step)
                 tb_writer.add_scalar("Raw/Vertical_Phase_Raw", float(raw_phase_v), global_step=step)
                 tb_writer.add_scalar("Raw/Horizontal_Phase_Raw", float(raw_phase_h), global_step=step)
+                
+                # 주파수 (고정값이지만 로깅)
+                tb_writer.add_scalar("Processed/Vertical_Frequency", fixed_freq_v, global_step=step)
+                tb_writer.add_scalar("Processed/Horizontal_Frequency", fixed_freq_h, global_step=step)
+                
+                # 🔧 모든 조인트 진폭 정보 저장
+                for i in range(len(processed_amplitudes)):  # 모든 조인트
+                    tb_writer.add_scalar(f"Processed/Joint_{i:02d}_Amplitude", processed_amplitudes[i], global_step=step)
+                    tb_writer.add_scalar(f"Raw/Joint_{i:02d}_Amplitude_Raw", float(raw_amplitudes[i]), global_step=step)
+                
+                # 🔧 진폭 통계
+                avg_amplitude = np.mean(processed_amplitudes)
+                max_amplitude = np.max(processed_amplitudes)
+                min_amplitude = np.min(processed_amplitudes)
+                std_amplitude = np.std(processed_amplitudes)
+                
+                tb_writer.add_scalar("Processed/Average_Amplitude", avg_amplitude, global_step=step)
+                tb_writer.add_scalar("Processed/Max_Amplitude", max_amplitude, global_step=step)
+                tb_writer.add_scalar("Processed/Min_Amplitude", min_amplitude, global_step=step)
+                tb_writer.add_scalar("Processed/StdDev_Amplitude", std_amplitude, global_step=step)
+                
+                # 🔧 수직/수평 조인트별 평균 진폭 (추가 분석)
+                # 홀수 번째: 수직 조인트 (1, 3, 5, ...)
+                # 짝수 번째: 수평 조인트 (0, 2, 4, ...)
+                vertical_amplitudes = [processed_amplitudes[i] for i in range(len(processed_amplitudes)) if i % 2 == 1]
+                horizontal_amplitudes = [processed_amplitudes[i] for i in range(len(processed_amplitudes)) if i % 2 == 0]
+                
+                if vertical_amplitudes:
+                    avg_vertical_amp = np.mean(vertical_amplitudes)
+                    tb_writer.add_scalar("Processed/Average_Vertical_Amplitude", avg_vertical_amp, global_step=step)
+                
+                if horizontal_amplitudes:
+                    avg_horizontal_amp = np.mean(horizontal_amplitudes)
+                    tb_writer.add_scalar("Processed/Average_Horizontal_Amplitude", avg_horizontal_amp, global_step=step)
+                
+                # 위상 상태 (이진값)
+                tb_writer.add_scalar("Processed/Vertical_Phase_Binary", phase_v_sign, global_step=step)
+                tb_writer.add_scalar("Processed/Horizontal_Phase_Binary", phase_h_sign, global_step=step)
+                
+                # 🔧 진폭 분포 히스토그램 (선택적)
+                if step % 100 == 0:  # 100스텝마다 히스토그램 저장
+                    tb_writer.add_histogram("Processed/Amplitude_Distribution", np.array(processed_amplitudes), global_step=step)
+                    tb_writer.add_histogram("Raw/Amplitude_Raw_Distribution", raw_amplitudes, global_step=step)
             
             # Writer 종료
             tb_writer.close()
             
-            print(f"✅ TensorBoard data logged at step {step}")
-            
         except Exception as e:
-            print(f"ERROR logging to TensorBoard: {e}")
+            print(f"TensorBoard 로깅 에러: {e}")
 
     # 원래 리워드 계산 (L2)
     return torch.sum(torch.square(current_actions), dim=1)

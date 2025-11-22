@@ -63,18 +63,18 @@ class JointSineAction(ActionTerm):
         self._raw_actions = torch.zeros(self.num_envs, self._num_joints + 2, device=self.device)
         self._processed_actions = torch.zeros(self.num_envs, self._num_joints, device=self.device)
 
-        # 주파수 고정값 (실험적으로 좋은 값으로 설정, 필요시 조정)
-        self._fixed_freq_v = 1.0  # 또는 1.2, 1.4 등
-        self._fixed_freq_h = 1.0  # 또는 1.2, 1.4 등
+        # 주파수 고정값 
+        self._fixed_freq_v = 1.0  
+        self._fixed_freq_h = 1.0
         
         # 위상 범위
-        self._phase_magnitude = np.pi / 4.0  # +π/4 또는 -π/4
+        self._phase_magnitude = np.pi / 4.0  
 
         self._current_time = 0.0
 
     @property
     def action_dim(self) -> int:
-        return self._num_joints + 2  # 주파수 제거로 4 → 2
+        return self._num_joints + 2  
 
     @property
     def raw_actions(self) -> torch.Tensor:
@@ -102,9 +102,9 @@ class JointSineAction(ActionTerm):
         # 진폭: 0.5 ~ 1.5
         # amplitudes = 0.5 + (torch.tanh(amp_actions) + 1.0) / 2.0
         amplitudes = amp_actions
-        # amplitudes = 0.5 + (torch.tanh(amplitudes) + 1.0) / 2.0
-        amplitudes = 1.5 * (torch.tanh(amplitudes) + 1.0) / 2.0
-
+        amplitudes = 0.5 + (torch.tanh(amplitudes) + 1.0) / 2.0
+        # amplitudes = 1.5 * (torch.tanh(amplitudes) + 1.0) / 2.0
+        # amplitudes = 1.5 * torch.tanh(amp_actions)
 
         # 주파수: 고정값 사용 (액션에서 제거)
         freq_v = torch.full((self.num_envs,), self._fixed_freq_v, device=self.device)
@@ -114,6 +114,9 @@ class JointSineAction(ActionTerm):
         # tanh로 [-1, 1]로 만들고, sign으로 양수/음수 결정
         phase_v_sign = torch.sign(torch.tanh(phase_v_action))  # -1 또는 +1
         phase_h_sign = torch.sign(torch.tanh(phase_h_action))  # -1 또는 +1
+
+        # phase_v_sign = phase_v_action  # -1 또는 +1
+        # phase_h_sign = phase_h_action
         
         phase_v = self._phase_magnitude * phase_v_sign  # -π/4 또는 +π/4
         phase_h = self._phase_magnitude * phase_h_sign  # -π/4 또는 +π/4
