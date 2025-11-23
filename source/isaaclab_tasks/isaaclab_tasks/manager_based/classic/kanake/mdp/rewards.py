@@ -417,6 +417,53 @@ def raw_action_save(env: ManagerBasedRLEnv, writer=None) -> torch.Tensor:
     # 원래 리워드 계산 (L2)
     return torch.sum(torch.square(current_actions), dim=1)
 
+def com_trajectory_save(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Dummy reward term that saves COM trajectories (XY only) to CSV for analysis."""
+    
+    # CSV 저장 경로 설정
+    csv_dir = Path("/home/nuc/IsaacLab_snake/logs/trajectories")
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    csv_file = csv_dir / "com_trajectory_xy.csv"
+    
+    # 현재 스텝 카운터 가져오기
+    if hasattr(env, 'common_step_counter'):
+        step = env.common_step_counter
+    else:
+        step = getattr(env, '_step_counter', 0)
+    
+    # 로봇 에셋 가져오기
+    asset: Articulation = env.scene["robot"]
+    
+    # 🔧 COM 계산 (모든 body의 평균 위치)
+    body_positions = asset.data.body_pos_w  # [num_envs, num_bodies, 3]
+    com_position = torch.mean(body_positions, dim=1)  # [num_envs, 3]
+    
+    # 첫 번째 환경의 XY 좌표만 저장
+    env_idx = 0
+    com_x = com_position[env_idx, 0].cpu().numpy()
+    com_y = com_position[env_idx, 1].cpu().numpy()
+    
+    # CSV 저장
+    try:
+        file_exists = csv_file.exists()
+        with open(csv_file, 'a', newline='') as f:
+            writer = csv.writer(f)
+            
+            # 헤더 작성 (파일이 처음 생성될 때)
+            if not file_exists:
+                header = ['step', 'com_x', 'com_y']
+                writer.writerow(header)
+            
+            # 데이터 작성
+            row = [step, com_x, com_y]
+            writer.writerow(row)
+            
+    except Exception as e:
+        print(f"ERROR saving COM trajectory to CSV: {e}")
+    
+    # 더미 리워드 반환 (실제로는 리워드 계산 안 함)
+    return torch.zeros(env.num_envs, device=env.device)
+
 
 def observation_save(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Dummy reward term that saves observations to CSV for analysis."""

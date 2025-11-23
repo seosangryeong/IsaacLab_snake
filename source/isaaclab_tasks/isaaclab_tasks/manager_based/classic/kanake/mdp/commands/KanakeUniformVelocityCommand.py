@@ -212,39 +212,30 @@ class KanakeUniformVelocityCommand(CommandTerm):
                 self.goal_vel_visualizer.set_visibility(False)
                 self.current_vel_visualizer.set_visibility(False)
 
+    # KanakeUniformVelocityCommand.py의 _debug_vis_callback 수정
     def _debug_vis_callback(self, event):
         """
-        [Kanake 오버라이드 v4 - 최종]
-        
-        1. 목표(초록색) 화살표: 리샘플링 시점의 위치에 고정 (월드 커맨드 표시)
-        2. 현재(파란색) 화살표: 현재 로봇의 평균 위치를 따라감 (월드 속도 표시)
+        현재 로봇 위치를 따라가도록 수정
         """
         if not self.robot.is_initialized:
             return
 
-        # --- 1. 현재 로봇의 평균 위치 (파란색 화살표용) ---
+        # --- 🔧 현재 로봇 위치를 항상 사용 ---
         body_pos_w = self.robot.data.body_com_pos_w[:, :, :3]
         current_avg_pos_w = torch.mean(body_pos_w, dim=1)
         current_avg_pos_w[:, 2] += 0.5  # 0.5m 띄우기
 
-
-        # --- 2. "목표" 화살표 (초록색) - 고정 위치 + 월드 커맨드 ---
-        fixed_pos_w = self.command_spawn_pos_w.clone()
-        fixed_pos_w[:, 2] += 0.5  # 0.5m 띄우기
-        
-        # 🔧 월드 커맨드를 직접 시각화 (heading 변환 없이)
+        # --- 목표 화살표 (초록색) - 현재 위치 사용 ---
         vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_world_velocity_to_arrow(
             self.vel_command_w[:, :2]
         )
         
-        self.goal_vel_visualizer.visualize(fixed_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
+        self.goal_vel_visualizer.visualize(current_avg_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
 
-
-        # --- 3. "현재" 화살표 (파란색) - 현재 위치 + 월드 속도 ---
+        # --- 현재 화살표 (파란색) - 현재 위치 + 월드 속도 ---
         body_lin_vels_w = self.robot.data.body_com_vel_w[:, :, :3]
         current_avg_vel_w = torch.mean(body_lin_vels_w, dim=1)
         
-        # 월드 속도 시각화
         vel_arrow_scale, vel_arrow_quat = self._resolve_world_velocity_to_arrow(
             current_avg_vel_w[:, :2]
         )

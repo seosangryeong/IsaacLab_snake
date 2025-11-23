@@ -106,7 +106,7 @@ class CommandsCfg:
     # )
     kanake_command = mdp.KanakeUniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(10.0, 20.0),
+        resampling_time_range=(3.0, 5.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=False,
@@ -431,9 +431,12 @@ class RewardsCfg:
     # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.001)
 
     # joint_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
-    # raw_action_save = RewTerm(func=mdp.raw_action_save, weight=-0.001)
+    raw_action_save = RewTerm(func=mdp.raw_action_save, weight=-0.001)
 
-
+    com_trajectory_logging = RewTerm(
+        func=mdp.com_trajectory_save,
+        weight=0.01  # 실제 리워드에 영향 없음
+    )
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(
     #     func=mdp.BaseXAxisDistanceReward, 
@@ -497,7 +500,7 @@ class TerminationsCfg:
 
 @configclass
 class CurriculumCfg:
-     """Curriculum terms for the MDP."""
+    """Curriculum terms for the MDP."""
 
     # camera_orientation_alignment_reward = CurrTerm(
     #     func=mdp.modify_reward_weight, params={"term_name": "camera_orientation_alignment_reward", "weight": 2.0, "num_steps": 10000}
@@ -520,7 +523,15 @@ class CurriculumCfg:
     # speed_towards_target_reward = CurrTerm(
     #     func=mdp.modify_reward_weight, params={"term_name": "speed_towards_target_reward", "weight": 2.0, "num_steps": 10000}
     # )
-
+    
+    kanake_command_resampling = CurrTerm(
+        func=mdp.modify_command_resampling_time, 
+        params={
+            "command_name": "kanake_command", 
+            "resampling_time_range": (3.0, 6.0), 
+            "num_steps": 50000
+        }
+    )
 
 @configclass
 class kanakeEnvCfg(ManagerBasedRLEnvCfg):
@@ -565,3 +576,6 @@ class kanakeEnvCfg_PLAY(kanakeEnvCfg):
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
+        self.commands.kanake_command.resampling_time_range = (10000.0, 10000.0)  # 5초마다 새 커맨드
+        self.episode_length_s = 10000.0
+        self.scene.terrain.usd_path = "/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_wall.usd"
