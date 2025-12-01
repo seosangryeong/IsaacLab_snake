@@ -286,20 +286,27 @@ import csv
 from pathlib import Path
 
 
-
 def raw_action_save(env: ManagerBasedRLEnv, writer=None) -> torch.Tensor:
     """
-    Raw actions를 CSV에 저장하고 TensorBoard 로깅
+    Raw actions와 Commands를 CSV에 저장 (sine_actions.py 처리 방식 동일)
     """
-    from torch.utils.tensorboard import SummaryWriter
-    
     # CSV 저장 경로 설정
     csv_dir = Path("/home/nuc/IsaacLab_snake/logs/actions")
     csv_dir.mkdir(parents=True, exist_ok=True)
-    csv_file = csv_dir / "raw_actions1.csv"
+    csv_file = csv_dir / "raw_actions_with_commands.csv"
 
     # 현재 액션 가져오기
     current_actions = env.action_manager.action
+    
+    # 🔧 kanake_command에서 직접 커맨드 가져오기
+    try:
+        kanake_command = env.command_manager.get_term("kanake_command")
+        cmd_x = kanake_command.command[0, 0].cpu().numpy()
+        cmd_y = kanake_command.command[0, 1].cpu().numpy()
+        cmd_z = kanake_command.command[0, 2].cpu().numpy() if kanake_command.command.shape[1] > 2 else 0.0
+    except Exception as e:
+        print(f"kanake_command 가져오기 실패: {e}")
+        cmd_x = cmd_y = cmd_z = 0.0
     
     # 스텝 카운터 가져오기
     if hasattr(env, 'common_step_counter'):
@@ -310,113 +317,197 @@ def raw_action_save(env: ManagerBasedRLEnv, writer=None) -> torch.Tensor:
     # 첫 번째 환경의 액션만 가져오기
     action_data = current_actions[0].cpu().numpy()
 
-    # CSV 저장 로직
+    # 🔧 sine_actions.py와 동일한 처리 방식
+    num_joints = len(action_data) - 2  # 조인트 개수 + 2개 위상 파라미터
+    
+    if len(action_data) >= num_joints + 2:
+        # Raw Actions에서 값 추출
+        raw_amplitudes = action_data[:num_joints]  # 조인트별 진폭
+        raw_phase_v = action_data[num_joints]      # 수직 위상 선택
+        raw_phase_h = action_data[num_joints + 1]  # 수평 위상 선택
+        
+        # 🔧 sine_actions.py와 동일한 진폭 처리
+        # 진폭: 0.5 + (tanh(x) + 1.0) / 2.0 → [0.5, 1.5] 범위
+        processed_amplitudes = [0.5 + (np.tanh(float(amp)) + 1.0) / 2.0 for amp in raw_amplitudes]
+        
+        # 🔧 sine_actions.py와 동일한 위상 처리
+        # 위상: sign(tanh(x)) * π/4 → -π/4 또는 +π/4
+        phase_v_sign = np.sign(np.tanh(float(raw_phase_v)))
+        phase_h_sign = np.sign(np.tanh(float(raw_phase_h)))
+        processed_phase_v = (np.pi / 4.0) * phase_v_sign
+        processed_phase_h = (np.pi / 4.0) * phase_h_sign
+        
+        # 🔧 주파수는 고정값 (sine_actions.py와 동일)
+        fixed_freq_v = 1.0
+        fixed_freq_h = 1.0
+        
+        # 통계 계산
+        avg_amplitude = np.mean(processed_amplitudes)
+        max_amplitude = np.max(processed_amplitudes)
+        min_amplitude = np.min(processed_amplitudes)
+        std_amplitude = np.std(processed_amplitudes)
+        
+        # 수직/수평 조인트별 평균 (홀수=수직, 짝수=수평)
+        vertical_amplitudes = [processed_amplitudes[i] for i in range(len(processed_amplitudes)) if i % 2 == 1]
+        horizontal_amplitudes = [processed_amplitudes[i] for i in range(len(processed_amplitudes)) if i % 2 == 0]
+        
+        avg_vertical_amp = np.mean(vertical_amplitudes) if vertical_amplitudes else 0.0
+        avg_horizontal_amp = np.mean(horizontal_amplitudes) if horizontal_amplitudes else 0.0
+    else:
+        # 안전 처리
+        processed_amplitudes = [0.0] * num_joints
+        processed_phase_v = processed_phase_h = 0.0
+        fixed_freq_v = fixed_freq_h = 1.0
+        avg_amplitude = max_amplitude = min_amplitude = std_amplitude = 0.0
+        avg_vertical_amp = avg_horizontal_amp = 0.0
+
+    # 🔧 CSV 저장 로직 수정: 첫 스텝에서만 'w', 이후엔 'a'
     try:
-        file_exists = csv_file.exists()
-        with open(csv_file, 'a', newline='') as f:
+        # 첫 스텝이면 파일을 새로 만들고, 아니면 추가
+        file_mode = 'w' if step == 0 else 'a'
+        write_header = (step == 0)  # 첫 스텝에서만 헤더 작성
+        
+        with open(csv_file, file_mode, newline='') as f:
             writer_csv = csv.writer(f)
-            if not file_exists:
-                header = ['step'] + [f'action_{i}' for i in range(len(action_data))]
+            
+            if write_header:
+                # 헤더 생성 (첫 스텝에서만)
+                header = ['step', 'time']
+                
+                # 커맨드 정보 (가장 앞에)
+                header += ['cmd_x', 'cmd_y', 'cmd_z']
+                
+                # Raw actions
+                header += [f'raw_amp_{i}' for i in range(num_joints)]
+                header += ['raw_phase_v', 'raw_phase_h']
+                
+                # Processed values (sine_actions.py 처리 결과)
+                header += [f'processed_amp_{i}' for i in range(num_joints)]
+                header += ['processed_phase_v', 'processed_phase_h']
+                header += ['fixed_freq_v', 'fixed_freq_h']
+                
+                # 통계
+                header += ['avg_amplitude', 'max_amplitude', 'min_amplitude', 'std_amplitude']
+                header += ['avg_vertical_amp', 'avg_horizontal_amp']
+                header += ['phase_v_sign', 'phase_h_sign']
+                
                 writer_csv.writerow(header)
-            row = [step] + action_data.tolist()
+                print(f"📝 CSV 헤더 작성 완료: step {step}")
+            
+            # 데이터 행 작성 (매 스텝마다)
+            time_sec = step * env.step_dt if hasattr(env, 'step_dt') else step * 0.01
+            row = [step, time_sec]
+            
+            # 커맨드 정보
+            row += [cmd_x, cmd_y, cmd_z]
+            
+            # Raw actions
+            if len(action_data) >= num_joints + 2:
+                row += raw_amplitudes.tolist()
+                row += [raw_phase_v, raw_phase_h]
+            else:
+                row += [0.0] * (num_joints + 2)
+            
+            # Processed values
+            row += processed_amplitudes
+            row += [processed_phase_v, processed_phase_h]
+            row += [fixed_freq_v, fixed_freq_h]
+            
+            # 통계
+            row += [avg_amplitude, max_amplitude, min_amplitude, std_amplitude]
+            row += [avg_vertical_amp, avg_horizontal_amp]
+            row += [phase_v_sign, phase_h_sign]
+            
             writer_csv.writerow(row)
+            
     except Exception as e:
         print(f"ERROR saving actions to CSV: {e}")
-
-    # 🔧 TensorBoard 로깅 (모든 조인트 진폭 저장)
-    if step % 10 == 0:  # 10스텝마다 기록
-        try:
-            # 로그 디렉토리를 TensorBoard가 보는 경로로 수정
-            log_dir = "/home/nuc/IsaacLab_snake/logs/actions_realtime"
-            Path(log_dir).mkdir(parents=True, exist_ok=True)
-            
-            # SummaryWriter 생성
-            tb_writer = SummaryWriter(log_dir)
-            
-            # 현재 액션 구조에 맞게 수정 (조인트 개수 + 2)
-            num_joints = len(action_data) - 2
-            
-            if len(action_data) >= num_joints + 2:  # 안전성 체크
-                # Raw Actions에서 값 추출
-                raw_phase_v = action_data[num_joints]      # 수직 위상
-                raw_phase_h = action_data[num_joints + 1]  # 수평 위상
-                
-                # 진폭들 (모든 조인트)
-                raw_amplitudes = action_data[:num_joints]
-                
-                # Processed Actions 계산 (현재 코드와 동일한 방식)
-                # 진폭: 1.5 * (tanh(x) + 1.0) / 2.0 → [0, 1.5] 범위
-                processed_amplitudes = [1.5 * (np.tanh(float(amp)) + 1.0) / 2.0 for amp in raw_amplitudes]
-                
-                # 위상: sign(tanh(x)) * π/4 → -π/4 또는 +π/4
-                phase_v_sign = np.sign(np.tanh(float(raw_phase_v)))
-                phase_h_sign = np.sign(np.tanh(float(raw_phase_h)))
-                processed_phase_v = (np.pi / 4.0) * phase_v_sign
-                processed_phase_h = (np.pi / 4.0) * phase_h_sign
-                
-                # 주파수는 고정값
-                fixed_freq_v = 1.0
-                fixed_freq_h = 1.0
-
-                # TensorBoard에 기록
-                # 위상 정보
-                tb_writer.add_scalar("Processed/Vertical_Phase", float(processed_phase_v), global_step=step)
-                tb_writer.add_scalar("Processed/Horizontal_Phase", float(processed_phase_h), global_step=step)
-                tb_writer.add_scalar("Raw/Vertical_Phase_Raw", float(raw_phase_v), global_step=step)
-                tb_writer.add_scalar("Raw/Horizontal_Phase_Raw", float(raw_phase_h), global_step=step)
-                
-                # 주파수 (고정값이지만 로깅)
-                tb_writer.add_scalar("Processed/Vertical_Frequency", fixed_freq_v, global_step=step)
-                tb_writer.add_scalar("Processed/Horizontal_Frequency", fixed_freq_h, global_step=step)
-                
-                # 🔧 모든 조인트 진폭 정보 저장
-                for i in range(len(processed_amplitudes)):  # 모든 조인트
-                    tb_writer.add_scalar(f"Processed/Joint_{i:02d}_Amplitude", processed_amplitudes[i], global_step=step)
-                    tb_writer.add_scalar(f"Raw/Joint_{i:02d}_Amplitude_Raw", float(raw_amplitudes[i]), global_step=step)
-                
-                # 🔧 진폭 통계
-                avg_amplitude = np.mean(processed_amplitudes)
-                max_amplitude = np.max(processed_amplitudes)
-                min_amplitude = np.min(processed_amplitudes)
-                std_amplitude = np.std(processed_amplitudes)
-                
-                tb_writer.add_scalar("Processed/Average_Amplitude", avg_amplitude, global_step=step)
-                tb_writer.add_scalar("Processed/Max_Amplitude", max_amplitude, global_step=step)
-                tb_writer.add_scalar("Processed/Min_Amplitude", min_amplitude, global_step=step)
-                tb_writer.add_scalar("Processed/StdDev_Amplitude", std_amplitude, global_step=step)
-                
-                # 🔧 수직/수평 조인트별 평균 진폭 (추가 분석)
-                # 홀수 번째: 수직 조인트 (1, 3, 5, ...)
-                # 짝수 번째: 수평 조인트 (0, 2, 4, ...)
-                vertical_amplitudes = [processed_amplitudes[i] for i in range(len(processed_amplitudes)) if i % 2 == 1]
-                horizontal_amplitudes = [processed_amplitudes[i] for i in range(len(processed_amplitudes)) if i % 2 == 0]
-                
-                if vertical_amplitudes:
-                    avg_vertical_amp = np.mean(vertical_amplitudes)
-                    tb_writer.add_scalar("Processed/Average_Vertical_Amplitude", avg_vertical_amp, global_step=step)
-                
-                if horizontal_amplitudes:
-                    avg_horizontal_amp = np.mean(horizontal_amplitudes)
-                    tb_writer.add_scalar("Processed/Average_Horizontal_Amplitude", avg_horizontal_amp, global_step=step)
-                
-                # 위상 상태 (이진값)
-                tb_writer.add_scalar("Processed/Vertical_Phase_Binary", phase_v_sign, global_step=step)
-                tb_writer.add_scalar("Processed/Horizontal_Phase_Binary", phase_h_sign, global_step=step)
-                
-                # 🔧 진폭 분포 히스토그램 (선택적)
-                if step % 100 == 0:  # 100스텝마다 히스토그램 저장
-                    tb_writer.add_histogram("Processed/Amplitude_Distribution", np.array(processed_amplitudes), global_step=step)
-                    tb_writer.add_histogram("Raw/Amplitude_Raw_Distribution", raw_amplitudes, global_step=step)
-            
-            # Writer 종료
-            tb_writer.close()
-            
-        except Exception as e:
-            print(f"TensorBoard 로깅 에러: {e}")
 
     # 원래 리워드 계산 (L2)
     return torch.sum(torch.square(current_actions), dim=1)
 
+import multiprocessing
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import numpy as np
+import time
+
+def realtime_plotter_process(data_queue, num_joints):
+    """
+    별도 프로세스에서 실행될 그래프 플로팅 함수
+    """
+    # 그래프 설정
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+    
+    # 데이터 버퍼 (최근 100스텝만 표시)
+    window_size = 100
+    steps = []
+    amp_history = [[] for _ in range(num_joints)]
+    phase_v_history = []
+    phase_h_history = []
+
+    # 라인 객체 초기화
+    lines_amp = [ax1.plot([], [], label=f'Joint {i}')[0] for i in range(num_joints)]
+    line_phase_v, = ax2.plot([], [], label='Vertical Phase', color='r')
+    line_phase_h, = ax2.plot([], [], label='Horizontal Phase', color='b')
+
+    # 스타일 설정
+    ax1.set_title("Real-time Joint Amplitudes")
+    ax1.set_ylim(-0.1, 1.6)  # 진폭 범위 예상
+    ax1.legend(loc='upper right', fontsize='small', ncol=2)
+    ax1.grid(True)
+
+    ax2.set_title("Real-time Phases")
+    ax2.set_ylim(-1.5, 1.5)  # 위상 범위 (-pi/4 ~ pi/4 등)
+    ax2.legend()
+    ax2.grid(True)
+
+    def update(frame):
+        # 큐에 쌓인 모든 데이터를 가져옴 (non-blocking)
+        while not data_queue.empty():
+            try:
+                data = data_queue.get_nowait()
+                if data == "STOP":
+                    plt.close(fig)
+                    return
+                
+                # 데이터 파싱
+                step, amps, ph_v, ph_h = data
+                
+                steps.append(step)
+                for i in range(num_joints):
+                    amp_history[i].append(amps[i])
+                phase_v_history.append(ph_v)
+                phase_h_history.append(ph_h)
+                
+                # 윈도우 사이즈 유지
+                if len(steps) > window_size:
+                    steps.pop(0)
+                    for i in range(num_joints):
+                        amp_history[i].pop(0)
+                    phase_v_history.pop(0)
+                    phase_h_history.pop(0)
+            except:
+                pass
+
+        # 그래프 데이터 업데이트
+        if steps:
+            for i, line in enumerate(lines_amp):
+                line.set_data(steps, amp_history[i])
+            
+            line_phase_v.set_data(steps, phase_v_history)
+            line_phase_h.set_data(steps, phase_h_history)
+            
+            # X축 범위 조정
+            ax1.set_xlim(min(steps), max(steps) + 1)
+            ax2.set_xlim(min(steps), max(steps) + 1)
+
+        return lines_amp + [line_phase_v, line_phase_h]
+
+    ani = FuncAnimation(fig, update, interval=50, blit=False)  # 50ms마다 업데이트
+    plt.tight_layout()
+    plt.show()
+        
 def com_trajectory_save(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Dummy reward term that saves COM trajectories (XY only) to CSV for analysis."""
     

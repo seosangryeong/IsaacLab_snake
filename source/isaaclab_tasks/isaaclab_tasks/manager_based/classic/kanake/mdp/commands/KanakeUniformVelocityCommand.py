@@ -149,7 +149,6 @@ class KanakeUniformVelocityCommand(CommandTerm):
         self.command_spawn_pos_w[env_ids] = torch.mean(body_pos_w, dim=1)
         self.command_spawn_heading_w[env_ids] = self.robot.data.heading_w[env_ids]
         
-        # 각 변수마다 새로운 텐서를 생성하여 할당합니다.
         temp_cmd_x = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.lin_vel_x)
         temp_cmd_y = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.lin_vel_y)
         temp_cmd_yaw = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ranges.ang_vel_z)
@@ -220,7 +219,6 @@ class KanakeUniformVelocityCommand(CommandTerm):
         if not self.robot.is_initialized:
             return
 
-        # --- 🔧 현재 로봇 위치를 항상 사용 ---
         body_pos_w = self.robot.data.body_com_pos_w[:, :, :3]
         current_avg_pos_w = torch.mean(body_pos_w, dim=1)
         current_avg_pos_w[:, 2] += 0.5  # 0.5m 띄우기
