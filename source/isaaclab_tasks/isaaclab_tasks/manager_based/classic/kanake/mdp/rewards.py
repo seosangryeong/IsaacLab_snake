@@ -1700,49 +1700,6 @@ def kanake_position_command_error_tanh(
     return 1 - torch.tanh(distance / std)
 
 
-
-
-
-# class kanake_progress_to_command(ManagerTermBase):
-#     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
-#         super().__init__(cfg, env)
-#         self.potentials = torch.zeros(env.num_envs, device=env.device)
-#         self.prev_potentials = torch.zeros_like(self.potentials)
-#         if not hasattr(env, "episode_length_buf"):
-#             raise AttributeError("The environment does not have the 'episode_length_buf' attribute.")
-
-#     def __call__(
-#         self,
-#         env: ManagerBasedRLEnv,
-#         command_name: str,
-#         asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-#     ) -> torch.Tensor:
-#         asset: Articulation = env.scene["robot"]
-#         command_term = env.command_manager.get_term(command_name)
-        
-#         target_pos_w = command_term.world_command_pos[:, :2]
-#         current_pos_w = asset.data.root_pos_w[:, :2]
-#         current_distance = torch.norm(target_pos_w - current_pos_w, dim=1)
-
-#         self.prev_potentials[:] = self.potentials[:]
-#         self.potentials[:] = -current_distance
-#         reward = self.potentials - self.prev_potentials
-#         reward[env.episode_length_buf == 0] = 0.0
-
-#         return reward
-
-#     def reset(self, env_ids: torch.Tensor):
-#         asset: Articulation = self._env.scene["robot"]
-#         command_term = self._env.command_manager.get_term(self.cfg.params["command_name"])
-        
-#         target_pos_w = command_term.world_command_pos[env_ids, :2]
-#         current_pos_w = asset.data.root_pos_w[env_ids, :2]
-#         distance = torch.norm(target_pos_w - current_pos_w, dim=1)
-
-#         self.potentials[env_ids] = -distance
-#         self.prev_potentials[env_ids] = self.potentials[env_ids]
-
-
 def kanake_position_command_error_tanh(
     env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
