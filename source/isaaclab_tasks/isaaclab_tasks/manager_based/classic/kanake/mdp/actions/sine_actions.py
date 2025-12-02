@@ -64,11 +64,14 @@ class JointSineAction(ActionTerm):
         self._processed_actions = torch.zeros(self.num_envs, self._num_joints, device=self.device)
 
         # 주파수 고정값 
+        # self._fixed_freq_v = 1.0  
+        # self._fixed_freq_h = 1.0
         self._fixed_freq_v = 1.0  
-        self._fixed_freq_h = 1.0
-        
+        self._fixed_freq_h = 0.5
         # 위상 범위
-        self._phase_magnitude = np.pi / 4.0  
+        # self._phase_magnitude = np.pi / 4.0  
+        self._phase_v_magnitude = np.pi / 2.0  
+        self._phase_h_magnitude = np.pi / 4.0
 
         self._current_time = 0.0
 
@@ -118,8 +121,8 @@ class JointSineAction(ActionTerm):
         # phase_v_sign = phase_v_action  # -1 또는 +1
         # phase_h_sign = phase_h_action
         
-        phase_v = self._phase_magnitude * phase_v_sign  # -π/4 또는 +π/4
-        phase_h = self._phase_magnitude * phase_h_sign  # -π/4 또는 +π/4
+        phase_v = self._phase_v_magnitude * phase_v_sign  # -π/4 또는 +π/4
+        phase_h = self._phase_h_magnitude * phase_h_sign  # -π/4 또는 +π/4
 
         t = torch.full((self.num_envs, 1), self._current_time, device=self.device)
 
