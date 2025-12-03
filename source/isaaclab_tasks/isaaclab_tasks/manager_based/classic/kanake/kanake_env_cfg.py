@@ -435,7 +435,7 @@ class RewardsCfg:
 
     com_trajectory_logging = RewTerm(
         func=mdp.com_trajectory_save,
-        weight=0.01  # 실제 리워드에 영향 없음
+        weight=0.01  
     )
     # head 로컬 x직선과 body들의 거리 합
     # BaseXAxisDistanceReward = RewTerm(

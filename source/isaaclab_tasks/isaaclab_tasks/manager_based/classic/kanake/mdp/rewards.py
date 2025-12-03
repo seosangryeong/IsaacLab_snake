@@ -832,7 +832,7 @@ def kanake_track_heading_frame_vel_xy_exp(
 class VelocityDirectionAlignmentSmoothed(ManagerTermBase):
     """
     [개선] 일정 시간 동안의 평균 속도를 사용하여 방향 정렬 리워드 계산
-    뱀의 사행 운동을 고려한 버전
+
     """
     
     def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
@@ -2760,4 +2760,80 @@ def forward_progress_penalty(
     # 후진하는 경우(음수)는 더 큰 페널티
     penalty = torch.clamp(threshold - forward_velocity, min=0.0)
     
-    return penalty  # ✅ 양수 반환 (이미 올바름)
+    return penalty  
+
+
+
+
+def average_body_velocity_alignment_with_target_pos(
+    env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    [Reward 1] 방향 정렬 리워드
+    - 로봇 Base에서 Target Position으로 향하는 벡터(목표 방향)와
+    - 로봇 전체 Body들의 평균 속도 벡터(현재 이동 방향)의
+    - 코사인 유사도를 계산하여 리워드/페널티 부여
+    """
+    # 1. 로봇 및 커맨드 데이터 가져오기
+    asset: Articulation = env.scene[asset_cfg.name]
+    command_term = env.command_manager.get_term(command_name) # KanakeBaseCommand 인스턴스 접근
+    
+    # 2. 목표 방향 벡터 계산 (Target Pos - Current Base Pos)
+    # command_term.pos_command_w는 (num_envs, 3) [x, y, z]
+    target_pos_w_xy = command_term.pos_command_w[:, :2]
+    current_root_pos_xy = asset.data.root_pos_w[:, :2]
+    
+    target_vec = target_pos_w_xy - current_root_pos_xy
+    target_dir = F.normalize(target_vec, p=2, dim=1, eps=1e-6)
+
+    # 3. 로봇 몸체 전체 평균 속도 방향 계산
+    # body_com_vel_w는 (num_envs, num_bodies, 3)
+    body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+    current_avg_vel_w_xy = torch.mean(body_lin_vels_w, dim=1)[:, :2] # 모든 바디 평균
+    current_vel_direction = F.normalize(current_avg_vel_w_xy, p=2, dim=1, eps=1e-6)
+    
+    # 4. Alignment 계산 (Dot Product)
+    alignment = torch.sum(current_vel_direction * target_dir, dim=1)
+    alignment = torch.clamp(alignment, -1.0, 1.0)
+    
+    # 5. 리워드/페널티 로직 (요청하신 대로 적용)
+    threshold = 0.8
+    penalty_scale = 2.0
+    reward_scale = 5.0 # 방향이 맞으면 매우 큰 보상
+    
+    # threshold 이하: 페널티 (방향이 틀리면 감점)
+    penalty = (alignment - threshold) * penalty_scale
+    
+    # threshold 이상: 리워드 (제곱 스케일로 급격히 증가)
+    normalized_alignment = (alignment - threshold) / (1.0 - threshold + 1e-6)
+    reward = torch.pow(torch.clamp(normalized_alignment, min=0.0), 2) * reward_scale
+    
+    # 최종 리워드 합치기
+    final_reward = torch.where(alignment < threshold, penalty, reward)
+    
+    # (옵션) 타겟에 거의 도달해서 벡터 길이가 너무 짧으면(방향 의미 없음) 0처리
+    target_dist = torch.norm(target_vec, dim=1)
+    is_valid_direction = (target_dist > 0.05).float() # 5cm 이상 떨어져 있어야 방향 인정
+    
+    return final_reward * is_valid_direction
+
+
+def average_body_velocity_magnitude(
+    env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    [Reward 2] 전체 바디 속도 평균 크기 리워드
+    - 방향 상관 없이, 빠르게 움직일수록 리워드.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    # 전체 바디 속도 가져오기
+    body_lin_vels_w = asset.data.body_com_vel_w[:, :, :3]
+    
+    # 평균 속도 벡터 (x, y)
+    current_avg_vel_w_xy = torch.mean(body_lin_vels_w, dim=1)[:, :2]
+    
+    # 속도의 크기(Magnitude) 계산
+    avg_speed = torch.norm(current_avg_vel_w_xy, dim=1)
+    
+    return avg_speed

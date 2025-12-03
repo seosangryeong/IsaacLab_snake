@@ -70,7 +70,7 @@ class JointSineAction(ActionTerm):
         self._fixed_freq_h = 0.5
         # 위상 범위
         # self._phase_magnitude = np.pi / 4.0  
-        self._phase_v_magnitude = np.pi / 2.0  
+        self._phase_v_magnitude = np.pi / 4.0  
         self._phase_h_magnitude = np.pi / 4.0
 
         self._current_time = 0.0
