@@ -2821,10 +2821,7 @@ def average_body_velocity_alignment_with_target_pos(
 def average_body_velocity_magnitude(
     env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    """
-    [Reward 2] 전체 바디 속도 평균 크기 리워드
-    - 방향 상관 없이, 빠르게 움직일수록 리워드.
-    """
+
     asset: Articulation = env.scene[asset_cfg.name]
     
     # 전체 바디 속도 가져오기

@@ -227,7 +227,7 @@ class RewardsCfg:
         weight=0.5,
     )
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.kanake_upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
 
     # # action이 급변하지 않도록 페널티
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
@@ -299,6 +299,18 @@ class kanakeNavEnvCfg_PLAY(kanakeNavEnvCfg):
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
-        self.commands.kanake_command.resampling_time_range = (3.0,5.0)  # 5초마다 새 커맨드
+        # self.commands.kanake_command.resampling_time_range = (1.0,2.0)
+        # self.commands.kanake_command.ranges = mdp.KanakeBaseCommandCfg.Ranges(
+        #     pos_x=(-0.3, 0.3),    # 더 작은 범위로 변경
+        #     pos_y=(-0.3, 0.3),    # 더 작은 범위로 변경  
+        #     heading=(0.0, 0.0),  # 약간의 heading 변화 추가
+        # )
+        self.commands.kanake_command.resampling_time_range = (1.0e9, 1.0e9) 
+
+        self.commands.kanake_command.ranges = mdp.KanakeBaseCommandCfg.Ranges(
+            pos_x=(-100.0, 100.0),  
+            pos_y=(-100.0, 100.0),  
+            heading=(-3.14, 3.14),
+        )
         self.episode_length_s = 10000.0
         # self.scene.terrain.usd_path = "/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_wall.usd"
