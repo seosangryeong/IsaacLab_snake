@@ -10,6 +10,7 @@ import os
 import time
 import torch
 import gymnasium as gym
+import csv  
 from scipy.spatial.transform import Rotation as R
 
 from isaaclab.app import AppLauncher
@@ -61,32 +62,38 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper, expor
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils import get_checkpoint_path, parse_env_cfg
 
-# 🔧 올바른 마커 임포트
 from isaaclab.markers import VisualizationMarkers
 from isaaclab.markers.config import CUBOID_MARKER_CFG
 import isaaclab.sim as sim_utils
 
 
+CSV_FILE_PATH = "/home/nuc/nav/path/robot_path1.csv"  
 
-def create_path():
+def load_path_from_csv(file_path):
     waypoints = []
     
-    for i in range(5):
-        waypoints.append([0.0, i * 0.4])  # (0, 0) → (0, 1.6)
+    if not os.path.exists(file_path):
+        print(f"[ERROR] CSV file not found at: {file_path}")
+        return []
+
+    print(f"[INFO] Loading waypoints from {file_path}...")
     
-    for i in range(1, 5):
-        waypoints.append([i * 0.4, 1.6])  # (0.4, 1.6) → (1.6, 1.6)
-    
-    for i in range(4, 1, -1):
-        waypoints.append([1.6, i * 0.4])  # (1.6, 1.6) → (1.6, 0.8)
-    
-    for i in range(3, 0, -1):
-        waypoints.append([i * 0.4, 0.8])  # (1.2, 0.8) → (0.4, 0.8)
-    
-    for i in range(1, -1, -1):
-        waypoints.append([0.4, i * 0.4])  # (0.4, 0.4) → (0.4, 0.0)
-    
+    with open(file_path, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)  # 헤더 건너뛰기 (index, pixel_x, pixel_y, world_x, world_y)
+        
+        for row in reader:
+            try:
+                # CSV 구조: index(0), pixel_x(1), pixel_y(2), world_x(3), world_y(4)
+                wx = float(row[3])
+                wy = float(row[4])
+                waypoints.append([wx, wy])
+            except ValueError:
+                continue
+                
+    print(f"[INFO] Loaded {len(waypoints)} waypoints.")
     return waypoints
+# =================================================================================
 
 def main():
     """Play with RSL-RL agent."""
@@ -151,19 +158,22 @@ def main():
     dt = env.unwrapped.step_dt
 
     # ---------------------------------------------------------
-    # [설정 1] 웨이포인트 생성 (Global Path)
+    # [설정 2] CSV 웨이포인트 로드 (Global Path)
     # ---------------------------------------------------------
-    # X축 방향으로 0.3m 간격으로 점을 생성합니다. (예: 0.3, 0.6, 0.9 ...)
-    waypoints = create_path()
-    current_wp_idx = 0
-    acceptance_radius = 0.1 # 목표 지점 도달 판정 거리 (m)
+    waypoints = load_path_from_csv(CSV_FILE_PATH)
+    
+    if not waypoints:
+        print("[ERROR] No waypoints loaded. Exiting.")
+        return
 
+    current_wp_idx = 0
+    acceptance_radius = 0.1 # 목표 지점 도달 판정 거리 (m) - 로봇 속도에 맞춰 조절 필요
 
     waypoint_marker_cfg = CUBOID_MARKER_CFG.replace(prim_path="/Visuals/Waypoints")
     
     waypoint_marker_cfg.markers["cuboid"].size = (0.1, 0.1, 0.1)
     waypoint_marker_cfg.markers["cuboid"].visual_material = sim_utils.PreviewSurfaceCfg(
-        diffuse_color=(1.0, 0.0, 0.0)  # (R, G, B)
+        diffuse_color=(1.0, 0.0, 0.0)  
     )
     
     waypoint_visualizer = VisualizationMarkers(waypoint_marker_cfg)
@@ -174,28 +184,19 @@ def main():
     for i, wp in enumerate(waypoints):
         marker_locations[i, 0] = wp[0]  # X
         marker_locations[i, 1] = wp[1]  # Y
-        marker_locations[i, 2] = 0.1    # Z (바닥에서 0.1m 띄워서 표시)
+        marker_locations[i, 2] = 0.05   # Z (바닥에 가깝게 표시)
 
-    # 5. 시각화 적용
     waypoint_visualizer.set_visibility(True)
     waypoint_visualizer.visualize(marker_locations)
-    # ---------------------------------------------------------
 
-    # ---------------------------------------------------------
-    # [설정 2] 로봇 객체 및 커맨드 매니저 가져오기
-    # ---------------------------------------------------------
-    # 'robot' 키는 cfg 파일에 정의된 로봇의 이름이어야 합니다.
     try:
         robot = env.unwrapped.scene["robot"]
     except KeyError:
         print(f"[ERROR] 'robot' not found in scene. Available keys: {env.unwrapped.scene.keys()}")
         return
 
-    # 커맨드 매니저
     try:
-        # kanake_command = env.unwrapped.command_manager.get_term("kanake_command")
         kanake_command = env.unwrapped.command_manager.get_term("kanake_command")
-
     except Exception as e:
         print(f"[ERROR] Command term 'kanake_command' not found. Check your config. Error: {e}")
         return
@@ -207,7 +208,7 @@ def main():
     obs, _ = env.get_observations()
     timestep = 0
 
-    print("[INFO] Starting Waypoint Navigation...")
+    print("[INFO] Starting CSV Waypoint Navigation...")
 
     # simulate environment
     while simulation_app.is_running():
@@ -216,7 +217,7 @@ def main():
         # 현재 위치 가져오기
         current_pos = robot.data.root_pos_w[0, :2].cpu().numpy()
         
-        # 기존 코드 수정
+        # [수정] CSV 경로 따라가기 로직
         if current_wp_idx < len(waypoints):
             target_pos = waypoints[current_wp_idx]
             
@@ -227,34 +228,32 @@ def main():
             
             # 도달 확인
             if dist < acceptance_radius:
-                print(f"[Nav] ✅ Reached Waypoint {current_wp_idx} at {target_pos}")
+                print(f"[Nav]  Reached Waypoint {current_wp_idx} ({target_pos})")
                 current_wp_idx += 1
                 
                 if current_wp_idx >= len(waypoints):
-                    print("[Nav] 🎉 All waypoints cleared!")
+                    print("[Nav]  Destination Reached!")
+                    # 마지막 포인트를 계속 유지하도록 인덱스 고정
                     current_wp_idx = len(waypoints) - 1
                 
                 target_pos = waypoints[current_wp_idx]
 
-            # ✅ 올바른 방법: pos_command_w 직접 설정
+            # ✅ 로봇에게 목표 전달
             kanake_command.pos_command_w[0, 0] = target_pos[0]  # 월드 X 좌표
             kanake_command.pos_command_w[0, 1] = target_pos[1]  # 월드 Y 좌표
-            kanake_command.pos_command_w[0, 2] = 0.25           # 기본 Z 높이
-            kanake_command.heading_command_w[0] = 0.0           # 기본 heading
+            kanake_command.pos_command_w[0, 2] = 0.25           # 로봇 Base Height (Z)
+            kanake_command.heading_command_w[0] = 0.0           # Heading 
             
-            # 디버깅 출력
-            if timestep % 10 == 0:
-                print(f"[DEBUG] WP{current_wp_idx}: Target={target_pos}, Current=[{current_pos[0]:.3f}, {current_pos[1]:.3f}], Dist={dist:.3f}")
-                print(f"[DEBUG] Command_w: [{kanake_command.pos_command_w[0, 0]:.3f}, {kanake_command.pos_command_w[0, 1]:.3f}]")
-                print(f"[DEBUG] Command_b: [{kanake_command.pos_command_b[0, 0]:.3f}, {kanake_command.pos_command_b[0, 1]:.3f}]")
-                    
-            else:
-                # 모든 웨이포인트 완료 시 마지막 지점 유지
-                final_target = waypoints[-1]
-                kanake_command.command[0, 0] = final_target[0]
-                kanake_command.command[0, 1] = final_target[1]
-                kanake_command.command[0, 2] = 0.025  # 기본 Z 높이
-        # ---------------------------------------------------------
+            # 디버깅 출력 (200 스텝마다)
+            if timestep % 200 == 0:
+                print(f"[DEBUG] Step {timestep}: Going to WP{current_wp_idx} {target_pos}, Dist={dist:.3f}m")
+        
+        else:
+            # 모든 경로 완료 시 마지막 위치 유지
+            final_target = waypoints[-1]
+            kanake_command.pos_command_w[0, 0] = final_target[0]
+            kanake_command.pos_command_w[0, 1] = final_target[1]
+            kanake_command.pos_command_w[0, 2] = 0.25
 
         # run everything in inference mode
         with torch.inference_mode():

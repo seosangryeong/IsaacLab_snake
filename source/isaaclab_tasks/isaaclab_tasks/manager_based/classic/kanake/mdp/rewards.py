@@ -536,23 +536,30 @@ def com_trajectory_save(env: ManagerBasedRLEnv) -> torch.Tensor:
     
     # CSV 저장
     try:
-        file_exists = csv_file.exists()
-        with open(csv_file, 'a', newline='') as f:
-            writer = csv.writer(f)
+        # 🔥 함수 첫 호출 감지를 위한 정적 변수
+        if not hasattr(com_trajectory_save, '_initialized'):
+            # 기존 파일 삭제하고 새로 시작
+            if csv_file.exists():
+                csv_file.unlink()
             
-            # 헤더 작성 (파일이 처음 생성될 때)
-            if not file_exists:
-                header = ['step', 'com_x', 'com_y']
-                writer.writerow(header)
+            # 새 파일 생성
+            with open(csv_file, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['step', 'com_x', 'com_y'])
+                writer.writerow([step, com_x, com_y])
             
-            # 데이터 작성
-            row = [step, com_x, com_y]
-            writer.writerow(row)
+            # 초기화 완료 표시
+            com_trajectory_save._initialized = True
+        else:
+            # 기존 파일에 append
+            with open(csv_file, 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow([step, com_x, com_y])
             
     except Exception as e:
         print(f"ERROR saving COM trajectory to CSV: {e}")
     
-    # 더미 리워드 반환 (실제로는 리워드 계산 안 함)
+    # 더미 리워드 반환
     return torch.zeros(env.num_envs, device=env.device)
 
 

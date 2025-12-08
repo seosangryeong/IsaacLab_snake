@@ -231,6 +231,11 @@ class RewardsCfg:
 
     # # action이 급변하지 않도록 페널티
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    
+    com_trajectory_logging = RewTerm(
+        func=mdp.com_trajectory_save,
+        weight=0.01  
+    )
 
 @configclass
 class TerminationsCfg:
@@ -313,4 +318,4 @@ class kanakeNavEnvCfg_PLAY(kanakeNavEnvCfg):
             heading=(-3.14, 3.14),
         )
         self.episode_length_s = 10000.0
-        # self.scene.terrain.usd_path = "/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_wall.usd"
+        self.scene.terrain.usd_path = "/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_navigation.usd"
