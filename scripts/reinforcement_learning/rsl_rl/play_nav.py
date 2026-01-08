@@ -67,7 +67,7 @@ from isaaclab.markers.config import CUBOID_MARKER_CFG
 import isaaclab.sim as sim_utils
 
 
-CSV_FILE_PATH = "/home/nuc/nav/path/robot_path1.csv"  
+CSV_FILE_PATH = "/home/nuc/nav/path/robot_path2.csv"  
 
 def load_path_from_csv(file_path):
     waypoints = []
@@ -169,25 +169,25 @@ def main():
     current_wp_idx = 0
     acceptance_radius = 0.1 # 목표 지점 도달 판정 거리 (m) - 로봇 속도에 맞춰 조절 필요
 
-    waypoint_marker_cfg = CUBOID_MARKER_CFG.replace(prim_path="/Visuals/Waypoints")
+    # waypoint_marker_cfg = CUBOID_MARKER_CFG.replace(prim_path="/Visuals/Waypoints")
     
-    waypoint_marker_cfg.markers["cuboid"].size = (0.1, 0.1, 0.1)
-    waypoint_marker_cfg.markers["cuboid"].visual_material = sim_utils.PreviewSurfaceCfg(
-        diffuse_color=(1.0, 0.0, 0.0)  
-    )
+    # waypoint_marker_cfg.markers["cuboid"].size = (0.1, 0.1, 0.1)
+    # waypoint_marker_cfg.markers["cuboid"].visual_material = sim_utils.PreviewSurfaceCfg(
+    #     diffuse_color=(1.0, 0.0, 0.0)  
+    # )
     
-    waypoint_visualizer = VisualizationMarkers(waypoint_marker_cfg)
+    # waypoint_visualizer = VisualizationMarkers(waypoint_marker_cfg)
 
-    num_points = len(waypoints)
-    marker_locations = torch.zeros((num_points, 3), device=env.unwrapped.device)
+    # num_points = len(waypoints)
+    # marker_locations = torch.zeros((num_points, 3), device=env.unwrapped.device)
     
-    for i, wp in enumerate(waypoints):
-        marker_locations[i, 0] = wp[0]  # X
-        marker_locations[i, 1] = wp[1]  # Y
-        marker_locations[i, 2] = 0.05   # Z (바닥에 가깝게 표시)
+    # for i, wp in enumerate(waypoints):
+    #     marker_locations[i, 0] = wp[0]  # X
+    #     marker_locations[i, 1] = wp[1]  # Y
+    #     marker_locations[i, 2] = 0.05   # Z (바닥에 가깝게 표시)
 
-    waypoint_visualizer.set_visibility(True)
-    waypoint_visualizer.visualize(marker_locations)
+    # waypoint_visualizer.set_visibility(True)
+    # waypoint_visualizer.visualize(marker_locations)
 
     try:
         robot = env.unwrapped.scene["robot"]

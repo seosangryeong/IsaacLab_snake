@@ -11,8 +11,13 @@ the curriculum introduced by the function.
 
 from __future__ import annotations
 
+import torch
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
+
+from isaaclab.assets import Articulation
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.terrains import TerrainImporter
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -132,3 +137,44 @@ def modify_command_relative_envs(
             command_term.cfg.rel_heading_envs = rel_heading_envs
         
         print(f"[CURRICULUM] Changed '{command_name}' env ratios - standing: {rel_standing_envs}, heading: {rel_heading_envs}")
+
+
+
+def terrain_levels_pose(
+    env: ManagerBasedRLEnv, 
+    env_ids: Sequence[int], 
+    target_command_name: str = "kanake_command",  
+    success_tolerance: float = 0.2,          # 목표 반경 0.2m 안에 들어오면 성공
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """
+    Curriculum based on distance to the target pose.
+    목표 지점에 도착하면(거리 < tolerance) 지형 난이도를 높이고, 실패하면 낮춥니다.
+    """
+    # 1. 로봇과 지형 객체 가져오기
+    asset: Articulation = env.scene[asset_cfg.name]
+    terrain: TerrainImporter = env.scene.terrain
+    
+    # 2. 커맨드 객체(Term) 자체를 가져옵니다. (커맨드 텐서가 아니라 객체를 가져와야 world 타겟을 알 수 있음)
+    # 님이 만든 KanakeBaseCommand 클래스의 인스턴스를 가져오는 것입니다.
+    command_term = env.command_manager.get_term(target_command_name)
+    
+    # 3. 목표 위치(World Frame)와 현재 로봇 위치 가져오기
+    # KanakeBaseCommand에 self.pos_command_w가 정의되어 있어야 합니다.
+    target_pos_w = command_term.pos_command_w[env_ids, :2] 
+    current_pos_w = asset.data.root_pos_w[env_ids, :2]
+
+    # 4. 목표까지의 남은 거리 계산
+    distance_to_target = torch.norm(target_pos_w - current_pos_w, dim=1)
+
+    # 5. 레벨 조정 로직
+    # 성공: 목표 반경 안에 들어왔는가? -> 난이도 UP
+    move_up = distance_to_target < success_tolerance
+    
+    # 실패: 성공하지 못했으면 -> 난이도 DOWN
+    move_down = ~move_up 
+
+    # 6. 지형 레벨 업데이트
+    terrain.update_env_origins(env_ids, move_up, move_down)
+
+    return torch.mean(terrain.terrain_levels.float())

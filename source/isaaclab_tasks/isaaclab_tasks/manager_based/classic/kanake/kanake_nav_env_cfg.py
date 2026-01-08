@@ -27,23 +27,7 @@ import isaaclab_tasks.manager_based.classic.kanake.mdp as mdp
 
 # Pre-defined configs
 from isaaclab_assets.robots.kanake import KANAKE_CFG 
-
-# TARGET_MARKER_CFG = FRAME_MARKER_CFG.replace(prim_path="/World/target_marker")
-# arrow_cfg = GREEN_ARROW_X_MARKER_CFG.replace(
-#     prim_path="/World/my_green_arrow",
-#     markers={
-#         k: v.replace(scale=(1.0, 1.0, 2.0)) for k, v in GREEN_ARROW_X_MARKER_CFG.markers.items()
-#     }
-# )
-# TARGET_BOX = CUBOID_MARKER_CFG.replace( prim_path="/World/target_box")
-# box_cfg = CUBOID_MARKER_CFG.replace(
-#     prim_path="/World/target_box",
-#     markers={
-#         "cuboid": CUBOID_MARKER_CFG.markers["cuboid"].replace(
-#             size=(0.1, 0.1, 0.1),
-#         )
-#     }
-# )
+from isaaclab.terrains.config.kanake_rough import ROUGH_TERRAINS_CFG  # isort: skip
 
 
 
@@ -51,26 +35,46 @@ from isaaclab_assets.robots.kanake import KANAKE_CFG
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
 
+    # terrain = TerrainImporterCfg(
+    #     prim_path="/World/ground",
+    #     # terrain_type="usd",
+    #     terrain_type="usd",
+    #     # terrain_type="plane",
+    #     # terrain_type="generator",
+    #     # terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
+    #     # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
+    #     usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd",  
+
+    #     collision_group=-1,
+    #     physics_material=sim_utils.RigidBodyMaterialCfg(
+    #         friction_combine_mode="average",
+    #         restitution_combine_mode="average",
+    #         static_friction=0.4,
+    #         dynamic_friction=0.4,
+    #     ),
+    #     debug_vis=False,
+    # )
+
+    # ground terrain
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
-        # terrain_type="usd",
-        terrain_type="usd",
-        # terrain_type="plane",
-        # terrain_type="generator",
-        # terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
-        # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
-        usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd",  
-
+        terrain_type="generator",
+        terrain_generator=ROUGH_TERRAINS_CFG,
+        max_init_terrain_level=5,
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="average",
             restitution_combine_mode="average",
-            static_friction=0.4,
-            dynamic_friction=0.4,
+            static_friction=0.5,
+            dynamic_friction=0.5,
+        ),
+        visual_material=sim_utils.MdlFileCfg(
+            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+            project_uvw=True,
+            texture_scale=(0.25, 0.25),
         ),
         debug_vis=False,
     )
-
     # robot
     robot = KANAKE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
@@ -153,7 +157,8 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.25, 0.25), "yaw": (0.0,0.0)},
+            # "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.25, 0.25), "yaw": (0.0,0.0)},
+            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.5, 0.5), "yaw": (0.0,0.0)},
             "velocity_range": {
                 "x": (0.0, 0.0),
                 "y": (0.0, 0.0),
@@ -214,7 +219,7 @@ class RewardsCfg:
     # 타겟과의 거리 리워드
     kanake_position_command_error_base = RewTerm(
         func=mdp.kanake_position_command_error_base,
-        weight=-1.0,
+        weight=-1.5,
         params={"command_name": "kanake_command"},
     )
     body_alignment_to_target = RewTerm(
@@ -227,22 +232,22 @@ class RewardsCfg:
         weight=0.5,
     )
     # base의 수직 유지(cube)
-    upright = RewTerm(func=mdp.kanake_upright_posture_bonus, weight=1.0, params={"threshold": 0.8})
+    upright = RewTerm(func=mdp.kanake_upright_posture_bonus, weight=0.1, params={"threshold": 0.6})
 
     # # action이 급변하지 않도록 페널티
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     
-    com_trajectory_logging = RewTerm(
-        func=mdp.com_trajectory_save,
-        weight=0.01  
-    )
+    # com_trajectory_logging = RewTerm(
+    #     func=mdp.com_trajectory_save,
+    #     weight=0.01  
+    # )
 
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 0.5})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 1.0})
 
     # bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 1.57, "asset_cfg": SceneEntityCfg(name="robot")})
 
@@ -252,20 +257,23 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     
-    kanake_command_resampling = CurrTerm(
-        func=mdp.modify_command_resampling_time, 
-        params={
-            "command_name": "kanake_command", 
-            "resampling_time_range": (3.0, 6.0), 
-            "num_steps": 50000
-        }
-    )
+    # kanake_command_resampling = CurrTerm(
+    #     func=mdp.modify_command_resampling_time, 
+    #     params={
+    #         "command_name": "kanake_command", 
+    #         "resampling_time_range": (3.0, 6.0), 
+    #         "num_steps": 50000
+    #     }
+    # )
+
+    terrain_levels = CurrTerm(func=mdp.terrain_levels_pose)
+
 
 @configclass
 class kanakeNavEnvCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=1.0)
+    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=0.2)
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
@@ -301,16 +309,18 @@ class kanakeNavEnvCfg_PLAY(kanakeNavEnvCfg):
 
         # make a smaller scene for play
         self.scene.num_envs = 1
-        self.scene.env_spacing = 2.5
+        self.scene.env_spacing = 1.0
+        self.curriculum = None
         # disable randomization for play
         self.observations.policy.enable_corruption = False
-        # self.commands.kanake_command.resampling_time_range = (1.0,2.0)
+        # self.commands.kanake_command.resampling_time_range = (10.0,12.0)
         # self.commands.kanake_command.ranges = mdp.KanakeBaseCommandCfg.Ranges(
-        #     pos_x=(-0.3, 0.3),    # 더 작은 범위로 변경
-        #     pos_y=(-0.3, 0.3),    # 더 작은 범위로 변경  
-        #     heading=(0.0, 0.0),  # 약간의 heading 변화 추가
+        #     pos_x=(-1.0, 1.0),    
+        #     pos_y=(-1.0, 1.0),     
+        #     heading=(0.0, 0.0),  
         # )
         self.commands.kanake_command.resampling_time_range = (1.0e9, 1.0e9) 
+        self.commands.kanake_command.debug_vis = False
 
         self.commands.kanake_command.ranges = mdp.KanakeBaseCommandCfg.Ranges(
             pos_x=(-100.0, 100.0),  
@@ -318,4 +328,5 @@ class kanakeNavEnvCfg_PLAY(kanakeNavEnvCfg):
             heading=(-3.14, 3.14),
         )
         self.episode_length_s = 10000.0
+        self.scene.terrain.terrain_type = "usd"
         self.scene.terrain.usd_path = "/home/nuc/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake_navigation.usd"
