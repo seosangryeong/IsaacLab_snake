@@ -377,7 +377,7 @@ class KanakeBaseCommandCfg(CommandTermCfg):
     goal_pose_visualizer_cfg: VisualizationMarkersCfg = CUBOID_MARKER_CFG.replace(
         prim_path="/Visuals/Command/pose_goal"
     )
-    goal_pose_visualizer_cfg.markers["cuboid"].size = (0.1, 0.1, 100.0)
+    goal_pose_visualizer_cfg.markers["cuboid"].size = (0.1, 0.1, 0.2)
     goal_pose_visualizer_cfg.markers["cuboid"].visual_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0))
 
 

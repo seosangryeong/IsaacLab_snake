@@ -35,46 +35,46 @@ from isaaclab.terrains.config.kanake_rough import ROUGH_TERRAINS_CFG  # isort: s
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
 
-    # terrain = TerrainImporterCfg(
-    #     prim_path="/World/ground",
-    #     # terrain_type="usd",
-    #     terrain_type="usd",
-    #     # terrain_type="plane",
-    #     # terrain_type="generator",
-    #     # terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
-    #     # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
-    #     usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd",  
-
-    #     collision_group=-1,
-    #     physics_material=sim_utils.RigidBodyMaterialCfg(
-    #         friction_combine_mode="average",
-    #         restitution_combine_mode="average",
-    #         static_friction=0.4,
-    #         dynamic_friction=0.4,
-    #     ),
-    #     debug_vis=False,
-    # )
-
-    # ground terrain
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
-        terrain_type="generator",
-        terrain_generator=ROUGH_TERRAINS_CFG,
-        max_init_terrain_level=5,
+        # terrain_type="usd",
+        terrain_type="usd",
+        # terrain_type="plane",
+        # terrain_type="generator",
+        # terrain_generator=KANAKE_RANDOM_TERRAIN_CFG,
+        # usd_path="/home/hi/IsaacLab_snake/kanake6_sim_523/kanake6_sim/kanake6_sim/urdf/kanake_0610/kanake6_1120_wall.usd",
+        usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd",  
+
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="average",
             restitution_combine_mode="average",
-            static_friction=0.5,
-            dynamic_friction=0.5,
-        ),
-        visual_material=sim_utils.MdlFileCfg(
-            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-            project_uvw=True,
-            texture_scale=(0.25, 0.25),
+            static_friction=0.4,
+            dynamic_friction=0.4,
         ),
         debug_vis=False,
     )
+
+    # ground terrain
+    # terrain = TerrainImporterCfg(
+    #     prim_path="/World/ground",
+    #     terrain_type="generator",
+    #     terrain_generator=ROUGH_TERRAINS_CFG,
+    #     max_init_terrain_level=5,
+    #     collision_group=-1,
+    #     physics_material=sim_utils.RigidBodyMaterialCfg(
+    #         friction_combine_mode="average",
+    #         restitution_combine_mode="average",
+    #         static_friction=0.5,
+    #         dynamic_friction=0.5,
+    #     ),
+    #     visual_material=sim_utils.MdlFileCfg(
+    #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+    #         project_uvw=True,
+    #         texture_scale=(0.25, 0.25),
+    #     ),
+    #     debug_vis=False,
+    # )
     # robot
     robot = KANAKE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
@@ -266,14 +266,14 @@ class CurriculumCfg:
     #     }
     # )
 
-    terrain_levels = CurrTerm(func=mdp.terrain_levels_pose)
+    # terrain_levels = CurrTerm(func=mdp.terrain_levels_pose)
 
 
 @configclass
 class kanakeNavEnvCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=0.2)
+    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=1.0)
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
