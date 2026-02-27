@@ -27,7 +27,7 @@ import isaaclab_tasks.manager_based.classic.teraffe.mdp as mdp
 # Pre-defined configs
 from isaaclab_assets.robots.teraffe import TERAFFE_CFG 
 from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG
-from isaaclab.terrains.config.teraffe_terrain import TERAFFE_TERRAINS_CFG, TERAFFE_WAVE_TERRATIN_CFG
+from isaaclab.terrains.config.teraffe_terrain import TERAFFE_TERRAINS_CFG, TERAFFE_WAVE_TERRATIN_CFG, ROUGH_RANDOM_TERRAINS_CFG
 
 
 
@@ -40,23 +40,23 @@ class MySceneCfg(InteractiveSceneCfg):
         prim_path="/World/ground",
         # terrain_type="usd",
         # terrain_type="usd",
-        # terrain_type="plane",
+        terrain_type="plane",
         # usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd",  
-        terrain_type="generator",
-        terrain_generator=TERAFFE_WAVE_TERRATIN_CFG,
+        # terrain_type="generator",
+        # terrain_generator=ROUGH_RANDOM_TERRAINS_CFG,
         max_init_terrain_level=5,
         collision_group=-1,
 
         visual_material=sim_utils.PreviewSurfaceCfg(
-                diffuse_color=(0.8, 0.8, 0.8), 
+                diffuse_color=(0.3, 0.3, 0.3), 
                 metallic=0.0,
                 roughness=0.5,
             ),
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="multiply",
             restitution_combine_mode="average",
-            static_friction=1.4,
-            dynamic_friction=1.2,
+            static_friction=1.2,
+            dynamic_friction=1.0,
         ),
         debug_vis=False,
     )
@@ -89,7 +89,7 @@ class CommandsCfg:
 
     base_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(5.0, 5.0),
+        resampling_time_range=(10.0, 10.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=True,
@@ -97,6 +97,8 @@ class CommandsCfg:
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
             lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(0.0, 1.0), heading=(-math.pi, math.pi)
+            # lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(0.0, 0.0), heading=(0.0, 0.0)
+
         ),
     )
 
@@ -109,20 +111,20 @@ class ActionsCfg:
     prismaticjoint = mdp.JointPositionActionCfg(
         asset_name="robot",               
         joint_names=["j1_1","j1_2","j2_1","j2_2","j3_1","j3_2","j4_1","j4_2"],
-        scale=1.0)
+        scale=0.01)
     
     steerjoint = mdp.JointPositionActionCfg(
         asset_name="robot",               
         joint_names=["j1_steer","j2_steer","j3_steer","j4_steer"],
-        scale=1.0)
+        scale=0.5)
     
     drivejoint = mdp.JointVelocityActionCfg(
         asset_name="robot",               
         joint_names=["j1_drive","j2_drive","j3_drive","j4_drive"],
-        scale=10.0)
+        scale=4.0)
     
 
-    
+  
 
 @configclass
 class ObservationsCfg:
@@ -140,8 +142,6 @@ class ObservationsCfg:
         joint_vel = ObsTerm(func=mdp.joint_vel)
         joint_pos = ObsTerm(func=mdp.joint_pos)
         actions = ObsTerm(func=mdp.last_action)
-
-
 
 
 
@@ -217,17 +217,17 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     track_lin_vel_xy_exp = RewTerm(
-        func=mdp.track_lin_vel_xy_exp, weight=1.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_lin_vel_xy_exp, weight=2.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
     track_ang_vel_z_exp = RewTerm(
         func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
-    # upright = RewTerm(func=mdp.upright_posture_bonus, weight=2.0, params={"threshold": 1.0})
-    upright_shaped = RewTerm(
-        func=mdp.upright_posture_shaped_penalty,
-        weight=0.5,
-        params={"threshold": 0.95} 
-    )
+    upright = RewTerm(func=mdp.upright_posture_bonus, weight=1.0, params={"threshold": 0.97})
+    # upright_shaped = RewTerm(
+    #     func=mdp.upright_posture_shaped_penalty,
+    #     weight=0.5,
+    #     params={"threshold": 0.95} 
+    # )
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
 
 @configclass
@@ -235,8 +235,8 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 7.0})
-    min = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 1.3})
+    max = DoneTerm(func=mdp.root_height_over_maximum, params={"maximum_height": 8.0})
+    # min = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 1.3})
     bad_orientation = DoneTerm(
             func=mdp.bad_orientation, 
             params={

@@ -41,6 +41,7 @@ TERAFFE_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 1.4),
+        # pos=(0.0, 0.0, 2.0),
         # rot=(0.70710678, 0.70710678, 0.0, 0.0),
         joint_pos={".*": 0.0},
         joint_vel={".*": 0.0},
@@ -50,8 +51,8 @@ TERAFFE_CFG = ArticulationCfg(
         # prismatic: j1_1/2 ~ j4_1/2
         "prismatic_pd": ImplicitActuatorCfg(
             joint_names_expr=[r"j[1-4]_[12]"],   # j1_1, j1_2, ..., j4_2
-            stiffness=30.0,
-            damping=10.0,
+            stiffness=100.0,
+            damping=70.0,
         ),
 
         # steer: j1_steer ~ j4_steer
@@ -65,7 +66,7 @@ TERAFFE_CFG = ArticulationCfg(
         "drive_vel": ImplicitActuatorCfg(
             joint_names_expr=[r"j[1-4]_drive"],
             stiffness=0.0,
-            damping=50.0,
+            damping=60.0,
             # effort_limit=30.0,      
             # effort_limit_sim=30.0,
         ),

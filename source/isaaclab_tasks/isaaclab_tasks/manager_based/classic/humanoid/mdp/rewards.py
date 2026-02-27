@@ -26,7 +26,7 @@ def upright_posture_bonus(
 ) -> torch.Tensor:
     """Reward for maintaining an upright posture.
     로봇의 로컬좌표계 z축과 월드좌표계 z축의 내적. -1에서 1 사이(1에 가까울수록 upright)"""
-    up_proj = obs.base_up_proj_kanake(env, asset_cfg).squeeze(-1)
+    up_proj = obs.base_up_proj(env, asset_cfg).squeeze(-1)
     # print("up_proj", up_proj)
     return (up_proj > threshold).float()
 
