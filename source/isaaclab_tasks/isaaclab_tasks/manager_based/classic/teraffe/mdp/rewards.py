@@ -144,16 +144,35 @@ def navigation_target_distance_tanh(
 def navigation_progress_velocity(
     env: ManagerBasedRLEnv,
     command_name: str = "navigation_command",
+    slow_radius: float = 0.8,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
-    """Reward velocity component that points directly toward the navigation target."""
+    """Reward velocity toward the target, fading out near arrival."""
     asset: Articulation = env.scene[asset_cfg.name]
     command_term = env.command_manager.get_term(command_name)
 
     target_vec = command_term.world_command_pos[:, :2] - asset.data.root_pos_w[:, :2]
+    distance = torch.linalg.norm(target_vec, dim=-1)
     target_dir = F.normalize(target_vec, dim=-1)
     progress_vel = torch.sum(asset.data.root_lin_vel_w[:, :2] * target_dir, dim=-1)
-    return torch.clamp(progress_vel, min=-1.0, max=1.0)
+    slow_scale = torch.clamp(distance / slow_radius, min=0.0, max=1.0)
+    return torch.clamp(progress_vel, min=-1.0, max=1.0) * slow_scale
+
+
+def navigation_stop_near_target(
+    env: ManagerBasedRLEnv,
+    command_name: str = "navigation_command",
+    distance_threshold: float = 0.5,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalty for keeping planar speed when the robot is close to the navigation target."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    command_term = env.command_manager.get_term(command_name)
+
+    distance = torch.linalg.norm(command_term.world_command_pos[:, :2] - asset.data.root_pos_w[:, :2], dim=-1)
+    planar_speed = torch.linalg.norm(asset.data.root_lin_vel_w[:, :2], dim=-1)
+    near_target = distance < distance_threshold
+    return torch.square(planar_speed) * near_target.float()
 
 
 def navigation_heading_alignment(

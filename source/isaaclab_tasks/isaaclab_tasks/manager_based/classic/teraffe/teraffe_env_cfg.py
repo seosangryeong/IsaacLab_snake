@@ -205,7 +205,7 @@ class ActionsCfg:
     drivejoint = mdp.JointVelocityActionCfg(
         asset_name="robot",               
         joint_names=["j1_drive","j2_drive","j3_drive","j4_drive"],
-        scale=4.0)
+        scale=8.0)
     
 
   
@@ -325,11 +325,16 @@ class RewardsCfg:
     # track_ang_vel_z_exp = RewTerm(
     #     func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     # )
-    progress_to_target = RewTerm(func=mdp.navigation_progress_velocity, weight=3.0)
+    progress_to_target = RewTerm(func=mdp.navigation_progress_velocity, weight=5.0, params={"slow_radius": 1.0})
     face_target = RewTerm(func=mdp.navigation_heading_alignment, weight=0.5)
-    forward_velocity_alignment = RewTerm(func=mdp.forward_velocity_alignment, weight=2.0)
+    forward_velocity_alignment = RewTerm(func=mdp.forward_velocity_alignment, weight=1.0)
     lateral_velocity = RewTerm(func=mdp.lateral_velocity_l2, weight=-3.0)
     backward_velocity = RewTerm(func=mdp.backward_velocity, weight=-2.0)
+    stop_near_target = RewTerm(
+        func=mdp.navigation_stop_near_target,
+        weight=-5.0,
+        params={"command_name": "navigation_command", "distance_threshold": 0.5},
+    )
     position_tracking = RewTerm(func=mdp.navigation_target_distance_tanh, weight=0.5, params={"std": 2.0})
     position_tracking_fine = RewTerm(func=mdp.navigation_target_distance_tanh, weight=1.0, params={"std": 0.4})
     arrival_bonus = RewTerm(func=mdp.navigation_arrival_bonus, weight=2.0, params={"distance_threshold": 0.35})
